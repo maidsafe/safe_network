@@ -16,6 +16,7 @@ use crate::{
     },
     VerbosityLevel,
 };
+use ant_bootstrap::PeersArgs;
 use ant_evm::{AttoTokens, CustomNetwork, EvmNetwork, RewardsAddress};
 use ant_service_management::{auditor::AuditorServiceData, control::ServiceControl};
 use ant_service_management::{error::Result as ServiceControlResult, NatDetectionStatus};
@@ -25,7 +26,6 @@ use ant_service_management::{
 use assert_fs::prelude::*;
 use assert_matches::assert_matches;
 use color_eyre::Result;
-use libp2p::Multiaddr;
 use mockall::{mock, predicate::*, Sequence};
 use predicates::prelude::*;
 use service_manager::ServiceInstallCtx;
@@ -97,7 +97,6 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -110,9 +109,18 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         .returning(|| Ok(8081))
         .in_sequence(&mut seq);
 
+    let peers_args = PeersArgs {
+        first: true,
+        addrs: vec![],
+        network_contacts_url: vec![],
+        local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
+        bootstrap_cache_dir: None,
+    };
+
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -124,9 +132,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: true,
         home_network: false,
-        local: true,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -136,6 +142,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: peers_args.clone(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         antnode_path: node_data_dir
@@ -157,21 +164,19 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: true,
             home_network: false,
-            local: true,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args,
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -207,7 +212,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
 
     node_reg_path.assert(predicates::path::is_file());
     assert_eq!(node_registry.nodes.len(), 1);
-    assert!(node_registry.nodes[0].genesis);
+    assert!(node_registry.nodes[0].peers_args.first);
     assert_eq!(node_registry.nodes[0].version, latest_version);
     assert_eq!(node_registry.nodes[0].service_name, "antnode1");
     assert_eq!(node_registry.nodes[0].user, Some(get_username()));
@@ -254,6 +259,16 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
     let mock_service_control = MockServiceControl::new();
 
     let latest_version = "0.96.4";
+
+    let peers_args = PeersArgs {
+        first: true,
+        addrs: vec![],
+        network_contacts_url: vec![],
+        local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
+        bootstrap_cache_dir: None,
+    };
     let mut node_registry = NodeRegistry {
         auditor: None,
         faucet: None,
@@ -272,10 +287,8 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
                     "0x8464135c8F25Da09e49BC8782676a84730C318bC",
                 )?,
             }),
-            genesis: true,
             home_network: false,
             listen_addr: None,
-            local: false,
             log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
@@ -284,9 +297,10 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             node_ip: None,
             node_port: None,
             number: 1,
-            pid: None,
-            peer_id: None,
             owner: None,
+            peer_id: None,
+            peers_args: peers_args.clone(),
+            pid: None,
             rewards_address: RewardsAddress::from_str(
                 "0x03B770D9cD32077cC0bF330c13C114a87643B124",
             )?,
@@ -300,7 +314,6 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             user_mode: false,
             version: latest_version.to_string(),
         }],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -319,21 +332,19 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: true,
             home_network: false,
-            local: true,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args,
             rpc_address: Some(custom_rpc_address),
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -384,9 +395,17 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
+    };
+    let peers_args = PeersArgs {
+        first: true,
+        addrs: vec![],
+        network_contacts_url: vec![],
+        local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
+        bootstrap_cache_dir: None,
     };
 
     let latest_version = "0.96.4";
@@ -402,21 +421,19 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(3),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: true,
             home_network: false,
-            local: true,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args,
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -467,7 +484,6 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -492,7 +508,6 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
 
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -504,9 +519,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: false,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -516,6 +529,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         antnode_path: node_data_dir
             .to_path_buf()
@@ -542,7 +556,6 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode2"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -554,9 +567,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: false,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode2"),
         log_format: None,
         max_archived_log_files: None,
@@ -566,6 +577,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
         antnode_path: node_data_dir
@@ -593,7 +605,6 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         data_dir_path: node_data_dir.to_path_buf().join("antnode3"),
-        bootstrap_peers: vec![],
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -604,9 +615,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: false,
-        local: false,
         log_format: None,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode3"),
         max_archived_log_files: None,
@@ -616,6 +625,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085),
         antnode_path: node_data_dir
@@ -638,21 +648,19 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(3),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -739,164 +747,6 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
 }
 
 #[tokio::test]
-async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Result<()> {
-    let tmp_data_dir = assert_fs::TempDir::new()?;
-    let node_reg_path = tmp_data_dir.child("node_reg.json");
-
-    let mut mock_service_control = MockServiceControl::new();
-
-    let mut old_peers  = vec![Multiaddr::from_str("/ip4/64.227.35.186/udp/33188/quic-v1/p2p/12D3KooWDrx4zfUuJgz7jSusC28AZRDRbj7eo3WKZigPsw9tVKs3")?];
-    let new_peers = vec![Multiaddr::from_str("/ip4/178.62.78.116/udp/45442/quic-v1/p2p/12D3KooWLH4E68xFqoSKuF2JPQQhzaAg7GNvN1vpxoLMgJq6Zqz8")?];
-
-    let mut node_registry = NodeRegistry {
-        auditor: None,
-        faucet: None,
-        save_path: node_reg_path.to_path_buf(),
-        nat_status: None,
-        nodes: vec![],
-        bootstrap_peers: old_peers.clone(),
-        environment_variables: None,
-        daemon: None,
-    };
-    let latest_version = "0.96.4";
-    let temp_dir = assert_fs::TempDir::new()?;
-    let node_data_dir = temp_dir.child("data");
-    node_data_dir.create_dir_all()?;
-    let node_logs_dir = temp_dir.child("logs");
-    node_logs_dir.create_dir_all()?;
-    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
-    antnode_download_path.write_binary(b"fake antnode bin")?;
-
-    let mut seq = Sequence::new();
-
-    mock_service_control
-        .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(12001))
-        .in_sequence(&mut seq);
-
-    let install_ctx = InstallNodeServiceCtxBuilder {
-        autostart: false,
-        bootstrap_peers: new_peers.clone(),
-        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
-        env_variables: None,
-        evm_network: EvmNetwork::Custom(CustomNetwork {
-            rpc_url_http: "http://localhost:8545".parse()?,
-            payment_token_address: RewardsAddress::from_str(
-                "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-            )?,
-            data_payments_address: RewardsAddress::from_str(
-                "0x8464135c8F25Da09e49BC8782676a84730C318bC",
-            )?,
-        }),
-        genesis: false,
-        home_network: false,
-        local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
-        log_format: None,
-        max_archived_log_files: None,
-        max_log_files: None,
-        metrics_port: None,
-        name: "antnode1".to_string(),
-        node_ip: None,
-        node_port: None,
-        owner: None,
-        rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
-        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-        antnode_path: node_data_dir
-            .to_path_buf()
-            .join("antnode1")
-            .join(ANTNODE_FILE_NAME),
-        service_user: Some(get_username()),
-        upnp: false,
-    }
-    .build()?;
-
-    mock_service_control
-        .expect_install()
-        .times(1)
-        .with(eq(install_ctx), eq(false))
-        .returning(|_, _| Ok(()))
-        .in_sequence(&mut seq);
-
-    add_node(
-        AddNodeServiceOptions {
-            auto_restart: false,
-            auto_set_nat_flags: false,
-            bootstrap_peers: new_peers.clone(),
-            count: None,
-            delete_antnode_src: true,
-            enable_metrics_server: false,
-            env_variables: None,
-            local: false,
-            genesis: false,
-            home_network: false,
-            log_format: None,
-            max_archived_log_files: None,
-            max_log_files: None,
-            metrics_port: None,
-            owner: None,
-            node_ip: None,
-            node_port: None,
-            rpc_address: None,
-            rpc_port: None,
-            antnode_src_path: antnode_download_path.to_path_buf(),
-            antnode_dir_path: temp_dir.to_path_buf(),
-            service_data_dir_path: node_data_dir.to_path_buf(),
-            service_log_dir_path: node_logs_dir.to_path_buf(),
-            upnp: false,
-            user: Some(get_username()),
-            user_mode: false,
-            version: latest_version.to_string(),
-            evm_network: EvmNetwork::Custom(CustomNetwork {
-                rpc_url_http: "http://localhost:8545".parse()?,
-                payment_token_address: RewardsAddress::from_str(
-                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-                )?,
-                data_payments_address: RewardsAddress::from_str(
-                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
-                )?,
-            }),
-            rewards_address: RewardsAddress::from_str(
-                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
-            )?,
-        },
-        &mut node_registry,
-        &mock_service_control,
-        VerbosityLevel::Normal,
-    )
-    .await?;
-
-    antnode_download_path.assert(predicate::path::missing());
-    node_data_dir.assert(predicate::path::is_dir());
-    node_logs_dir.assert(predicate::path::is_dir());
-
-    old_peers.extend(new_peers);
-    assert_eq!(node_registry.bootstrap_peers, old_peers);
-
-    assert_eq!(node_registry.nodes.len(), 1);
-    assert_eq!(node_registry.nodes[0].version, latest_version);
-    assert_eq!(node_registry.nodes[0].service_name, "antnode1");
-    assert_eq!(node_registry.nodes[0].user, Some(get_username()));
-    assert_eq!(node_registry.nodes[0].number, 1);
-    assert_eq!(
-        node_registry.nodes[0].rpc_socket_addr,
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001)
-    );
-    assert_eq!(
-        node_registry.nodes[0].log_dir_path,
-        node_logs_dir.to_path_buf().join("antnode1")
-    );
-    assert_eq!(
-        node_registry.nodes[0].data_dir_path,
-        node_data_dir.to_path_buf().join("antnode1")
-    );
-    assert_matches!(node_registry.nodes[0].status, ServiceStatus::Added);
-
-    Ok(())
-}
-
-#[tokio::test]
 async fn add_node_should_update_the_environment_variables_inside_node_registry() -> Result<()> {
     let tmp_data_dir = assert_fs::TempDir::new()?;
     let node_reg_path = tmp_data_dir.child("node_reg.json");
@@ -914,7 +764,6 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -936,7 +785,6 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: env_variables.clone(),
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -948,9 +796,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: false,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -960,6 +806,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         antnode_path: node_data_dir
@@ -981,21 +828,19 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: env_variables.clone(),
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -1079,10 +924,8 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
                     "0x8464135c8F25Da09e49BC8782676a84730C318bC",
                 )?,
             }),
-            genesis: true,
             home_network: false,
             listen_addr: None,
-            local: false,
             log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
@@ -1093,6 +936,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             number: 1,
             owner: None,
             peer_id: None,
+            peers_args: PeersArgs::default(),
             pid: None,
             rewards_address: RewardsAddress::from_str(
                 "0x03B770D9cD32077cC0bF330c13C114a87643B124",
@@ -1107,7 +951,6 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             user_mode: false,
             version: latest_version.to_string(),
         }],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -1127,7 +970,6 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode2"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -1139,9 +981,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: false,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode2"),
         log_format: None,
         max_archived_log_files: None,
@@ -1150,6 +990,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         name: "antnode2".to_string(),
         node_ip: None,
         node_port: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
         owner: None,
@@ -1173,21 +1014,19 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_src_path: antnode_download_path.to_path_buf(),
@@ -1241,6 +1080,1079 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
 }
 
 #[tokio::test]
+async fn add_node_should_create_service_file_with_first_arg() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
+
+    let peers_args = PeersArgs {
+        first: true,
+        addrs: vec![],
+        network_contacts_url: vec![],
+        local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
+        bootstrap_cache_dir: None,
+    };
+
+    let mut seq = Sequence::new();
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(12001))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:12001"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--first"),
+                    OsString::from("--rewards-address"),
+                    OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
+                    OsString::from("evm-custom"),
+                    OsString::from("--rpc-url"),
+                    OsString::from("http://localhost:8545/"),
+                    OsString::from("--payment-token-address"),
+                    OsString::from("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
+                    OsString::from("--data-payments-address"),
+                    OsString::from("0x8464135c8F25Da09e49BC8782676a84730C318bC"),
+                ],
+                autostart: false,
+                contents: None,
+                environment: None,
+                label: "antnode1".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            auto_restart: false,
+            auto_set_nat_flags: false,
+            count: None,
+            delete_antnode_src: true,
+            enable_metrics_server: false,
+            env_variables: None,
+            home_network: false,
+            log_format: None,
+            max_archived_log_files: None,
+            max_log_files: None,
+            metrics_port: None,
+            node_ip: None,
+            node_port: None,
+            owner: None,
+            peers_args: peers_args.clone(),
+            rpc_address: None,
+            rpc_port: None,
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    antnode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 1);
+    assert_eq!(node_registry.nodes[0].version, latest_version);
+    assert_eq!(node_registry.nodes[0].peers_args, peers_args);
+    assert!(node_registry.nodes[0].peers_args.first);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_create_service_file_with_peers_args() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
+
+    let peers_args = PeersArgs {
+        first: false,
+        addrs: vec![
+            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
+                .parse()?,
+        ],
+        network_contacts_url: vec![],
+        local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
+        bootstrap_cache_dir: None,
+    };
+
+    let mut seq = Sequence::new();
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(12001))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:12001"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--peer"),
+                    OsString::from(
+                        "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"),
+                    OsString::from("--rewards-address"),
+                    OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
+                    OsString::from("evm-custom"),
+                    OsString::from("--rpc-url"),
+                    OsString::from("http://localhost:8545/"),
+                    OsString::from("--payment-token-address"),
+                    OsString::from("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
+                    OsString::from("--data-payments-address"),
+                    OsString::from("0x8464135c8F25Da09e49BC8782676a84730C318bC"),
+                ],
+                autostart: false,
+                contents: None,
+                environment: None,
+                label: "antnode1".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            auto_restart: false,
+            auto_set_nat_flags: false,
+            count: None,
+            delete_antnode_src: true,
+            enable_metrics_server: false,
+            env_variables: None,
+            home_network: false,
+            log_format: None,
+            max_archived_log_files: None,
+            max_log_files: None,
+            metrics_port: None,
+            node_ip: None,
+            node_port: None,
+            owner: None,
+            peers_args: peers_args.clone(),
+            rpc_address: None,
+            rpc_port: None,
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    antnode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 1);
+    assert_eq!(node_registry.nodes[0].version, latest_version);
+    assert_eq!(node_registry.nodes[0].peers_args, peers_args);
+    assert_eq!(node_registry.nodes[0].peers_args.addrs.len(), 1);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_create_service_file_with_local_arg() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
+
+    let peers_args = PeersArgs {
+        first: false,
+        addrs: vec![],
+        network_contacts_url: vec![],
+        local: true,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
+        bootstrap_cache_dir: None,
+    };
+
+    let mut seq = Sequence::new();
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(12001))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:12001"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--local"),
+                    OsString::from("--rewards-address"),
+                    OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
+                    OsString::from("evm-custom"),
+                    OsString::from("--rpc-url"),
+                    OsString::from("http://localhost:8545/"),
+                    OsString::from("--payment-token-address"),
+                    OsString::from("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
+                    OsString::from("--data-payments-address"),
+                    OsString::from("0x8464135c8F25Da09e49BC8782676a84730C318bC"),
+                ],
+                autostart: false,
+                contents: None,
+                environment: None,
+                label: "antnode1".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            auto_restart: false,
+            auto_set_nat_flags: false,
+            count: None,
+            delete_antnode_src: true,
+            enable_metrics_server: false,
+            env_variables: None,
+            home_network: false,
+            log_format: None,
+            max_archived_log_files: None,
+            max_log_files: None,
+            metrics_port: None,
+            node_ip: None,
+            node_port: None,
+            owner: None,
+            peers_args: peers_args.clone(),
+            rpc_address: None,
+            rpc_port: None,
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    antnode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 1);
+    assert_eq!(node_registry.nodes[0].version, latest_version);
+    assert_eq!(node_registry.nodes[0].peers_args, peers_args);
+    assert!(node_registry.nodes[0].peers_args.local);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_create_service_file_with_network_contacts_url_arg() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
+
+    let peers_args = PeersArgs {
+        first: false,
+        addrs: vec![],
+        network_contacts_url: vec![
+            "http://localhost:8080/contacts".to_string(),
+            "http://localhost:8081/contacts".to_string(),
+        ],
+        local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
+        bootstrap_cache_dir: None,
+    };
+
+    let mut seq = Sequence::new();
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(12001))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:12001"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--network-contacts-url"),
+                    OsString::from("http://localhost:8080/contacts,http://localhost:8081/contacts"),
+                    OsString::from("--rewards-address"),
+                    OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
+                    OsString::from("evm-custom"),
+                    OsString::from("--rpc-url"),
+                    OsString::from("http://localhost:8545/"),
+                    OsString::from("--payment-token-address"),
+                    OsString::from("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
+                    OsString::from("--data-payments-address"),
+                    OsString::from("0x8464135c8F25Da09e49BC8782676a84730C318bC"),
+                ],
+                autostart: false,
+                contents: None,
+                environment: None,
+                label: "antnode1".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            auto_restart: false,
+            auto_set_nat_flags: false,
+            count: None,
+            delete_antnode_src: true,
+            enable_metrics_server: false,
+            env_variables: None,
+            home_network: false,
+            log_format: None,
+            max_archived_log_files: None,
+            max_log_files: None,
+            metrics_port: None,
+            node_ip: None,
+            node_port: None,
+            owner: None,
+            peers_args: peers_args.clone(),
+            rpc_address: None,
+            rpc_port: None,
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    antnode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 1);
+    assert_eq!(node_registry.nodes[0].version, latest_version);
+    assert_eq!(node_registry.nodes[0].peers_args, peers_args);
+    assert_eq!(
+        node_registry.nodes[0].peers_args.network_contacts_url.len(),
+        2
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_create_service_file_with_testnet_arg() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
+
+    let peers_args = PeersArgs {
+        first: false,
+        addrs: vec![],
+        network_contacts_url: vec![],
+        local: false,
+        disable_mainnet_contacts: true,
+        ignore_cache: false,
+        bootstrap_cache_dir: None,
+    };
+
+    let mut seq = Sequence::new();
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(12001))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:12001"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--testnet"),
+                    OsString::from("--rewards-address"),
+                    OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
+                    OsString::from("evm-custom"),
+                    OsString::from("--rpc-url"),
+                    OsString::from("http://localhost:8545/"),
+                    OsString::from("--payment-token-address"),
+                    OsString::from("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
+                    OsString::from("--data-payments-address"),
+                    OsString::from("0x8464135c8F25Da09e49BC8782676a84730C318bC"),
+                ],
+                autostart: false,
+                contents: None,
+                environment: None,
+                label: "antnode1".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            auto_restart: false,
+            auto_set_nat_flags: false,
+            count: None,
+            delete_antnode_src: true,
+            enable_metrics_server: false,
+            env_variables: None,
+            home_network: false,
+            log_format: None,
+            max_archived_log_files: None,
+            max_log_files: None,
+            metrics_port: None,
+            node_ip: None,
+            node_port: None,
+            owner: None,
+            peers_args: peers_args.clone(),
+            rpc_address: None,
+            rpc_port: None,
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    antnode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 1);
+    assert_eq!(node_registry.nodes[0].version, latest_version);
+    assert_eq!(node_registry.nodes[0].peers_args, peers_args);
+    assert!(node_registry.nodes[0].peers_args.disable_mainnet_contacts);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_create_service_file_with_ignore_cache_arg() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
+
+    let peers_args = PeersArgs {
+        first: false,
+        addrs: vec![],
+        network_contacts_url: vec![],
+        local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: true,
+        bootstrap_cache_dir: None,
+    };
+
+    let mut seq = Sequence::new();
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(12001))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:12001"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--ignore-cache"),
+                    OsString::from("--rewards-address"),
+                    OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
+                    OsString::from("evm-custom"),
+                    OsString::from("--rpc-url"),
+                    OsString::from("http://localhost:8545/"),
+                    OsString::from("--payment-token-address"),
+                    OsString::from("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
+                    OsString::from("--data-payments-address"),
+                    OsString::from("0x8464135c8F25Da09e49BC8782676a84730C318bC"),
+                ],
+                autostart: false,
+                contents: None,
+                environment: None,
+                label: "antnode1".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            auto_restart: false,
+            auto_set_nat_flags: false,
+            count: None,
+            delete_antnode_src: true,
+            enable_metrics_server: false,
+            env_variables: None,
+            home_network: false,
+            log_format: None,
+            max_archived_log_files: None,
+            max_log_files: None,
+            metrics_port: None,
+            node_ip: None,
+            node_port: None,
+            owner: None,
+            peers_args: peers_args.clone(),
+            rpc_address: None,
+            rpc_port: None,
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    antnode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 1);
+    assert_eq!(node_registry.nodes[0].version, latest_version);
+    assert_eq!(node_registry.nodes[0].peers_args, peers_args);
+    assert!(node_registry.nodes[0].peers_args.ignore_cache);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_create_service_file_with_custom_bootstrap_cache_path() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
+
+    let peers_args = PeersArgs {
+        first: false,
+        addrs: vec![],
+        network_contacts_url: vec![],
+        local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
+        bootstrap_cache_dir: Some(PathBuf::from("/path/to/bootstrap/cache")),
+    };
+
+    let mut seq = Sequence::new();
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(12001))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:12001"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("antnode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--bootstrap-cache-dir"),
+                    OsString::from("/path/to/bootstrap/cache"),
+                    OsString::from("--rewards-address"),
+                    OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
+                    OsString::from("evm-custom"),
+                    OsString::from("--rpc-url"),
+                    OsString::from("http://localhost:8545/"),
+                    OsString::from("--payment-token-address"),
+                    OsString::from("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
+                    OsString::from("--data-payments-address"),
+                    OsString::from("0x8464135c8F25Da09e49BC8782676a84730C318bC"),
+                ],
+                autostart: false,
+                contents: None,
+                environment: None,
+                label: "antnode1".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            auto_restart: false,
+            auto_set_nat_flags: false,
+            count: None,
+            delete_antnode_src: true,
+            enable_metrics_server: false,
+            env_variables: None,
+            home_network: false,
+            log_format: None,
+            max_archived_log_files: None,
+            max_log_files: None,
+            metrics_port: None,
+            node_ip: None,
+            node_port: None,
+            owner: None,
+            peers_args: peers_args.clone(),
+            rpc_address: None,
+            rpc_port: None,
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    antnode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 1);
+    assert_eq!(node_registry.nodes[0].version, latest_version);
+    assert_eq!(node_registry.nodes[0].peers_args, peers_args);
+    assert_eq!(
+        node_registry.nodes[0].peers_args.bootstrap_cache_dir,
+        Some(PathBuf::from("/path/to/bootstrap/cache"))
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn add_node_should_use_custom_ip() -> Result<()> {
     let tmp_data_dir = assert_fs::TempDir::new()?;
     let node_reg_path = tmp_data_dir.child("node_reg.json");
@@ -1253,7 +2165,6 @@ async fn add_node_should_use_custom_ip() -> Result<()> {
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -1332,21 +2243,19 @@ async fn add_node_should_use_custom_ip() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: Some(custom_ip),
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -1399,7 +2308,6 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -1423,7 +2331,6 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -1435,9 +2342,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: false,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -1447,6 +2352,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         node_ip: None,
         node_port: Some(custom_port),
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         antnode_path: node_data_dir
@@ -1469,21 +2375,19 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: Some(PortRange::Single(custom_port)),
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -1536,7 +2440,6 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -1729,21 +2632,19 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(3),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: Some(PortRange::Range(12000, 12002)),
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -1807,10 +2708,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
                     "0x8464135c8F25Da09e49BC8782676a84730C318bC",
                 )?,
             }),
-            genesis: false,
             home_network: false,
             listen_addr: None,
-            local: false,
             log_format: None,
             log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             max_archived_log_files: None,
@@ -1821,6 +2720,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
             number: 1,
             owner: None,
             peer_id: None,
+            peers_args: PeersArgs::default(),
             pid: None,
             rewards_address: RewardsAddress::from_str(
                 "0x03B770D9cD32077cC0bF330c13C114a87643B124",
@@ -1835,7 +2735,6 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
             user_mode: false,
             version: "0.98.1".to_string(),
         }],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -1852,21 +2751,19 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: Some(PortRange::Single(12000)),
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -1928,10 +2825,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
                     "0x8464135c8F25Da09e49BC8782676a84730C318bC",
                 )?,
             }),
-            genesis: false,
             home_network: false,
             listen_addr: None,
-            local: false,
             log_format: None,
             log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             max_archived_log_files: None,
@@ -1939,8 +2834,9 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
             metrics_port: None,
             node_ip: None,
             node_port: Some(12000),
-            number: 1,
             owner: None,
+            peers_args: PeersArgs::default(),
+            number: 1,
             peer_id: None,
             pid: None,
             rewards_address: RewardsAddress::from_str(
@@ -1956,7 +2852,6 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
             user_mode: false,
             version: "0.98.1".to_string(),
         }],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -1973,21 +2868,19 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(3),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: Some(PortRange::Range(12000, 12002)),
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -2037,7 +2930,6 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -2054,21 +2946,19 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(2),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: Some(PortRange::Range(12000, 12002)),
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_src_path: antnode_download_path.to_path_buf(),
@@ -2123,7 +3013,6 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -2140,21 +3029,19 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(2),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: Some(PortRange::Single(12000)),
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -2210,7 +3097,6 @@ async fn add_node_should_set_random_ports_if_enable_metrics_server_is_true() -> 
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -2288,21 +3174,19 @@ async fn add_node_should_set_random_ports_if_enable_metrics_server_is_true() -> 
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: true,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -2349,7 +3233,6 @@ async fn add_node_should_set_max_archived_log_files() -> Result<()> {
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -2428,21 +3311,19 @@ async fn add_node_should_set_max_archived_log_files() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(1),
             delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: Some(20),
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -2490,7 +3371,6 @@ async fn add_node_should_set_max_log_files() -> Result<()> {
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -2569,21 +3449,19 @@ async fn add_node_should_set_max_log_files() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(1),
             delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: Some(20),
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -2631,7 +3509,6 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -2824,21 +3701,19 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(3),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: Some(PortRange::Range(12000, 12002)),
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -2899,10 +3774,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
                     "0x8464135c8F25Da09e49BC8782676a84730C318bC",
                 )?,
             }),
-            genesis: false,
             home_network: false,
             listen_addr: None,
-            local: false,
             log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
@@ -2913,6 +3786,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
             number: 1,
             owner: None,
             peer_id: None,
+            peers_args: PeersArgs::default(),
             pid: None,
             rewards_address: RewardsAddress::from_str(
                 "0x03B770D9cD32077cC0bF330c13C114a87643B124",
@@ -2927,7 +3801,6 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
             user_mode: false,
             version: "0.98.1".to_string(),
         }],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -2944,21 +3817,19 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: Some(PortRange::Single(12000)),
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -3021,10 +3892,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
                     "0x8464135c8F25Da09e49BC8782676a84730C318bC",
                 )?,
             }),
-            genesis: false,
             home_network: false,
             listen_addr: None,
-            local: false,
             log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
@@ -3035,6 +3904,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
             number: 1,
             owner: None,
             peer_id: None,
+            peers_args: PeersArgs::default(),
             pid: None,
             rewards_address: RewardsAddress::from_str(
                 "0x03B770D9cD32077cC0bF330c13C114a87643B124",
@@ -3049,7 +3919,6 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
             user_mode: false,
             version: "0.98.1".to_string(),
         }],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -3066,21 +3935,19 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(3),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: Some(PortRange::Range(12000, 12002)),
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -3132,7 +3999,6 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -3304,21 +4170,19 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(3),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: Some(PortRange::Range(20000, 20002)),
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -3390,10 +4254,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
                     "0x8464135c8F25Da09e49BC8782676a84730C318bC",
                 )?,
             }),
-            genesis: false,
             home_network: false,
             listen_addr: None,
-            local: false,
             log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
@@ -3404,6 +4266,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
             number: 1,
             owner: None,
             peer_id: None,
+            peers_args: PeersArgs::default(),
             pid: None,
             rewards_address: RewardsAddress::from_str(
                 "0x03B770D9cD32077cC0bF330c13C114a87643B124",
@@ -3418,7 +4281,6 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
             user_mode: false,
             version: "0.98.1".to_string(),
         }],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -3435,21 +4297,19 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: Some(PortRange::Single(8081)),
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -3512,10 +4372,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
                     "0x8464135c8F25Da09e49BC8782676a84730C318bC",
                 )?,
             }),
-            genesis: false,
             home_network: false,
             listen_addr: None,
-            local: false,
             log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
@@ -3526,6 +4384,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             number: 1,
             owner: None,
             peer_id: None,
+            peers_args: PeersArgs::default(),
             pid: None,
             rewards_address: RewardsAddress::from_str(
                 "0x03B770D9cD32077cC0bF330c13C114a87643B124",
@@ -3540,7 +4399,6 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             user_mode: false,
             version: "0.98.1".to_string(),
         }],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -3557,21 +4415,19 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(2),
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: Some(PortRange::Range(8081, 8082)),
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -3623,7 +4479,6 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
         save_path: node_reg_path.to_path_buf(),
         nat_status: Some(NatDetectionStatus::Public),
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -3646,7 +4501,6 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
 
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -3658,9 +4512,7 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: false,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -3670,6 +4522,7 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         antnode_path: node_data_dir
@@ -3691,21 +4544,19 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: true,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            local: false,
-            genesis: false,
             home_network: true,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -3754,7 +4605,6 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
         save_path: node_reg_path.to_path_buf(),
         nat_status: Some(NatDetectionStatus::UPnP),
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -3777,7 +4627,6 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
 
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -3789,9 +4638,7 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: false,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -3801,6 +4648,7 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         antnode_path: node_data_dir
@@ -3822,21 +4670,19 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: true,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            local: false,
-            genesis: false,
             home_network: true,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -3885,7 +4731,6 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
         save_path: node_reg_path.to_path_buf(),
         nat_status: Some(NatDetectionStatus::Private),
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -3908,7 +4753,6 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
 
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -3920,9 +4764,7 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: true,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -3932,6 +4774,7 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         antnode_path: node_data_dir
@@ -3953,21 +4796,19 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: true,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            local: false,
-            genesis: false,
             home_network: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -4017,7 +4858,6 @@ async fn add_node_should_return_an_error_if_nat_status_is_none_but_auto_set_nat_
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -4042,21 +4882,19 @@ async fn add_node_should_return_an_error_if_nat_status_is_none_but_auto_set_nat_
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: true,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            local: false,
-            genesis: false,
             home_network: true,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -4115,7 +4953,6 @@ async fn add_auditor_should_add_an_auditor_service() -> Result<()> {
     auditor_download_path.write_binary(b"fake auditor bin")?;
 
     let mut node_registry = NodeRegistry {
-        bootstrap_peers: vec![],
         daemon: None,
         auditor: None,
         faucet: None,
@@ -4150,7 +4987,6 @@ async fn add_auditor_should_add_an_auditor_service() -> Result<()> {
 
     add_auditor(
         AddAuditorServiceOptions {
-            bootstrap_peers: vec![],
             beta_encryption_key: None,
             env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
@@ -4202,7 +5038,6 @@ async fn add_auditor_should_return_an_error_if_a_auditor_service_was_already_cre
     auditor_download_path.write_binary(b"fake auditor bin")?;
 
     let mut node_registry = NodeRegistry {
-        bootstrap_peers: vec![],
         daemon: None,
         auditor: Some(AuditorServiceData {
             auditor_path: auditor_download_path.to_path_buf(),
@@ -4222,7 +5057,6 @@ async fn add_auditor_should_return_an_error_if_a_auditor_service_was_already_cre
 
     let result = add_auditor(
         AddAuditorServiceOptions {
-            bootstrap_peers: vec![],
             beta_encryption_key: None,
             env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
@@ -4265,7 +5099,6 @@ async fn add_auditor_should_include_beta_encryption_key_if_specified() -> Result
     auditor_download_path.write_binary(b"fake auditor bin")?;
 
     let mut node_registry = NodeRegistry {
-        bootstrap_peers: vec![],
         daemon: None,
         auditor: None,
         faucet: None,
@@ -4302,7 +5135,6 @@ async fn add_auditor_should_include_beta_encryption_key_if_specified() -> Result
 
     add_auditor(
         AddAuditorServiceOptions {
-            bootstrap_peers: vec![],
             beta_encryption_key: Some("test".to_string()),
             env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
@@ -4355,7 +5187,6 @@ async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
     faucet_download_path.write_binary(b"fake faucet bin")?;
 
     let mut node_registry = NodeRegistry {
-        bootstrap_peers: vec![],
         daemon: None,
         auditor: None,
         faucet: None,
@@ -4391,7 +5222,6 @@ async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
 
     add_faucet(
         AddFaucetServiceOptions {
-            bootstrap_peers: vec![],
             env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             faucet_src_bin_path: faucet_download_path.to_path_buf(),
             faucet_install_bin_path: faucet_install_path.to_path_buf(),
@@ -4443,7 +5273,6 @@ async fn add_faucet_should_return_an_error_if_a_faucet_service_was_already_creat
     faucet_download_path.write_binary(b"fake faucet bin")?;
 
     let mut node_registry = NodeRegistry {
-        bootstrap_peers: vec![],
         daemon: None,
         auditor: None,
         faucet: Some(FaucetServiceData {
@@ -4464,7 +5293,6 @@ async fn add_faucet_should_return_an_error_if_a_faucet_service_was_already_creat
 
     let result = add_faucet(
         AddFaucetServiceOptions {
-            bootstrap_peers: vec![],
             env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             faucet_src_bin_path: faucet_download_path.to_path_buf(),
             faucet_install_bin_path: faucet_install_path.to_path_buf(),
@@ -4506,7 +5334,6 @@ async fn add_daemon_should_add_a_daemon_service() -> Result<()> {
     daemon_download_path.write_binary(b"fake daemon bin")?;
 
     let mut node_registry = NodeRegistry {
-        bootstrap_peers: vec![],
         daemon: None,
         auditor: None,
         faucet: None,
@@ -4584,7 +5411,6 @@ async fn add_daemon_should_return_an_error_if_a_daemon_service_was_already_creat
     daemon_download_path.write_binary(b"fake daemon bin")?;
 
     let mut node_registry = NodeRegistry {
-        bootstrap_peers: vec![],
         daemon: Some(DaemonServiceData {
             daemon_path: PathBuf::from("/usr/local/bin/antctld"),
             endpoint: Some(SocketAddr::new(
@@ -4644,7 +5470,6 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -4669,7 +5494,6 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
 
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -4681,9 +5505,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: false,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -4693,6 +5515,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         antnode_path: node_data_dir
@@ -4715,21 +5538,19 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(1),
             delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -4777,7 +5598,6 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -4802,12 +5622,9 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
 
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
-        genesis: false,
         home_network: true,
-        local: false,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
             payment_token_address: RewardsAddress::from_str(
@@ -4826,6 +5643,7 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         antnode_path: node_data_dir
@@ -4848,21 +5666,19 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(1),
             delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: true,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -4910,7 +5726,6 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -4935,7 +5750,6 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
 
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -4947,9 +5761,7 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: true,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -4959,6 +5771,7 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         antnode_path: node_data_dir
@@ -4981,21 +5794,19 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(1),
             delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: true,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -5041,7 +5852,6 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
         save_path: node_reg_path.to_path_buf(),
         nat_status: None,
         nodes: vec![],
-        bootstrap_peers: vec![],
         environment_variables: None,
         daemon: None,
     };
@@ -5065,7 +5875,6 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
 
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        bootstrap_peers: vec![],
         data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -5077,9 +5886,7 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        genesis: false,
         home_network: true,
-        local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
@@ -5089,6 +5896,7 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
         node_ip: None,
         node_port: None,
         owner: None,
+        peers_args: PeersArgs::default(),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         antnode_path: node_data_dir
@@ -5111,21 +5919,19 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: Some(1),
             delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: true,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: None,
             node_ip: None,
             node_port: None,
+            owner: None,
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -5177,7 +5983,6 @@ async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
 
     let mut node_registry = NodeRegistry {
         auditor: None,
-        bootstrap_peers: vec![],
         daemon: None,
         environment_variables: None,
         faucet: None,
@@ -5250,21 +6055,19 @@ async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: false,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: Some("Discord_Username".to_string()),
             node_ip: None,
             node_port: None,
+            owner: Some("Discord_Username".to_string()),
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
@@ -5318,7 +6121,6 @@ async fn add_node_should_auto_restart() -> Result<()> {
 
     let mut node_registry = NodeRegistry {
         auditor: None,
-        bootstrap_peers: vec![],
         daemon: None,
         environment_variables: None,
         faucet: None,
@@ -5391,21 +6193,19 @@ async fn add_node_should_auto_restart() -> Result<()> {
         AddNodeServiceOptions {
             auto_restart: true,
             auto_set_nat_flags: false,
-            bootstrap_peers: vec![],
             count: None,
             delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
-            genesis: false,
             home_network: false,
-            local: false,
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: Some("discord_username".to_string()),
             node_ip: None,
             node_port: None,
+            owner: Some("discord_username".to_string()),
+            peers_args: PeersArgs::default(),
             rpc_address: None,
             rpc_port: None,
             antnode_dir_path: temp_dir.to_path_buf(),
