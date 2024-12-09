@@ -295,7 +295,7 @@ fn main() -> Result<()> {
     // another process with these args.
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
-    let initial_peres = rt.block_on(opt.peers.get_addrs(None))?;
+    let initial_peres = rt.block_on(opt.peers.get_addrs(None, Some(100)))?;
     debug!("Node's owner set to: {:?}", opt.owner);
     let restart_options = rt.block_on(async move {
         let mut node_builder = NodeBuilder::new(

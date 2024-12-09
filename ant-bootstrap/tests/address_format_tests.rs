@@ -47,12 +47,12 @@ async fn test_multiaddr_format_parsing() -> Result<(), Box<dyn std::error::Error
             addrs: vec![addr.clone()],
             network_contacts_url: vec![],
             local: false,
-            disable_mainnet_contacts: false,
-            ignore_cache: false,
+            disable_mainnet_contacts: true,
+            ignore_cache: true,
             bootstrap_cache_dir: None,
         };
 
-        let bootstrap_addresses = args.get_bootstrap_addr(None).await?;
+        let bootstrap_addresses = args.get_bootstrap_addr(None, None).await?;
         assert_eq!(bootstrap_addresses.len(), 1, "Should have one peer");
         assert_eq!(
             bootstrap_addresses[0].addr, addr,
@@ -85,12 +85,12 @@ async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>
         addrs: vec![],
         network_contacts_url: vec![format!("{}/peers", mock_server.uri()).parse()?],
         local: false,
-        disable_mainnet_contacts: false,
-        ignore_cache: false,
+        disable_mainnet_contacts: true,
+        ignore_cache: true,
         bootstrap_cache_dir: None,
     };
 
-    let addrs = args.get_bootstrap_addr(None).await?;
+    let addrs = args.get_bootstrap_addr(None, None).await?;
     assert_eq!(
         addrs.len(),
         2,
