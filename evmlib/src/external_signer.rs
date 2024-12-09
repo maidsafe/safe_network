@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::common::{Address, Amount, Calldata, QuoteHash, QuotePayment, U256};
-use crate::contract::network_token::{NetworkToken, self};
+use crate::contract::network_token::{self, NetworkToken};
 use crate::contract::payment_vault::MAX_TRANSFERS_PER_TRANSACTION;
 use crate::utils::http_provider;
 use crate::Network;

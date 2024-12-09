@@ -20,9 +20,7 @@ pub enum Marker<'a> {
     /// Close records held (Used in VDash)
     CloseRecordsLen(usize),
     /// Quoting metrics
-    QuotingMetrics {
-        quoting_metrics: &'a QuotingMetrics,
-    },
+    QuotingMetrics { quoting_metrics: &'a QuotingMetrics },
     /// The peer has been considered as bad
     PeerConsideredAsBad { bad_peer: &'a PeerId },
     /// We have been flagged as a bad node by a peer.

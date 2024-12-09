@@ -284,9 +284,7 @@ impl NetworkMetricsRecorder {
                     }
                 });
             }
-            Marker::QuotingMetrics {
-                quoting_metrics,
-            } => {
+            Marker::QuotingMetrics { quoting_metrics } => {
                 let _ = self.relevant_records.set(
                     quoting_metrics
                         .close_records_stored

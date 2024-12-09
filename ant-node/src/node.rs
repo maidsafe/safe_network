@@ -561,7 +561,8 @@ impl Node {
                 let record_key = key.to_record_key();
                 let self_id = network.peer_id();
 
-                let maybe_quoting_metrics = network.get_local_quoting_metrics(record_key.clone()).await;
+                let maybe_quoting_metrics =
+                    network.get_local_quoting_metrics(record_key.clone()).await;
 
                 let storage_proofs = if let Some(nonce) = nonce {
                     Self::respond_x_closest_record_proof(
@@ -588,7 +589,7 @@ impl Node {
                             }
                         } else {
                             QueryResponse::GetStoreQuote {
-                                 quote: Self::create_quote_for_storecost(
+                                quote: Self::create_quote_for_storecost(
                                     network,
                                     &key,
                                     &quoting_metrics,
