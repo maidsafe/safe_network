@@ -26,7 +26,6 @@ use super::{
     Client,
 };
 use crate::self_encryption::DataMapLevel;
-use crate::utils::receipt_from_cost_map_and_payments;
 
 impl Client {
     /// Fetch and decrypt all chunks in the data map.
@@ -172,6 +171,7 @@ impl Client {
         // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
         // TODO: retry when it fails?
         // Execute chunk payments
+        // NB TODO: make this return a Receipt or something that can turn into a Receipt @mick
         let payments = wallet
             .pay_for_quotes(quotes.payments())
             .await
@@ -181,12 +181,10 @@ impl Client {
         drop(lock_guard);
         debug!("Unlocked wallet");
 
-        let proofs = receipt_from_cost_map_and_payments(cost_map, &payments);
-
         let skipped_chunks = content_addrs.count() - quotes.len();
         trace!(
             "Chunk payments of {} chunks completed. {} chunks were free / already paid for",
-            proofs.len(),
+            quotes.len(),
             skipped_chunks
         );
 

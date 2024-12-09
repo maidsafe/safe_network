@@ -106,6 +106,7 @@ async fn get_data_payment_event(
 /// Verify if a data payment is confirmed.
 pub async fn verify_data_payment(
     network: &Network,
+    my_quote_hashes: Vec<QuoteHash>, // TODO @mick hashes the node owns so it knows how much it received from them
     payment: Vec<(QuoteHash, QuotingMetrics, Address)>
 ) -> Result<Amount, Error> {
     let provider = http_provider(network.rpc_url().clone());
