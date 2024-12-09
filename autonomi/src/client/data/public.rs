@@ -8,15 +8,14 @@
 
 use bytes::Bytes;
 use libp2p::kad::Quorum;
+use std::collections::HashSet;
 
-use std::collections::{HashMap, HashSet};
 use xor_name::XorName;
 
-use crate::client::payment::PaymentOption;
+use crate::client::payment::{PaymentOption, Receipt};
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
-use ant_evm::ProofOfPayment;
 use ant_evm::{Amount, AttoTokens};
 use ant_networking::{GetRecordCfg, NetworkError};
 use ant_protocol::{
@@ -96,7 +95,7 @@ impl Client {
         if let Some(channel) = self.client_event_sender.as_ref() {
             let tokens_spent = receipt
                 .values()
-                .map(|proof| proof.quote.cost.as_atto())
+                .map(|(_proof, price)| price.as_atto())
                 .sum::<Amount>();
 
             let summary = UploadSummary {
@@ -163,21 +162,27 @@ impl Client {
             content_addrs.len()
         );
 
-        let cost_map = self
+        let store_quote = self
             .get_store_quotes(content_addrs.into_iter())
             .await
             .inspect_err(|err| error!("Error getting store quotes: {err:?}"))?;
-        let total_cost = cost_map
-            .values()
-            .fold(Amount::ZERO, |acc, q| acc + q.total_cost.as_atto());
-        Ok(AttoTokens::from_atto(total_cost))
+
+        let total_cost = AttoTokens::from_atto(
+            store_quote
+                .0
+                .values()
+                .map(|quote| quote.price())
+                .sum::<Amount>(),
+        );
+
+        Ok(total_cost)
     }
 
     // Upload chunks and retry failed uploads up to `RETRY_ATTEMPTS` times.
     pub(crate) async fn upload_chunks_with_retries<'a>(
         &self,
         mut chunks: Vec<&'a Chunk>,
-        receipt: &HashMap<XorName, ProofOfPayment>,
+        receipt: &Receipt,
     ) -> Vec<(&'a Chunk, PutError)> {
         let mut current_attempt: usize = 1;
 
@@ -187,7 +192,7 @@ impl Client {
                 let self_clone = self.clone();
                 let address = *chunk.address();
 
-                let Some(proof) = receipt.get(chunk.name()) else {
+                let Some((proof, _)) = receipt.get(chunk.name()) else {
                     debug!("Chunk at {address:?} was already paid for so skipping");
                     continue;
                 };
