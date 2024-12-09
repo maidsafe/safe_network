@@ -8,7 +8,9 @@
 
 use crate::EvmError;
 use evmlib::{
-    common::{Address as RewardsAddress, QuoteHash}, quoting_metrics::QuotingMetrics, utils::dummy_address
+    common::{Address as RewardsAddress, QuoteHash},
+    quoting_metrics::QuotingMetrics,
+    utils::dummy_address,
 };
 use libp2p::{identity::PublicKey, PeerId};
 use serde::{Deserialize, Serialize};
@@ -31,31 +33,48 @@ impl EncodedPeerId {
     pub fn to_peer_id(&self) -> Result<PeerId, libp2p::identity::DecodingError> {
         match PublicKey::try_decode_protobuf(&self.0) {
             Ok(pub_key) => Ok(PeerId::from_public_key(&pub_key)),
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
+    }
+}
+
+// TODO: @anselme is this conversion right?
+impl From<PeerId> for EncodedPeerId {
+    fn from(peer_id: PeerId) -> Self {
+        let bytes = peer_id.to_bytes();
+        EncodedPeerId(bytes)
     }
 }
 
 /// The proof of payment for a data payment
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct ProofOfPayment {
-    peer_quotes: Vec<(EncodedPeerId, PaymentQuote)>
+    pub peer_quotes: Vec<(EncodedPeerId, PaymentQuote)>,
 }
 
 impl ProofOfPayment {
     /// returns a short digest of the proof of payment to use for verification
     pub fn digest(&self) -> Vec<(QuoteHash, QuotingMetrics, RewardsAddress)> {
-        self.peer_quotes.clone().into_iter().map(|(_, quote)| (quote.hash(), quote.quoting_metrics, quote.rewards_address)).collect()
+        self.peer_quotes
+            .clone()
+            .into_iter()
+            .map(|(_, quote)| (quote.hash(), quote.quoting_metrics, quote.rewards_address))
+            .collect()
     }
 
     /// returns the list of payees
     pub fn payees(&self) -> Vec<PeerId> {
-        self.peer_quotes.iter().filter_map(|(peer_id, _)| peer_id.to_peer_id().ok()).collect()
+        self.peer_quotes
+            .iter()
+            .filter_map(|(peer_id, _)| peer_id.to_peer_id().ok())
+            .collect()
     }
 
     /// has the quote expired
     pub fn has_expired(&self) -> bool {
-        self.peer_quotes.iter().any(|(_, quote)| quote.has_expired())
+        self.peer_quotes
+            .iter()
+            .any(|(_, quote)| quote.has_expired())
     }
 
     /// verifies the proof of payment is valid for the given peer id
@@ -72,7 +91,7 @@ impl ProofOfPayment {
                 Err(e) => {
                     warn!("Invalid encoded peer id: {e}");
                     return false;
-                },
+                }
             };
             if !quote.check_is_signed_by_claimed_peer(peer_id) {
                 return false;

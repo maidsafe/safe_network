@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::client::payment::Receipt;
+use crate::client::payment::{receipt_from_store_quotes_and_payments, Receipt};
 use ant_evm::{EvmNetwork, EvmWallet, ProofOfPayment};
 use ant_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use ant_protocol::{
@@ -161,7 +161,9 @@ impl Client {
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &EvmWallet,
     ) -> Result<Receipt, PayError> {
-        let quotes = self.get_store_quotes(wallet.network(), content_addrs).await?;
+        let quotes = self
+            .get_store_quotes(wallet.network(), content_addrs.clone())
+            .await?;
 
         // Make sure nobody else can use the wallet while we are paying
         debug!("Waiting for wallet lock");
@@ -171,7 +173,6 @@ impl Client {
         // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
         // TODO: retry when it fails?
         // Execute chunk payments
-        // NB TODO: make this return a Receipt or something that can turn into a Receipt @mick
         let payments = wallet
             .pay_for_quotes(quotes.payments())
             .await
@@ -180,6 +181,8 @@ impl Client {
         // payment is done, unlock the wallet for other threads
         drop(lock_guard);
         debug!("Unlocked wallet");
+
+        let receipt = receipt_from_store_quotes_and_payments(quotes, payments);
 
         let skipped_chunks = content_addrs.count() - quotes.len();
         trace!(
