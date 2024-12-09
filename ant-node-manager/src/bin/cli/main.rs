@@ -172,6 +172,11 @@ pub enum SubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         metrics_port: Option<PortRange>,
+        /// Specify the network ID to use for the services. This will allow you to run the node on a different network.
+        ///
+        /// By default, the network ID is set to 1, which represents the mainnet.
+        #[clap(long, verbatim_doc_comment)]
+        network_id: Option<u8>,
         /// Specify the IP address for the antnode service(s).
         ///
         /// If not set, we bind to all the available network interfaces.
@@ -1075,6 +1080,7 @@ async fn main() -> Result<()> {
             max_archived_log_files,
             max_log_files,
             metrics_port,
+            network_id,
             node_ip,
             node_port,
             owner,
@@ -1102,6 +1108,7 @@ async fn main() -> Result<()> {
                 max_archived_log_files,
                 max_log_files,
                 metrics_port,
+                network_id,
                 node_ip,
                 node_port,
                 owner,
