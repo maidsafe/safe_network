@@ -51,6 +51,12 @@ pub(crate) struct Opt {
     #[clap(long = "timeout", global = true, value_parser = |t: &str| -> Result<Duration> { Ok(t.parse().map(Duration::from_secs)?) })]
     pub connection_timeout: Option<Duration>,
 
+    /// Specify the network ID to use. This will allow you to run the CLI on a different network.
+    ///
+    /// By default, the network ID is set to 1, which represents the mainnet.
+    #[clap(long, verbatim_doc_comment)]
+    pub network_id: Option<u8>,
+
     /// Prevent verification of data storage on the network.
     ///
     /// This may increase operation speed, but offers no guarantees that operations were successful.
