@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use xor_name::XorName;
 
 /// A quote for a single address
-pub struct QuoteForAddress(Vec<(PeerId, PaymentQuote, Amount)>);
+pub struct QuoteForAddress(pub(crate) Vec<(PeerId, PaymentQuote, Amount)>);
 
 impl QuoteForAddress {
     pub fn price(&self) -> Amount {
@@ -26,7 +26,7 @@ impl QuoteForAddress {
 }
 
 /// A quote for many addresses
-pub struct StoreQuote(HashMap<XorName, QuoteForAddress>);
+pub struct StoreQuote(pub(crate) HashMap<XorName, QuoteForAddress>);
 
 impl StoreQuote {
     pub fn price(&self) -> Amount {
@@ -87,10 +87,23 @@ impl Client {
                     let second = (*p2, q2.clone(), Amount::ZERO);
 
                     // pay for the rest
-                    quotes_to_pay_per_addr.insert(content_addr, QuoteForAddress(vec![first, second, third.clone(), fourth.clone(), fifth.clone()]));
+                    quotes_to_pay_per_addr.insert(
+                        content_addr,
+                        QuoteForAddress(vec![
+                            first,
+                            second,
+                            third.clone(),
+                            fourth.clone(),
+                            fifth.clone(),
+                        ]),
+                    );
                 }
                 _ => {
-                    return Err(CostError::NotEnoughNodeQuotes(content_addr, prices.len(), MINIMUM_QUOTES_TO_PAY));
+                    return Err(CostError::NotEnoughNodeQuotes(
+                        content_addr,
+                        prices.len(),
+                        MINIMUM_QUOTES_TO_PAY,
+                    ));
                 }
             }
         }
