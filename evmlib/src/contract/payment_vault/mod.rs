@@ -12,7 +12,7 @@ pub mod interface;
 pub const MAX_TRANSFERS_PER_TRANSACTION: usize = 256;
 
 /// Helper function to return a quote for the given quoting metrics
-pub async fn get_quote(
+pub async fn get_market_price(
     network: &Network,
     quoting_metrics: QuotingMetrics,
 ) -> Result<Amount, error::Error> {

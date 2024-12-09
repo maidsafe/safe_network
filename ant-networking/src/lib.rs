@@ -83,11 +83,6 @@ use {
     std::collections::HashSet,
 };
 
-/// Selected quotes to pay for a data address
-pub struct SelectedQuotes {
-    pub quotes: Vec<(PeerId, PaymentQuote)>,
-}
-
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
 pub const fn close_group_majority() -> usize {
@@ -384,7 +379,7 @@ impl Network {
         &self,
         record_address: NetworkAddress,
         ignore_peers: Vec<PeerId>,
-    ) -> Result<SelectedQuotes> {
+    ) -> Result<Vec<(PeerId, PaymentQuote)>> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
         let mut close_nodes = self
@@ -408,9 +403,9 @@ impl Network {
             .send_and_get_responses(&close_nodes, &request, true)
             .await;
 
-        // consider data to be already paid for if 1/3 of the close nodes already have it
+        // consider data to be already paid for if 1/2 of the close nodes already have it
         let mut peer_already_have_it = 0;
-        let enough_peers_already_have_it = close_nodes.len() / 3;
+        let enough_peers_already_have_it = close_nodes.len() / 2;
 
         // loop over responses
         let mut all_quotes = vec![];
@@ -448,7 +443,7 @@ impl Network {
                     info!("Address {record_address:?} was already paid for according to {peer_address:?} ({peer_already_have_it}/{enough_peers_already_have_it})");
                     if peer_already_have_it >= enough_peers_already_have_it {
                         info!("Address {record_address:?} was already paid for according to {peer_already_have_it} peers, ending quote request");
-                        return Ok(SelectedQuotes { quotes: vec![] });
+                        return Ok(vec![]);
                     }
                 }
                 Err(err) => {
@@ -460,7 +455,7 @@ impl Network {
             }
         }
 
-        Ok(SelectedQuotes { quotes: quotes_to_pay })
+        Ok(quotes_to_pay)
     }
 
     /// Get register from network.

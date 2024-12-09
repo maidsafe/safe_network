@@ -82,4 +82,3 @@ pub use client::{files::archive::PrivateArchive, Client};
 
 #[cfg(feature = "extension-module")]
 mod python;
-mod utils;

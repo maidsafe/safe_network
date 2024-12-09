@@ -106,16 +106,18 @@ async fn get_data_payment_event(
 /// Verify if a data payment is confirmed.
 pub async fn verify_data_payment(
     network: &Network,
-    quote_hash: QuoteHash,
-    reward_addr: Address,
-    quoting_metrics: QuotingMetrics,
+    payment: Vec<(QuoteHash, QuotingMetrics, Address)>
 ) -> Result<Amount, Error> {
     let provider = http_provider(network.rpc_url().clone());
     let payment_vault = PaymentVaultHandler::new(*network.data_payments_address(), provider);
 
-    let is_paid = payment_vault
-        .verify_payment(quoting_metrics, (quote_hash, reward_addr, Amount::ZERO))
-        .await?;
+    // NB TODO @mick remove tmp loop and support verification of the whole payment at once
+    let mut is_paid = true;
+    for (quote_hash, quoting_metrics, reward_addr) in payment {
+        is_paid = payment_vault
+            .verify_payment(quoting_metrics, (quote_hash, reward_addr, Amount::ZERO))
+            .await?;
+    }
 
     let amount_paid = Amount::ZERO; // NB TODO @mick we need to get the amount paid from the contract
 
@@ -144,9 +146,7 @@ mod tests {
 
         let result = verify_data_payment(
             &network,
-            quote_hash,
-            reward_address,
-            QuotingMetrics::default(),
+            vec![(quote_hash, QuotingMetrics::default(), reward_address)]
         )
         .await;
 

@@ -7,72 +7,95 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{data::CostError, Client};
-use crate::client::payment::Receipt;
 use crate::EvmNetwork;
-use ant_evm::payment_vault::get_quote;
-use ant_evm::{Amount, AttoTokens, QuotePayment};
-use ant_evm::{ProofOfPayment, QuoteHash, TxHash};
-use ant_networking::{Network, NetworkError, SelectedQuotes};
+use ant_evm::payment_vault::get_market_price;
+use ant_evm::{Amount, PaymentQuote, QuotePayment};
+use ant_networking::{Network, NetworkError};
 use ant_protocol::{storage::ChunkAddress, NetworkAddress};
-use std::collections::{BTreeMap, HashMap};
+use libp2p::PeerId;
+use std::collections::HashMap;
 use xor_name::XorName;
 
-pub struct QuotesToPay {
-    pub nodes_to_pay: Vec<QuotePayment>,
-    pub nodes_to_upload_to: Vec<SelectedQuotes>,
-    pub cost_per_node: AttoTokens,
-    pub total_cost: AttoTokens,
+/// A quote for a single address
+pub struct QuoteForAddress(Vec<(PeerId, PaymentQuote, Amount)>);
+
+impl QuoteForAddress {
+    pub fn price(&self) -> Amount {
+        self.0.iter().map(|(_, _, price)| price).sum()
+    }
+}
+
+/// A quote for many addresses
+pub struct StoreQuote(HashMap<XorName, QuoteForAddress>);
+
+impl StoreQuote {
+    pub fn price(&self) -> Amount {
+        self.0.iter().map(|(_, quote)| quote.price()).sum()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn payments(&self) -> Vec<QuotePayment> {
+        let mut quote_payments = vec![];
+        for (_address, quote) in self.0.iter() {
+            for (_peer, quote, price) in quote.0.iter() {
+                quote_payments.push((quote.hash(), quote.rewards_address, *price));
+            }
+        }
+        quote_payments
+    }
 }
 
 impl Client {
     pub(crate) async fn get_store_quotes(
         &self,
-        network: &EvmNetwork,
+        evm_network: &EvmNetwork,
         content_addrs: impl Iterator<Item = XorName>,
-    ) -> Result<HashMap<XorName, QuotesToPay>, CostError> {
+    ) -> Result<StoreQuote, CostError> {
+        // get all quotes from nodes
         let futures: Vec<_> = content_addrs
             .into_iter()
             .map(|content_addr| fetch_store_quote_with_retries(&self.network, content_addr))
             .collect();
+        let raw_quotes_per_addr = futures::future::try_join_all(futures).await?;
 
-        let quotes = futures::future::try_join_all(futures).await?;
-
+        // choose the quotes to pay for each address
         let mut quotes_to_pay_per_addr = HashMap::new();
-
-        for (content_addr, selected_quotes) in quotes {
-            let mut prices: Vec<Amount> = vec![];
-
-            for quote in selected_quotes.quotes {
-                let price = get_quote(network, quote.1.quoting_metrics.clone()).await?;
-                prices.push(price);
+        for (content_addr, raw_quotes) in raw_quotes_per_addr {
+            // ask smart contract for the market price
+            let mut prices = vec![];
+            for (peer, quote) in raw_quotes {
+                // NB TODO @mick we need to batch this smart contract call
+                let price = get_market_price(evm_network, quote.quoting_metrics.clone()).await?;
+                prices.push((peer, quote, price));
             }
 
-            // TODO: set the cost per node by picking the median price of the prices above @anselme
-            let cost_per_node = Amount::from(1);
+            // sort by price
+            prices.sort_by(|(_, _, price_a), (_, _, price_b)| price_a.cmp(price_b));
 
-            // NB TODO: that's all the nodes except the invalid ones (rejected by smart contract)
-            let nodes_to_pay: Vec<_> = selected_quotes
-                .quotes
-                .iter()
-                .map(|(_, q)| (q.hash(), q.rewards_address, cost_per_node))
-                .collect();
+            // we need at least 5 valid quotes to pay for the data
+            const MINIMUM_QUOTES_TO_PAY: usize = 5;
+            match &prices[..] {
+                [first, second, third, fourth, fifth, ..] => {
+                    let (p1, q1, _) = first;
+                    let (p2, q2, _) = second;
 
-            // NB TODO: that's the lower half (quotes under or equal to the median price)
-            let nodes_to_upload_to = quotes.clone();
+                    // don't pay for the cheapest 2 quotes but include them
+                    let first = (*p1, q1.clone(), Amount::ZERO);
+                    let second = (*p2, q2.clone(), Amount::ZERO);
 
-            let total_cost = cost_per_node * Amount::from(nodes_to_pay.len());
-            quotes_to_pay_per_addr.insert(
-                content_addr,
-                QuotesToPay {
-                    nodes_to_pay,
-                    nodes_to_upload_to,
-                    cost_per_node: AttoTokens::from_atto(cost_per_node),
-                    total_cost: AttoTokens::from_atto(total_cost),
-                },
-            );
+                    // pay for the rest
+                    quotes_to_pay_per_addr.insert(content_addr, QuoteForAddress(vec![first, second, third.clone(), fourth.clone(), fifth.clone()]));
+                }
+                _ => {
+                    return Err(CostError::NotEnoughNodeQuotes(content_addr, prices.len(), MINIMUM_QUOTES_TO_PAY));
+                }
+            }
         }
 
-        Ok(quotes_to_pay_per_addr)
+        Ok(StoreQuote(quotes_to_pay_per_addr))
     }
 }
 
@@ -80,7 +103,7 @@ impl Client {
 async fn fetch_store_quote(
     network: &Network,
     content_addr: XorName,
-) -> Result<SelectedQuotes, NetworkError> {
+) -> Result<Vec<(PeerId, PaymentQuote)>, NetworkError> {
     network
         .get_store_quote_from_network(
             NetworkAddress::from_chunk_address(ChunkAddress::new(content_addr)),
@@ -93,7 +116,7 @@ async fn fetch_store_quote(
 async fn fetch_store_quote_with_retries(
     network: &Network,
     content_addr: XorName,
-) -> Result<(XorName, SelectedQuotes), CostError> {
+) -> Result<(XorName, Vec<(PeerId, PaymentQuote)>), CostError> {
     let mut retries = 0;
 
     loop {
@@ -113,32 +136,4 @@ async fn fetch_store_quote_with_retries(
             }
         }
     }
-}
-
-pub fn receipt_from_quotes_and_payments(
-    quotes_map: HashMap<XorName, QuotesToPay>,
-    payments: &BTreeMap<QuoteHash, TxHash>,
-) -> Receipt {
-    let quotes = cost_map_to_quotes(quotes_map);
-    receipt_from_quotes_and_payments(&quotes, payments)
-}
-
-pub fn receipt_from_quotes_and_payments(
-    quotes: &HashMap<XorName, QuotesToPay>,
-    payments: &BTreeMap<QuoteHash, TxHash>,
-) -> Receipt {
-    quotes
-        .iter()
-        .filter_map(|(xor_name, quote)| {
-            payments.get(&quote.hash()).map(|tx_hash| {
-                (
-                    *xor_name,
-                    ProofOfPayment {
-                        quote: quote.clone(),
-                        tx_hash: *tx_hash,
-                    },
-                )
-            })
-        })
-        .collect()
 }
