@@ -79,6 +79,7 @@ pub struct InstallNodeServiceCtxBuilder {
     pub log_dir_path: PathBuf,
     pub log_format: Option<LogFormat>,
     pub name: String,
+    pub network_id: Option<u8>,
     pub max_archived_log_files: Option<usize>,
     pub max_log_files: Option<usize>,
     pub metrics_port: Option<u16>,
@@ -105,6 +106,10 @@ impl InstallNodeServiceCtxBuilder {
         ];
 
         push_arguments_from_peers_args(&self.peers_args, &mut args);
+        if let Some(id) = self.network_id {
+            args.push(OsString::from("--network-id"));
+            args.push(OsString::from(id.to_string()));
+        }
         if self.home_network {
             args.push(OsString::from("--home-network"));
         }
@@ -185,6 +190,7 @@ pub struct AddNodeServiceOptions {
     pub max_archived_log_files: Option<usize>,
     pub max_log_files: Option<usize>,
     pub metrics_port: Option<PortRange>,
+    pub network_id: Option<u8>,
     pub node_ip: Option<Ipv4Addr>,
     pub node_port: Option<PortRange>,
     pub owner: Option<String>,
@@ -314,10 +320,11 @@ mod tests {
             home_network: false,
             log_dir_path: PathBuf::from("/logs"),
             log_format: None,
-            name: "test-node".to_string(),
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
+            name: "test-node".to_string(),
+            network_id: None,
             node_ip: None,
             node_port: None,
             owner: None,
@@ -349,10 +356,11 @@ mod tests {
             home_network: false,
             log_dir_path: PathBuf::from("/logs"),
             log_format: None,
-            name: "test-node".to_string(),
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
+            name: "test-node".to_string(),
+            network_id: None,
             node_ip: None,
             node_port: None,
             owner: None,
@@ -385,10 +393,11 @@ mod tests {
             home_network: false,
             log_dir_path: PathBuf::from("/logs"),
             log_format: None,
-            name: "test-node".to_string(),
             max_archived_log_files: Some(10),
             max_log_files: Some(10),
             metrics_port: None,
+            name: "test-node".to_string(),
+            network_id: Some(5),
             node_ip: None,
             node_port: None,
             owner: None,
@@ -510,6 +519,8 @@ mod tests {
             "http://localhost:8080",
             "--testnet",
             "--ignore-cache",
+            "--network-id",
+            "5",
             "--home-network",
             "--log-format",
             "json",

@@ -77,6 +77,10 @@ impl ServiceStateActions for NodeService<'_> {
             args.push(OsString::from("--log-format"));
             args.push(OsString::from(log_fmt.as_str()));
         }
+        if let Some(id) = self.service_data.network_id {
+            args.push(OsString::from("--network-id"));
+            args.push(OsString::from(id.to_string()));
+        }
         if self.service_data.upnp {
             args.push(OsString::from("--upnp"));
         }
@@ -286,6 +290,7 @@ pub struct NodeServiceData {
     pub metrics_port: Option<u16>,
     #[serde(default)]
     pub owner: Option<String>,
+    pub network_id: Option<u8>,
     #[serde(default)]
     pub node_ip: Option<Ipv4Addr>,
     #[serde(default)]
