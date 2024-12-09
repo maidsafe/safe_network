@@ -138,10 +138,8 @@ impl Network {
 
     pub async fn verify_data_payment(
         &self,
-        quote_hash: QuoteHash,
-        quoting_metrics: QuotingMetrics,
-        reward_addr: Address,
+        payment: Vec<(QuoteHash, QuotingMetrics, Address)>
     ) -> Result<Amount, transaction::Error> {
-        verify_data_payment(self, quote_hash, reward_addr, quoting_metrics).await
+        verify_data_payment(self, payment).await
     }
 }

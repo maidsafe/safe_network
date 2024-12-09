@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::client::payment::Receipt;
-use ant_evm::{EvmWallet, ProofOfPayment};
+use ant_evm::{EvmNetwork, EvmWallet, ProofOfPayment};
 use ant_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use ant_protocol::{
     messages::ChunkProof,
@@ -158,10 +158,8 @@ impl Client {
         &self,
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &EvmWallet,
-    ) -> Result<(Receipt, Vec<XorName>), PayError> {
-        let cost_map = self.get_store_quotes(content_addrs).await?;
-
-        let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
+    ) -> Result<Receipt, PayError> {
+        let quotes = self.get_store_quotes(wallet.network(), content_addrs).await?;
 
         // Make sure nobody else can use the wallet while we are paying
         debug!("Waiting for wallet lock");
@@ -172,7 +170,7 @@ impl Client {
         // TODO: retry when it fails?
         // Execute chunk payments
         let payments = wallet
-            .pay_for_quotes(quote_payments)
+            .pay_for_quotes(quotes.payments())
             .await
             .map_err(|err| PayError::from(err.0))?;
 
@@ -182,13 +180,14 @@ impl Client {
 
         let proofs = receipt_from_cost_map_and_payments(cost_map, &payments);
 
+        let skipped_chunks = content_addrs.count() - quotes.len();
         trace!(
             "Chunk payments of {} chunks completed. {} chunks were free / already paid for",
             proofs.len(),
-            skipped_chunks.len()
+            skipped_chunks
         );
 
-        Ok((proofs, skipped_chunks))
+        Ok(receipt)
     }
 }
 

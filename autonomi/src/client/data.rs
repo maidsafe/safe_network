@@ -121,10 +121,12 @@ pub enum CostError {
     CouldNotGetStoreQuote(XorName),
     #[error("Could not get store costs: {0:?}")]
     CouldNotGetStoreCosts(NetworkError),
+    #[error("Not enough node quotes for {0:?}, got: {1:?} and need at least {2:?}")]
+    NotEnoughNodeQuotes(XorName, usize, usize),
     #[error("Failed to serialize {0}")]
     Serialization(String),
-    #[error("Payment vault error: {0:?}")]
-    PaymentVaultError(ant_evm::payment_vault::error::Error),
+    #[error("Market price error: {0:?}")]
+    MarketPriceError(#[from] ant_evm::payment_vault::error::Error),
 }
 
 impl Client {

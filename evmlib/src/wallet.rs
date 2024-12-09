@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::common::{Address, Amount, QuoteHash, QuotePayment, TxHash, U256};
+use crate::common::{Address, Amount, QuotePayment, QuoteHash, TxHash, U256};
 use crate::contract::network_token::NetworkToken;
 use crate::contract::payment_vault::handler::PaymentVaultHandler;
 use crate::contract::payment_vault::MAX_TRANSFERS_PER_TRANSACTION;
@@ -120,26 +120,13 @@ impl Wallet {
         approve_to_spend_tokens(self.wallet.clone(), &self.network, spender, amount).await
     }
 
-    /// Pays for a single quote. Returns transaction hash of the payment.
-    pub async fn pay_for_quote(
-        &self,
-        quote_hash: QuoteHash,
-        rewards_addr: Address,
-        amount: U256,
-    ) -> Result<TxHash, Error> {
-        self.pay_for_quotes([(quote_hash, rewards_addr, amount)])
-            .await
-            .map(|v| v.values().last().cloned().expect("Infallible"))
-            .map_err(|err| err.0)
-    }
-
     /// Function for batch payments of quotes. It accepts an iterator of QuotePayment and returns
     /// transaction hashes of the payments by quotes.
     pub async fn pay_for_quotes<I: IntoIterator<Item = QuotePayment>>(
         &self,
-        data_payments: I,
+        quote_payments: I,
     ) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
-        pay_for_quotes(self.wallet.clone(), &self.network, data_payments).await
+        pay_for_quotes(self.wallet.clone(), &self.network, quote_payments).await
     }
 
     /// Build a provider using this wallet.
@@ -334,8 +321,14 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
     let data_payments = PaymentVaultHandler::new(*network.data_payments_address(), provider);
 
+    // remove payments with 0 amount as they don't need to be paid for
+    let payment_for_batch: Vec<QuotePayment> = payments
+        .into_iter()
+        .filter(|(_, _, amount)| *amount > Amount::ZERO)
+        .collect();
+
     // Divide transfers over multiple transactions if they exceed the max per transaction.
-    let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);
+    let chunks = payment_for_batch.chunks(MAX_TRANSFERS_PER_TRANSACTION);
 
     let mut tx_hashes_by_quote = BTreeMap::new();
 

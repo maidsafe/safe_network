@@ -90,9 +90,7 @@ async fn test_pay_for_quotes_and_data_payment_verification() {
     for (quote_hash, reward_addr, _) in quote_payments.iter() {
         let result = verify_data_payment(
             &network,
-            *quote_hash,
-            *reward_addr,
-            QuotingMetrics::default(),
+            vec![(*quote_hash, QuotingMetrics::default(), *reward_addr)]
         )
         .await;
 
