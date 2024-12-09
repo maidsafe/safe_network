@@ -77,6 +77,21 @@ impl ProofOfPayment {
             .any(|(_, quote)| quote.has_expired())
     }
 
+    /// Returns all quotes by given peer id
+    pub fn quotes_by_peer(&self, peer_id: &PeerId) -> Vec<&PaymentQuote> {
+        self.peer_quotes
+            .iter()
+            .filter_map(|(id, quote)| {
+                if let Ok(id) = id.to_peer_id() {
+                    if id == *peer_id {
+                        return Some(quote);
+                    }
+                }
+                None
+            })
+            .collect()
+    }
+
     /// verifies the proof of payment is valid for the given peer id
     pub fn verify_for(&self, peer_id: PeerId) -> bool {
         // make sure I am in the list of payees
