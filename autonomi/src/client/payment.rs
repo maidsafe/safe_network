@@ -71,7 +71,7 @@ impl From<Receipt> for PaymentOption {
 impl Client {
     pub(crate) async fn pay_for_content_addrs(
         &self,
-        content_addrs: impl Iterator<Item = XorName>,
+        content_addrs: impl Iterator<Item = XorName> + Clone,
         payment_option: PaymentOption,
     ) -> Result<Receipt, PayError> {
         match payment_option {

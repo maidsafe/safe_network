@@ -10,6 +10,12 @@ sol!(
     "abi/IPaymentVault.json"
 );
 
+pub struct PaymentVerification {
+    pub quote_hash: FixedBytes<32>,
+    pub amount_paid: Amount,
+    pub is_valid: bool,
+}
+
 impl From<(QuoteHash, Address, Amount)> for IPaymentVault::DataPayment {
     fn from(value: (QuoteHash, Address, Amount)) -> Self {
         Self {
