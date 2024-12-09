@@ -1561,6 +1561,7 @@ dependencies = [
  "libp2p 0.54.1 (git+https://github.com/maqi/rust-libp2p.git?branch=kad_0.46.2)",
  "pyo3",
  "rand 0.8.5",
+ "rayon",
  "rmp-serde",
  "self_encryption",
  "serde",
