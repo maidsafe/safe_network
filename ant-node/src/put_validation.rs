@@ -186,6 +186,55 @@ impl Node {
                 }
                 result
             }
+            RecordKind::TransactionWithPayment => {
+                let (payment, transaction) =
+                    try_deserialize_record::<(ProofOfPayment, Transaction)>(&record)?;
+
+                // check if the deserialized value's TransactionAddress matches the record's key
+                let net_addr = NetworkAddress::from_transaction_address(transaction.address());
+                let key = net_addr.to_record_key();
+                let pretty_key = PrettyPrintRecordKey::from(&key);
+                if record.key != key {
+                    warn!(
+                        "Record's key {pretty_key:?} does not match with the value's TransactionAddress, ignoring PUT."
+                    );
+                    return Err(Error::RecordKeyMismatch);
+                }
+
+                let already_exists = self.validate_key_and_existence(&net_addr, &key).await?;
+
+                // The transaction may already exist during the replication.
+                // The payment shall get deposit to self even the transaction already presents.
+                // However, if the transaction is already present, the incoming one shall be
+                // appended with the existing one, if content is different.
+                if let Err(err) = self
+                    .payment_for_us_exists_and_is_still_valid(&net_addr, payment)
+                    .await
+                {
+                    if already_exists {
+                        debug!("Payment of the incoming exists transaction {pretty_key:?} having error {err:?}");
+                    } else {
+                        error!("Payment of the incoming non-exist transaction {pretty_key:?} having error {err:?}");
+                        return Err(err);
+                    }
+                }
+
+                let res = self
+                    .validate_merge_and_store_transactions(vec![transaction], &key)
+                    .await;
+                if res.is_ok() {
+                    let content_hash = XorName::from_content(&record.value);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network().notify_fetch_completed(
+                        record.key.clone(),
+                        RecordType::NonChunk(content_hash),
+                    );
+                }
+                res
+            }
             RecordKind::Register => {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
 
@@ -282,6 +331,7 @@ impl Node {
         match record_header.kind {
             // A separate flow handles payment for chunks and registers
             RecordKind::ChunkWithPayment
+            | RecordKind::TransactionWithPayment
             | RecordKind::RegisterWithPayment
             | RecordKind::ScratchpadWithPayment => {
                 warn!("Prepaid record came with Payment, which should be handled in another flow");
@@ -515,7 +565,7 @@ impl Node {
         Ok(())
     }
 
-    /// Validate and store `Vec<AAATransaction>` to the RecordStore
+    /// Validate and store `Vec<Transaction>` to the RecordStore
     /// If we already have a transaction at this address, the Vec is extended and stored.
     pub(crate) async fn validate_merge_and_store_transactions(
         &self,

@@ -35,6 +35,7 @@ pub enum RecordKind {
     Chunk,
     ChunkWithPayment,
     Transaction,
+    TransactionWithPayment,
     Register,
     RegisterWithPayment,
     Scratchpad,
@@ -54,6 +55,7 @@ impl Serialize for RecordKind {
             Self::RegisterWithPayment => serializer.serialize_u32(4),
             Self::Scratchpad => serializer.serialize_u32(5),
             Self::ScratchpadWithPayment => serializer.serialize_u32(6),
+            Self::TransactionWithPayment => serializer.serialize_u32(7),
         }
     }
 }
@@ -72,6 +74,7 @@ impl<'de> Deserialize<'de> for RecordKind {
             4 => Ok(Self::RegisterWithPayment),
             5 => Ok(Self::Scratchpad),
             6 => Ok(Self::ScratchpadWithPayment),
+            7 => Ok(Self::TransactionWithPayment),
             _ => Err(serde::de::Error::custom(
                 "Unexpected integer for RecordKind variant",
             )),
