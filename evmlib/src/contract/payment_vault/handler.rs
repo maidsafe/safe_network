@@ -1,7 +1,9 @@
 use crate::common::{Address, Amount, Calldata, TxHash};
 use crate::contract::payment_vault::error::Error;
-use crate::contract::payment_vault::interface::IPaymentVault;
 use crate::contract::payment_vault::interface::IPaymentVault::IPaymentVaultInstance;
+use crate::contract::payment_vault::interface::{
+    IPaymentVault, REQUIRED_PAYMENT_VERIFICATION_LENGTH,
+};
 use alloy::network::{Network, TransactionBuilder};
 use alloy::providers::Provider;
 use alloy::transports::Transport;
@@ -16,7 +18,7 @@ where
     P: Provider<T, N>,
     N: Network,
 {
-    /// Create a new PaymentVaultHandler instance from a deployed contract's address
+    /// Create a new PaymentVaultHandler instance from a (proxy) contract's address
     pub fn new(contract_address: Address, provider: P) -> Self {
         let contract = IPaymentVault::new(contract_address, provider);
         Self { contract }
@@ -79,22 +81,27 @@ where
         Ok((calldata, *self.contract.address()))
     }
 
-    /// Verify if a payment is valid
-    pub async fn verify_payment<
-        Q: Into<IPaymentVault::QuotingMetrics>,
-        I: Into<IPaymentVault::DataPayment>,
-    >(
+    /// Verify if payments are valid
+    pub async fn verify_payment<I: IntoIterator<Item: Into<IPaymentVault::PaymentVerification>>>(
         &self,
-        metrics: Q,
-        payment: I,
-    ) -> Result<bool, Error> {
-        let is_valid = self
+        payment_verifications: I,
+    ) -> Result<[IPaymentVault::PaymentVerificationResult; 3], Error> {
+        let payment_verifications: Vec<IPaymentVault::PaymentVerification> = payment_verifications
+            .into_iter()
+            .map(|v| v.into())
+            .collect();
+
+        if payment_verifications.len() != REQUIRED_PAYMENT_VERIFICATION_LENGTH {
+            return Err(Error::PaymentVerificationLengthInvalid);
+        }
+
+        let results = self
             .contract
-            .verifyPayment(metrics.into(), payment.into())
+            .verifyPayment(payment_verifications)
             .call()
             .await?
-            .isValid;
+            .verificationResults;
 
-        Ok(is_valid)
+        Ok(results)
     }
 }

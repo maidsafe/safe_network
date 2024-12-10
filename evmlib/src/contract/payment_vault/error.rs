@@ -10,4 +10,6 @@ pub enum Error {
     PendingTransactionError(#[from] alloy::providers::PendingTransactionError),
     #[error("Payment is invalid.")]
     PaymentInvalid,
+    #[error("Payment verification length must be 3.")]
+    PaymentVerificationLengthInvalid,
 }
