@@ -182,6 +182,9 @@ pub enum NetworkError {
 
     #[error("Register already exists at this address")]
     RegisterAlreadyExists,
+
+    #[error("Transaction already exists at this address")]
+    TransactionAlreadyExists,
 }
 
 #[cfg(test)]
