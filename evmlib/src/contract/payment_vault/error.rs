@@ -8,4 +8,6 @@ pub enum Error {
     RpcError(#[from] RpcError<TransportErrorKind>),
     #[error(transparent)]
     PendingTransactionError(#[from] alloy::providers::PendingTransactionError),
+    #[error("Payment is invalid.")]
+    PaymentInvalid,
 }

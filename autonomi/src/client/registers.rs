@@ -11,7 +11,6 @@ use crate::client::Client;
 use crate::client::ClientEvent;
 use crate::client::UploadSummary;
 
-use ant_evm::EvmNetwork;
 pub use ant_registers::{Permissions as RegisterPermissions, RegisterAddress};
 pub use bls::SecretKey as RegisterSecretKey;
 
@@ -50,6 +49,8 @@ pub enum RegisterError {
     CouldNotSign(#[source] ant_registers::Error),
     #[error("Received invalid quote from node, this node is possibly malfunctioning, try another node by trying another register name")]
     InvalidQuote,
+    #[error("The payment proof contains no payees.")]
+    PayeesMissing,
 }
 
 #[derive(Clone, Debug)]
@@ -225,7 +226,6 @@ impl Client {
     /// Get the cost to create a register
     pub async fn register_cost(
         &self,
-        evm_network: &EvmNetwork,
         name: String,
         owner: RegisterSecretKey,
     ) -> Result<AttoTokens, RegisterError> {
@@ -239,11 +239,13 @@ impl Client {
 
         // get cost to store register
         // NB TODO: register should be priced differently from other data
-        let cost_map = self.get_store_quotes(evm_network, std::iter::once(reg_xor)).await?;
+        let store_quote = self.get_store_quotes(std::iter::once(reg_xor)).await?;
+
         let total_cost = AttoTokens::from_atto(
-            cost_map
+            store_quote
+                .0
                 .values()
-                .map(|quote| quote.2.cost.as_atto())
+                .map(|quote| quote.price())
                 .sum::<Amount>(),
         );
 
@@ -300,18 +302,24 @@ impl Client {
             .inspect_err(|err| {
                 error!("Failed to pay for register at address: {address} : {err}")
             })?;
-        let proof = if let Some(proof) = payment_proofs.get(&reg_xor) {
-            proof
+        let (proof, price) = if let Some((proof, price)) = payment_proofs.get(&reg_xor) {
+            (proof, price)
         } else {
             // register was skipped, meaning it was already paid for
             error!("Register at address: {address} was already paid for");
             return Err(RegisterError::Network(NetworkError::RegisterAlreadyExists));
         };
 
-        let payee = proof
-            .to_peer_id_payee()
-            .ok_or(RegisterError::InvalidQuote)
-            .inspect_err(|err| error!("Failed to get payee from payment proof: {err}"))?;
+        let payees = proof.payees();
+
+        if payees.is_empty() {
+            error!(
+                "Failed to get payees from payment proof: {:?}",
+                RegisterError::PayeesMissing
+            );
+            return Err(RegisterError::PayeesMissing);
+        }
+
         let signed_register = register.signed_reg.clone();
 
         let record = Record {
@@ -333,10 +341,11 @@ impl Client {
             expected_holders: Default::default(),
             is_register: true,
         };
+
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             retry_strategy: None,
-            use_put_record_to: Some(vec![payee]),
+            use_put_record_to: Some(payees), // CODE REVIEW: should we put to all or just one here?
             verification: Some((VerificationKind::Network, get_cfg)),
         };
 
@@ -351,7 +360,7 @@ impl Client {
         if let Some(channel) = self.client_event_sender.as_ref() {
             let summary = UploadSummary {
                 record_count: 1,
-                tokens_spent: proof.quote.cost.as_atto(),
+                tokens_spent: price.as_atto(),
             };
             if let Err(err) = channel.send(ClientEvent::UploadComplete(summary)).await {
                 error!("Failed to send client event: {err}");

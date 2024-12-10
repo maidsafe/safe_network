@@ -29,7 +29,7 @@ mod amount;
 mod data_payments;
 mod error;
 
-pub use data_payments::{PaymentQuote, ProofOfPayment, QUOTE_EXPIRATION_SECS};
+pub use data_payments::{EncodedPeerId, PaymentQuote, ProofOfPayment, QUOTE_EXPIRATION_SECS};
 pub use evmlib::quoting_metrics::QuotingMetrics;
 
 /// Types used in the public API

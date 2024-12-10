@@ -6,8 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::client::payment::Receipt;
-use ant_evm::{EvmNetwork, EvmWallet, ProofOfPayment};
+use crate::client::payment::{receipt_from_store_quotes_and_payments, Receipt};
+use ant_evm::{EvmWallet, ProofOfPayment};
 use ant_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use ant_protocol::{
     messages::ChunkProof,
@@ -99,9 +99,13 @@ impl Client {
         chunk: &Chunk,
         payment: ProofOfPayment,
     ) -> Result<(), PutError> {
-        let storing_node = payment.to_peer_id_payee().expect("Missing node Peer ID");
+        let storing_nodes = payment.payees();
 
-        debug!("Storing chunk: {chunk:?} to {:?}", storing_node);
+        if storing_nodes.is_empty() {
+            return Err(PutError::PayeesMissing);
+        }
+
+        debug!("Storing chunk: {chunk:?} to {:?}", storing_nodes);
 
         let key = chunk.network_address().to_record_key();
 
@@ -146,19 +150,21 @@ impl Client {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
             retry_strategy: Some(RetryStrategy::Balanced),
-            use_put_record_to: Some(vec![storing_node]),
+            use_put_record_to: Some(storing_nodes), // CODE REVIEW: do we put to all payees or just one?
             verification,
         };
+
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
     /// Pay for the chunks and get the proof of payment.
     pub(crate) async fn pay(
         &self,
-        content_addrs: impl Iterator<Item = XorName>,
+        content_addrs: impl Iterator<Item = XorName> + Clone,
         wallet: &EvmWallet,
     ) -> Result<Receipt, PayError> {
-        let quotes = self.get_store_quotes(wallet.network(), content_addrs).await?;
+        let number_of_content_addrs = content_addrs.clone().count();
+        let quotes = self.get_store_quotes(content_addrs).await?;
 
         // Make sure nobody else can use the wallet while we are paying
         debug!("Waiting for wallet lock");
@@ -168,7 +174,6 @@ impl Client {
         // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
         // TODO: retry when it fails?
         // Execute chunk payments
-        // NB TODO: make this return a Receipt or something that can turn into a Receipt @mick
         let payments = wallet
             .pay_for_quotes(quotes.payments())
             .await
@@ -178,12 +183,14 @@ impl Client {
         drop(lock_guard);
         debug!("Unlocked wallet");
 
-        let skipped_chunks = content_addrs.count() - quotes.len();
+        let skipped_chunks = number_of_content_addrs - quotes.len();
         trace!(
             "Chunk payments of {} chunks completed. {} chunks were free / already paid for",
             quotes.len(),
             skipped_chunks
         );
+
+        let receipt = receipt_from_store_quotes_and_payments(quotes, payments);
 
         Ok(receipt)
     }

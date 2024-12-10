@@ -8,17 +8,17 @@
 
 use bytes::Bytes;
 use libp2p::kad::Quorum;
+use std::collections::HashSet;
 
-use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
 use xor_name::XorName;
 
-use crate::client::payment::PaymentOption;
+use crate::client::payment::{PaymentOption, Receipt};
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
+use ant_evm::EvmWalletError;
 use ant_evm::{Amount, AttoTokens};
-use ant_evm::{EvmWalletError, ProofOfPayment};
 use ant_networking::{GetRecordCfg, NetworkError};
 use ant_protocol::{
     storage::{try_deserialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind},
@@ -84,6 +84,8 @@ pub enum PutError {
     VaultBadOwner,
     #[error("Payment unexpectedly invalid for {0:?}")]
     PaymentUnexpectedlyInvalid(NetworkAddress),
+    #[error("The payment proof contains no payees.")]
+    PayeesMissing,
 }
 
 /// Errors that can occur during the pay operation.
@@ -198,7 +200,7 @@ impl Client {
         if let Some(channel) = self.client_event_sender.as_ref() {
             let tokens_spent = receipt
                 .values()
-                .map(|proof| proof.quote.cost.as_atto())
+                .map(|(_proof, price)| price.as_atto())
                 .sum::<Amount>();
 
             let summary = UploadSummary {
@@ -261,16 +263,19 @@ impl Client {
             content_addrs.len()
         );
 
-        let cost_map = self
+        let store_quote = self
             .get_store_quotes(content_addrs.into_iter())
             .await
             .inspect_err(|err| error!("Error getting store quotes: {err:?}"))?;
+
         let total_cost = AttoTokens::from_atto(
-            cost_map
+            store_quote
+                .0
                 .values()
-                .map(|quote| quote.2.cost.as_atto())
+                .map(|quote| quote.price())
                 .sum::<Amount>(),
         );
+
         Ok(total_cost)
     }
 
@@ -278,7 +283,7 @@ impl Client {
     pub(crate) async fn upload_chunks_with_retries<'a>(
         &self,
         mut chunks: Vec<&'a Chunk>,
-        receipt: &HashMap<XorName, ProofOfPayment>,
+        receipt: &Receipt,
     ) -> Vec<(&'a Chunk, PutError)> {
         let mut current_attempt: usize = 1;
 
@@ -288,7 +293,7 @@ impl Client {
                 let self_clone = self.clone();
                 let address = *chunk.address();
 
-                let Some(proof) = receipt.get(chunk.name()) else {
+                let Some((proof, _)) = receipt.get(chunk.name()) else {
                     debug!("Chunk at {address:?} was already paid for so skipping");
                     continue;
                 };

@@ -151,11 +151,13 @@ impl Client {
         let vault_xor = scratch.network_address().as_xorname().unwrap_or_default();
 
         // NB TODO: vault should be priced differently from other data
-        let cost_map = self.get_store_quotes(std::iter::once(vault_xor)).await?;
+        let store_quote = self.get_store_quotes(std::iter::once(vault_xor)).await?;
+
         let total_cost = AttoTokens::from_atto(
-            cost_map
+            store_quote
+                .0
                 .values()
-                .map(|quote| quote.2.cost.as_atto())
+                .map(|quote| quote.price())
                 .sum::<Amount>(),
         );
 
@@ -196,12 +198,12 @@ impl Client {
                     error!("Failed to pay for new vault at addr: {scratch_address:?} : {err}");
                 })?;
 
-            let proof = match receipt.values().next() {
+            let (proof, price) = match receipt.values().next() {
                 Some(proof) => proof,
                 None => return Err(PutError::PaymentUnexpectedlyInvalid(scratch_address)),
             };
 
-            total_cost = proof.quote.cost;
+            total_cost = price.clone();
 
             Record {
                 key: scratch_key,

@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{data::CostError, Client};
-use crate::EvmNetwork;
 use ant_evm::payment_vault::get_market_price;
 use ant_evm::{Amount, PaymentQuote, QuotePayment};
 use ant_networking::{Network, NetworkError};
@@ -17,7 +16,7 @@ use std::collections::HashMap;
 use xor_name::XorName;
 
 /// A quote for a single address
-pub struct QuoteForAddress(Vec<(PeerId, PaymentQuote, Amount)>);
+pub struct QuoteForAddress(pub(crate) Vec<(PeerId, PaymentQuote, Amount)>);
 
 impl QuoteForAddress {
     pub fn price(&self) -> Amount {
@@ -26,7 +25,7 @@ impl QuoteForAddress {
 }
 
 /// A quote for many addresses
-pub struct StoreQuote(HashMap<XorName, QuoteForAddress>);
+pub struct StoreQuote(pub(crate) HashMap<XorName, QuoteForAddress>);
 
 impl StoreQuote {
     pub fn price(&self) -> Amount {
@@ -51,7 +50,6 @@ impl StoreQuote {
 impl Client {
     pub(crate) async fn get_store_quotes(
         &self,
-        evm_network: &EvmNetwork,
         content_addrs: impl Iterator<Item = XorName>,
     ) -> Result<StoreQuote, CostError> {
         // get all quotes from nodes
@@ -68,7 +66,8 @@ impl Client {
             let mut prices = vec![];
             for (peer, quote) in raw_quotes {
                 // NB TODO @mick we need to batch this smart contract call
-                let price = get_market_price(evm_network, quote.quoting_metrics.clone()).await?;
+                let price =
+                    get_market_price(&self.evm_network, quote.quoting_metrics.clone()).await?;
                 prices.push((peer, quote, price));
             }
 
@@ -87,10 +86,23 @@ impl Client {
                     let second = (*p2, q2.clone(), Amount::ZERO);
 
                     // pay for the rest
-                    quotes_to_pay_per_addr.insert(content_addr, QuoteForAddress(vec![first, second, third.clone(), fourth.clone(), fifth.clone()]));
+                    quotes_to_pay_per_addr.insert(
+                        content_addr,
+                        QuoteForAddress(vec![
+                            first,
+                            second,
+                            third.clone(),
+                            fourth.clone(),
+                            fifth.clone(),
+                        ]),
+                    );
                 }
                 _ => {
-                    return Err(CostError::NotEnoughNodeQuotes(content_addr, prices.len(), MINIMUM_QUOTES_TO_PAY));
+                    return Err(CostError::NotEnoughNodeQuotes(
+                        content_addr,
+                        prices.len(),
+                        MINIMUM_QUOTES_TO_PAY,
+                    ));
                 }
             }
         }

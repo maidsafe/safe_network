@@ -6,12 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::common::{Address, QuoteHash};
-use crate::transaction::verify_data_payment;
+use crate::common::Address;
 use alloy::primitives::address;
 use alloy::transports::http::reqwest;
-use common::Amount;
-use quoting_metrics::QuotingMetrics;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use std::str::FromStr;
@@ -27,7 +24,6 @@ pub mod cryptography;
 pub mod external_signer;
 pub mod quoting_metrics;
 pub mod testnet;
-pub mod transaction;
 pub mod utils;
 pub mod wallet;
 
@@ -134,12 +130,5 @@ impl Network {
             Network::ArbitrumSepolia => &ARBITRUM_SEPOLIA_DATA_PAYMENTS_ADDRESS,
             Network::Custom(custom) => &custom.data_payments_address,
         }
-    }
-
-    pub async fn verify_data_payment(
-        &self,
-        payment: Vec<(QuoteHash, QuotingMetrics, Address)>
-    ) -> Result<Amount, transaction::Error> {
-        verify_data_payment(self, payment).await
     }
 }
