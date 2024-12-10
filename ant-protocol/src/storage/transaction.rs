@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::address::TransactionAddress;
+use bls::SecretKey;
 use serde::{Deserialize, Serialize};
 
 // re-exports
@@ -27,13 +28,15 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Create a new transaction, signing it with the provided secret key.
     pub fn new(
         owner: PublicKey,
         parents: Vec<PublicKey>,
         content: TransactionContent,
         outputs: Vec<(PublicKey, TransactionContent)>,
-        signature: Signature,
+        signing_key: &SecretKey,
     ) -> Self {
+        let signature = signing_key.sign(bytes_for_signature(&owner, &parents, &content, &outputs));
         Self {
             owner,
             parents,
@@ -47,33 +50,41 @@ impl Transaction {
         TransactionAddress::from_owner(self.owner)
     }
 
+    /// Get the bytes that the signature is calculated from.
     pub fn bytes_for_signature(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.owner.to_bytes());
-        bytes.extend_from_slice("parent".as_bytes());
-        bytes.extend_from_slice(
-            &self
-                .parents
-                .iter()
-                .map(|p| p.to_bytes())
-                .collect::<Vec<_>>()
-                .concat(),
-        );
-        bytes.extend_from_slice("content".as_bytes());
-        bytes.extend_from_slice(&self.content);
-        bytes.extend_from_slice("outputs".as_bytes());
-        bytes.extend_from_slice(
-            &self
-                .outputs
-                .iter()
-                .flat_map(|(p, c)| [&p.to_bytes(), c.as_slice()].concat())
-                .collect::<Vec<_>>(),
-        );
-        bytes
+        bytes_for_signature(&self.owner, &self.parents, &self.content, &self.outputs)
     }
 
     pub fn verify(&self) -> bool {
         self.owner
             .verify(&self.signature, self.bytes_for_signature())
     }
+}
+
+fn bytes_for_signature(
+    owner: &PublicKey,
+    parents: &[PublicKey],
+    content: &[u8],
+    outputs: &[(PublicKey, TransactionContent)],
+) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(&owner.to_bytes());
+    bytes.extend_from_slice("parent".as_bytes());
+    bytes.extend_from_slice(
+        &parents
+            .iter()
+            .map(|p| p.to_bytes())
+            .collect::<Vec<_>>()
+            .concat(),
+    );
+    bytes.extend_from_slice("content".as_bytes());
+    bytes.extend_from_slice(content);
+    bytes.extend_from_slice("outputs".as_bytes());
+    bytes.extend_from_slice(
+        &outputs
+            .iter()
+            .flat_map(|(p, c)| [&p.to_bytes(), c.as_slice()].concat())
+            .collect::<Vec<_>>(),
+    );
+    bytes
 }
