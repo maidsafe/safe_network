@@ -763,7 +763,6 @@ dependencies = [
  "ant-bootstrap",
  "ant-build-info",
  "ant-logging",
- "ant-protocol",
  "autonomi",
  "clap",
  "color-eyre",
@@ -1092,7 +1091,6 @@ dependencies = [
 name = "ant-service-management"
 version = "0.4.3"
 dependencies = [
- "ant-bootstrap",
  "ant-evm",
  "ant-logging",
  "ant-protocol",

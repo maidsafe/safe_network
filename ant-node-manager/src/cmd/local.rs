@@ -36,7 +36,7 @@ pub async fn join(
     log_format: Option<LogFormat>,
     owner: Option<String>,
     owner_prefix: Option<String>,
-    _peers_args: PeersArgs,
+    peers_args: PeersArgs,
     rpc_port: Option<PortRange>,
     rewards_address: RewardsAddress,
     evm_network: Option<EvmNetwork>,
@@ -70,6 +70,21 @@ pub async fn join(
     )
     .await?;
 
+    // If no peers are obtained we will attempt to join the existing local network, if one
+    // is running.
+    let peers = match peers_args.get_addrs(None).await {
+        Ok(peers) => Some(peers),
+        Err(err) => match err {
+            ant_bootstrap::error::Error::NoBootstrapPeersFound => {
+                warn!("PeersNotObtained, peers is set to None");
+                None
+            }
+            _ => {
+                error!("Failed to obtain peers: {err:?}");
+                return Err(err.into());
+            }
+        },
+    };
     let options = LocalNetworkOptions {
         antnode_bin_path,
         enable_metrics_server,
@@ -80,7 +95,7 @@ pub async fn join(
         node_port,
         owner,
         owner_prefix,
-        peers: None,
+        peers,
         rpc_port,
         skip_validation,
         log_format,

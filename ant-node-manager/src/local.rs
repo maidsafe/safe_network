@@ -11,7 +11,6 @@ use crate::helpers::{
     check_port_availability, get_bin_version, get_start_port_if_applicable, increment_port_option,
 };
 
-use ant_bootstrap::PeersArgs;
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
 use ant_service_management::{
@@ -39,7 +38,7 @@ pub trait Launcher {
     #[allow(clippy::too_many_arguments)]
     fn launch_node(
         &self,
-        first: bool,
+        bootstrap_peers: Vec<Multiaddr>,
         log_format: Option<LogFormat>,
         metrics_port: Option<u16>,
         node_port: Option<u16>,
@@ -63,7 +62,7 @@ impl Launcher for LocalSafeLauncher {
 
     fn launch_node(
         &self,
-        first: bool,
+        bootstrap_peers: Vec<Multiaddr>,
         log_format: Option<LogFormat>,
         metrics_port: Option<u16>,
         node_port: Option<u16>,
@@ -79,8 +78,13 @@ impl Launcher for LocalSafeLauncher {
             args.push(owner);
         }
 
-        if first {
+        if bootstrap_peers.is_empty() {
             args.push("--first".to_string())
+        } else {
+            for peer in bootstrap_peers {
+                args.push("--peer".to_string());
+                args.push(peer.to_string());
+            }
         }
 
         if let Some(log_format) = log_format {
@@ -292,7 +296,8 @@ pub async fn run_network(
         let owner = get_node_owner(&options.owner_prefix, &options.owner, &number);
         let node = run_node(
             RunNodeOptions {
-                first: true,
+                bootstrap_peers: vec![],
+                genesis: true,
                 metrics_port: metrics_free_port,
                 node_port,
                 interval: options.interval,
@@ -340,7 +345,8 @@ pub async fn run_network(
         let owner = get_node_owner(&options.owner_prefix, &options.owner, &number);
         let node = run_node(
             RunNodeOptions {
-                first: false,
+                bootstrap_peers: bootstrap_peers.clone(),
+                genesis: false,
                 metrics_port: metrics_free_port,
                 node_port,
                 interval: options.interval,
@@ -380,7 +386,8 @@ pub async fn run_network(
 }
 
 pub struct RunNodeOptions {
-    pub first: bool,
+    pub bootstrap_peers: Vec<Multiaddr>,
+    pub genesis: bool,
     pub interval: u64,
     pub log_format: Option<LogFormat>,
     pub metrics_port: Option<u16>,
@@ -401,7 +408,7 @@ pub async fn run_node(
     info!("Launching node {}...", run_options.number);
     println!("Launching node {}...", run_options.number);
     launcher.launch_node(
-        run_options.first,
+        run_options.bootstrap_peers.clone(),
         run_options.log_format,
         run_options.metrics_port,
         run_options.node_port,
@@ -428,28 +435,20 @@ pub async fn run_node(
         connected_peers,
         data_dir_path: node_info.data_path,
         evm_network: run_options.evm_network.unwrap_or(EvmNetwork::ArbitrumOne),
+        genesis: run_options.genesis,
         home_network: false,
         listen_addr: Some(listen_addrs),
+        local: true,
         log_dir_path: node_info.log_path,
         log_format: run_options.log_format,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: run_options.metrics_port,
-        network_id: None,
         node_ip: None,
         node_port: run_options.node_port,
         number: run_options.number,
         owner: run_options.owner,
         peer_id: Some(peer_id),
-        peers_args: PeersArgs {
-            first: run_options.first,
-            addrs: vec![],
-            network_contacts_url: vec![],
-            local: true,
-            disable_mainnet_contacts: true,
-            ignore_cache: true,
-            bootstrap_cache_dir: None,
-        },
         pid: Some(node_info.pid),
         rewards_address: run_options.rewards_address,
         reward_balance: None,
@@ -565,7 +564,7 @@ mod tests {
         mock_launcher
             .expect_launch_node()
             .with(
-                eq(true),
+                eq(vec![]),
                 eq(None),
                 eq(None),
                 eq(None),
@@ -612,7 +611,8 @@ mod tests {
 
         let node = run_node(
             RunNodeOptions {
-                first: true,
+                bootstrap_peers: vec![],
+                genesis: true,
                 interval: 100,
                 log_format: None,
                 metrics_port: None,
@@ -629,7 +629,7 @@ mod tests {
         )
         .await?;
 
-        assert!(node.peers_args.first);
+        assert!(node.genesis);
         assert_eq!(node.version, "0.100.12");
         assert_eq!(node.service_name, "antnode-local1");
         assert_eq!(

@@ -16,12 +16,10 @@ pub enum Error {
     FailedToParseCacheData,
     #[error("Could not obtain data directory")]
     CouldNotObtainDataDir,
-    #[error("Invalid bootstrap cache directory")]
-    InvalidBootstrapCacheDir,
     #[error("Could not obtain bootstrap addresses from {0} after {1} retries")]
     FailedToObtainAddrsFromUrl(String, usize),
-    #[error("Failed to parse Url")]
-    FailedToParseUrl,
+    #[error("No Bootstrap Addresses found: {0}")]
+    NoBootstrapAddressesFound(String),
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
     #[error("JSON error: {0}")]

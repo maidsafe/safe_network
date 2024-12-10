@@ -45,14 +45,13 @@ async fn test_multiaddr_format_parsing() -> Result<(), Box<dyn std::error::Error
         let args = PeersArgs {
             first: false,
             addrs: vec![addr.clone()],
-            network_contacts_url: vec![],
+            network_contacts_url: None,
             local: false,
-            disable_mainnet_contacts: true,
-            ignore_cache: true,
-            bootstrap_cache_dir: None,
+            disable_mainnet_contacts: false,
+            ignore_cache: false,
         };
 
-        let bootstrap_addresses = args.get_bootstrap_addr(None, None).await?;
+        let bootstrap_addresses = args.get_bootstrap_addr(None).await?;
         assert_eq!(bootstrap_addresses.len(), 1, "Should have one peer");
         assert_eq!(
             bootstrap_addresses[0].addr, addr,
@@ -83,14 +82,13 @@ async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>
     let args = PeersArgs {
         first: false,
         addrs: vec![],
-        network_contacts_url: vec![format!("{}/peers", mock_server.uri()).parse()?],
+        network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
         local: false,
-        disable_mainnet_contacts: true,
-        ignore_cache: true,
-        bootstrap_cache_dir: None,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let addrs = args.get_bootstrap_addr(None, None).await?;
+    let addrs = args.get_bootstrap_addr(None).await?;
     assert_eq!(
         addrs.len(),
         2,

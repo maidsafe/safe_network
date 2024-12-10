@@ -7,83 +7,39 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use lazy_static::lazy_static;
-use std::sync::RwLock;
 
 lazy_static! {
-    /// The network_id is used to differentiate between different networks.
-    /// The default is set to 1 and it represents the mainnet.
-    pub static ref NETWORK_ID: RwLock<u8> = RwLock::new(1);
-
     /// The node version used during Identify Behaviour.
-    pub static ref IDENTIFY_NODE_VERSION_STR: RwLock<String> =
-        RwLock::new(format!(
-            "ant/node/{}/{}",
+    pub static ref IDENTIFY_NODE_VERSION_STR: String =
+        format!(
+            "safe/node/{}/{}",
             get_truncate_version_str(),
-            *NETWORK_ID.read().expect("Failed to obtain read lock for NETWORK_ID"),
-        ));
+            get_key_version_str(),
+        );
 
     /// The client version used during Identify Behaviour.
-    pub static ref IDENTIFY_CLIENT_VERSION_STR: RwLock<String> =
-        RwLock::new(format!(
-            "ant/client/{}/{}",
+    pub static ref IDENTIFY_CLIENT_VERSION_STR: String =
+        format!(
+            "safe/client/{}/{}",
             get_truncate_version_str(),
-            *NETWORK_ID.read().expect("Failed to obtain read lock for NETWORK_ID"),
-        ));
+            get_key_version_str(),
+        );
 
     /// The req/response protocol version
-    pub static ref REQ_RESPONSE_VERSION_STR: RwLock<String> =
-        RwLock::new(format!(
-            "/ant/{}/{}",
+    pub static ref REQ_RESPONSE_VERSION_STR: String =
+        format!(
+            "/safe/node/{}/{}",
             get_truncate_version_str(),
-            *NETWORK_ID.read().expect("Failed to obtain read lock for NETWORK_ID"),
-        ));
+            get_key_version_str(),
+        );
 
     /// The identify protocol version
-    pub static ref IDENTIFY_PROTOCOL_STR: RwLock<String> =
-        RwLock::new(format!(
-            "ant/{}/{}",
+    pub static ref IDENTIFY_PROTOCOL_STR: String =
+        format!(
+            "safe/{}/{}",
             get_truncate_version_str(),
-            *NETWORK_ID.read().expect("Failed to obtain read lock for NETWORK_ID"),
-        ));
-}
-
-/// Update the NETWORK_ID and all the version strings that depend on it.
-/// By default, the network id is set to 1 which represents the mainnet.
-///
-/// This should be called before starting the node or client.
-/// The values will be read often and this can cause issues if the values are changed after the node is started.
-pub fn set_network_id(id: u8) {
-    let mut network_id = NETWORK_ID
-        .write()
-        .expect("Failed to obtain write lock for NETWORK_ID");
-    *network_id = id;
-
-    let mut node_version = IDENTIFY_NODE_VERSION_STR
-        .write()
-        .expect("Failed to obtain write lock for IDENTIFY_NODE_VERSION_STR");
-    *node_version = format!("ant/node/{}/{}", get_truncate_version_str(), id);
-    let mut client_version = IDENTIFY_CLIENT_VERSION_STR
-        .write()
-        .expect("Failed to obtain write lock for IDENTIFY_CLIENT_VERSION_STR");
-    *client_version = format!("ant/client/{}/{}", get_truncate_version_str(), id);
-    let mut req_response_version = REQ_RESPONSE_VERSION_STR
-        .write()
-        .expect("Failed to obtain write lock for REQ_RESPONSE_VERSION_STR");
-    *req_response_version = format!("/ant/{}/{}", get_truncate_version_str(), id);
-    let mut identify_protocol = IDENTIFY_PROTOCOL_STR
-        .write()
-        .expect("Failed to obtain write lock for IDENTIFY_PROTOCOL_STR");
-    *identify_protocol = format!("ant/{}/{}", get_truncate_version_str(), id);
-}
-
-/// Get the current NETWORK_ID as string.
-pub fn get_network_id() -> String {
-    format!(
-        "{}",
-        *NETWORK_ID
-            .read()
-            .expect("Failed to obtain read lock for NETWORK_ID")
-    )
+            get_key_version_str(),
+        );
 }
 
 // Protocol support shall be downward compatible for patch only version update.
@@ -98,44 +54,42 @@ pub fn get_truncate_version_str() -> String {
     }
 }
 
+/// FIXME: Remove this once BEFORE next breaking release and fix this whole file
+/// Get the PKs version string.
+/// If the public key mis-configed via env variable,
+/// it shall result in being rejected to join by the network
+pub fn get_key_version_str() -> String {
+    // let mut f_k_str = FOUNDATION_PK.to_hex();
+    // let _ = f_k_str.split_off(6);
+    // let mut g_k_str = GENESIS_PK.to_hex();
+    // let _ = g_k_str.split_off(6);
+    // let mut n_k_str = NETWORK_ROYALTIES_PK.to_hex();
+    // let _ = n_k_str.split_off(6);
+    // let s = format!("{f_k_str}_{g_k_str}_{n_k_str}");
+    // dbg!(&s);
+    "b20c91_93f735_af451a".to_string()
+}
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_print_version_strings() -> Result<(), Box<dyn std::error::Error>> {
+        // Test and print all version strings
         println!(
-            "\nIDENTIFY_NODE_VERSION_STR: {}",
-            *IDENTIFY_NODE_VERSION_STR
-                .read()
-                .expect("Failed to obtain read lock for IDENTIFY_NODE_VERSION_STR")
-        );
-        println!(
-            "IDENTIFY_CLIENT_VERSION_STR: {}",
+            "\nIDENTIFY_CLIENT_VERSION_STR: {}",
             *IDENTIFY_CLIENT_VERSION_STR
-                .read()
-                .expect("Failed to obtain read lock for IDENTIFY_CLIENT_VERSION_STR")
         );
-        println!(
-            "REQ_RESPONSE_VERSION_STR: {}",
-            *REQ_RESPONSE_VERSION_STR
-                .read()
-                .expect("Failed to obtain read lock for REQ_RESPONSE_VERSION_STR")
-        );
-        println!(
-            "IDENTIFY_PROTOCOL_STR: {}",
-            *IDENTIFY_PROTOCOL_STR
-                .read()
-                .expect("Failed to obtain read lock for IDENTIFY_PROTOCOL_STR")
-        );
+        println!("REQ_RESPONSE_VERSION_STR: {}", *REQ_RESPONSE_VERSION_STR);
+        println!("IDENTIFY_PROTOCOL_STR: {}", *IDENTIFY_PROTOCOL_STR);
 
         // Test truncated version string
         let truncated = get_truncate_version_str();
         println!("\nTruncated version: {truncated}");
 
-        // Test network id string
-        let network_id = get_network_id();
-        println!("Network ID string: {network_id}");
+        // Test key version string
+        let key_version = get_key_version_str();
+        println!("\nKey version string: {key_version}");
 
         Ok(())
     }

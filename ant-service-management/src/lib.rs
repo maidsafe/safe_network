@@ -23,6 +23,7 @@ pub mod antctl_proto {
 
 use async_trait::async_trait;
 use auditor::AuditorServiceData;
+use libp2p::Multiaddr;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use service_manager::ServiceInstallCtx;
@@ -67,6 +68,7 @@ pub enum UpgradeResult {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UpgradeOptions {
     pub auto_restart: bool,
+    pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
     pub force: bool,
     pub start_service: bool,
@@ -101,6 +103,7 @@ pub struct StatusSummary {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeRegistry {
     pub auditor: Option<AuditorServiceData>,
+    pub bootstrap_peers: Vec<Multiaddr>,
     pub daemon: Option<DaemonServiceData>,
     pub environment_variables: Option<Vec<(String, String)>>,
     pub faucet: Option<FaucetServiceData>,
@@ -136,6 +139,7 @@ impl NodeRegistry {
             debug!("Loading default node registry as {path:?} does not exist");
             return Ok(NodeRegistry {
                 auditor: None,
+                bootstrap_peers: vec![],
                 daemon: None,
                 environment_variables: None,
                 faucet: None,
@@ -158,6 +162,7 @@ impl NodeRegistry {
         if contents.is_empty() {
             return Ok(NodeRegistry {
                 auditor: None,
+                bootstrap_peers: vec![],
                 daemon: None,
                 environment_variables: None,
                 faucet: None,
