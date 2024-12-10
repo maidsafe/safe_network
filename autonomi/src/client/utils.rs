@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::client::payment::{receipt_from_store_quotes_and_payments, Receipt};
+use crate::client::payment::{receipt_from_store_quotes, Receipt};
 use ant_evm::{EvmWallet, ProofOfPayment};
 use ant_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use ant_protocol::{
@@ -176,7 +176,7 @@ impl Client {
         // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
         // TODO: retry when it fails?
         // Execute chunk payments
-        let payments = wallet
+        let _payments = wallet
             .pay_for_quotes(quotes.payments())
             .await
             .map_err(|err| PayError::from(err.0))?;
@@ -192,7 +192,7 @@ impl Client {
             skipped_chunks
         );
 
-        let receipt = receipt_from_store_quotes_and_payments(quotes, payments);
+        let receipt = receipt_from_store_quotes(quotes);
 
         Ok(receipt)
     }
