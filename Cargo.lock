@@ -763,7 +763,6 @@ dependencies = [
  "ant-bootstrap",
  "ant-build-info",
  "ant-logging",
- "ant-protocol",
  "autonomi",
  "clap",
  "color-eyre",

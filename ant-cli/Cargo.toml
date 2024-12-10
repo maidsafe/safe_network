@@ -26,7 +26,6 @@ harness = false
 ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
 ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
 ant-logging = { path = "../ant-logging", version = "0.2.40" }
-ant-protocol = { path = "../ant-protocol", version = "0.17.15" }
 autonomi = { path = "../autonomi", version = "0.2.4", features = [
     "fs",
     "vault",
