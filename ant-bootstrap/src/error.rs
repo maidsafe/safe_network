@@ -20,8 +20,6 @@ pub enum Error {
     FailedToObtainAddrsFromUrl(String, usize),
     #[error("No Bootstrap Addresses found: {0}")]
     NoBootstrapAddressesFound(String),
-    #[error("Failed to parse Url")]
-    FailedToParseUrl,
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
     #[error("JSON error: {0}")]
