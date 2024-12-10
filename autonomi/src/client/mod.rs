@@ -6,26 +6,22 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+// Optionally enable nightly `doc_cfg`. Allows items to be annotated, e.g.: "Available on crate feature X only".
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 pub mod address;
 pub mod payment;
 
-#[cfg(feature = "data")]
-pub mod archive;
-#[cfg(feature = "data")]
-pub mod archive_private;
-#[cfg(feature = "data")]
 pub mod data;
-#[cfg(feature = "data")]
-pub mod data_private;
 #[cfg(feature = "external-signer")]
+#[cfg_attr(docsrs, doc(cfg(feature = "external-signer")))]
 pub mod external_signer;
-#[cfg(feature = "fs")]
-pub mod fs;
-#[cfg(feature = "fs")]
-pub mod fs_private;
+pub mod files;
 #[cfg(feature = "registers")]
+#[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
 pub mod registers;
 #[cfg(feature = "vault")]
+#[cfg_attr(docsrs, doc(cfg(feature = "vault")))]
 pub mod vault;
 
 #[cfg(target_arch = "wasm32")]
@@ -34,6 +30,7 @@ pub mod wasm;
 // private module with utility functions
 mod utils;
 
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore};
 pub use ant_evm::Amount;
 
 use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
@@ -115,6 +112,7 @@ impl Client {
         ant_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
 
         receiver.await.expect("sender should not close")?;
+        debug!("Client is connected to the network");
 
         Ok(Self {
             network,
@@ -127,12 +125,23 @@ impl Client {
         let (client_event_sender, client_event_receiver) =
             tokio::sync::mpsc::channel(CLIENT_EVENT_CHANNEL_SIZE);
         self.client_event_sender = Arc::new(Some(client_event_sender));
+        debug!("All events to the clients are enabled");
+
         client_event_receiver
     }
 }
 
 fn build_client_and_run_swarm(local: bool) -> (Network, mpsc::Receiver<NetworkEvent>) {
-    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
+    let mut network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
+
+    if let Ok(mut config) = BootstrapCacheConfig::default_config() {
+        if local {
+            config.disable_cache_writing = true;
+        }
+        if let Ok(cache) = BootstrapCacheStore::new(config) {
+            network_builder.bootstrap_cache(cache);
+        }
+    }
 
     // TODO: Re-export `Receiver<T>` from `ant-networking`. Else users need to keep their `tokio` dependency in sync.
     // TODO: Think about handling the mDNS error here.
@@ -140,6 +149,7 @@ fn build_client_and_run_swarm(local: bool) -> (Network, mpsc::Receiver<NetworkEv
         network_builder.build_client().expect("mdns to succeed");
 
     let _swarm_driver = ant_networking::target_arch::spawn(swarm_driver.run());
+    debug!("Client swarm driver is running");
 
     (network, event_receiver)
 }
@@ -167,7 +177,7 @@ async fn handle_event_receiver(
                         sender
                             .send(Err(ConnectError::TimedOutWithIncompatibleProtocol(
                                 protocols,
-                                IDENTIFY_PROTOCOL_STR.to_string(),
+                                IDENTIFY_PROTOCOL_STR.read().expect("Failed to obtain read lock for IDENTIFY_PROTOCOL_STR. A call to set_network_id performed. This should not happen").clone(),
                             )))
                             .expect("receiver should not close");
                     } else {

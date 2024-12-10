@@ -12,6 +12,7 @@ use super::{
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetricsRecorder;
 use crate::RunningNode;
+use ant_bootstrap::BootstrapCacheStore;
 use ant_evm::{AttoTokens, RewardsAddress};
 #[cfg(feature = "open-metrics")]
 use ant_networking::MetricsRegistries;
@@ -81,41 +82,42 @@ const NETWORK_DENSITY_SAMPLING_INTERVAL_MAX_S: u64 = 200;
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
+    bootstrap_cache: Option<BootstrapCacheStore>,
+    initial_peers: Vec<Multiaddr>,
     identity_keypair: Keypair,
     evm_address: RewardsAddress,
     evm_network: EvmNetwork,
     addr: SocketAddr,
-    initial_peers: Vec<Multiaddr>,
     local: bool,
     root_dir: PathBuf,
     #[cfg(feature = "open-metrics")]
     /// Set to Some to enable the metrics server
     metrics_server_port: Option<u16>,
     /// Enable hole punching for nodes connecting from home networks.
-    pub is_behind_home_network: bool,
+    is_behind_home_network: bool,
     #[cfg(feature = "upnp")]
     upnp: bool,
 }
 
 impl NodeBuilder {
-    /// Instantiate the builder
-    #[expect(clippy::too_many_arguments)]
+    /// Instantiate the builder. The initial peers can either be supplied via the `initial_peers` method
+    /// or fetched from the bootstrap cache set using `bootstrap_cache` method.
     pub fn new(
         identity_keypair: Keypair,
         evm_address: RewardsAddress,
         evm_network: EvmNetwork,
         addr: SocketAddr,
-        initial_peers: Vec<Multiaddr>,
         local: bool,
         root_dir: PathBuf,
         #[cfg(feature = "upnp")] upnp: bool,
     ) -> Self {
         Self {
+            bootstrap_cache: None,
+            initial_peers: vec![],
             identity_keypair,
             evm_address,
             evm_network,
             addr,
-            initial_peers,
             local,
             root_dir,
             #[cfg(feature = "open-metrics")]
@@ -130,6 +132,21 @@ impl NodeBuilder {
     /// Set the port for the OpenMetrics server. Defaults to a random port if not set
     pub fn metrics_server_port(&mut self, port: Option<u16>) {
         self.metrics_server_port = port;
+    }
+
+    /// Set the initialized bootstrap cache.
+    pub fn bootstrap_cache(&mut self, cache: BootstrapCacheStore) {
+        self.bootstrap_cache = Some(cache);
+    }
+
+    /// Set the initial peers to dial at startup.
+    pub fn initial_peers(&mut self, peers: Vec<Multiaddr>) {
+        self.initial_peers = peers;
+    }
+
+    /// Set the flag to indicate if the node is behind a home network
+    pub fn is_behind_home_network(&mut self, is_behind_home_network: bool) {
+        self.is_behind_home_network = is_behind_home_network;
     }
 
     /// Asynchronously runs a new node instance, setting up the swarm driver,
@@ -163,8 +180,10 @@ impl NodeBuilder {
         network_builder.listen_addr(self.addr);
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_server_port(self.metrics_server_port);
-        network_builder.initial_peers(self.initial_peers.clone());
         network_builder.is_behind_home_network(self.is_behind_home_network);
+        if let Some(cache) = self.bootstrap_cache {
+            network_builder.bootstrap_cache(cache);
+        }
 
         #[cfg(feature = "upnp")]
         network_builder.upnp(self.upnp);

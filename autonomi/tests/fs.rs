@@ -30,13 +30,13 @@ async fn dir_upload_download() -> Result<()> {
     let wallet = get_funded_wallet();
 
     let addr = client
-        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .dir_and_archive_upload_public("tests/file/test_dir".into(), &wallet)
         .await?;
 
     sleep(Duration::from_secs(10)).await;
 
     client
-        .dir_download(addr, "tests/file/test_dir_fetched".into())
+        .dir_download_public(addr, "tests/file/test_dir_fetched".into())
         .await?;
 
     // compare the two directories
@@ -86,11 +86,11 @@ async fn file_into_vault() -> Result<()> {
     let client_sk = bls::SecretKey::random();
 
     let addr = client
-        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .dir_and_archive_upload_public("tests/file/test_dir".into(), &wallet)
         .await?;
     sleep(Duration::from_secs(2)).await;
 
-    let archive = client.archive_get(addr).await?;
+    let archive = client.archive_get_public(addr).await?;
     let set_version = 0;
     client
         .write_bytes_to_vault(
@@ -106,7 +106,8 @@ async fn file_into_vault() -> Result<()> {
 
     let (ap, got_version) = new_client.fetch_and_decrypt_vault(&client_sk).await?;
     assert_eq!(set_version, got_version);
-    let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
+    let ap_archive_fetched =
+        autonomi::client::files::archive_public::PublicArchive::from_bytes(ap)?;
 
     assert_eq!(
         archive, ap_archive_fetched,

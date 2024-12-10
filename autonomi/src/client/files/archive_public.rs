@@ -13,65 +13,31 @@ use std::{
 
 use ant_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
-use super::{
-    data::{CostError, DataAddr, GetError, PutError},
-    Client,
-};
 use ant_evm::{AttoTokens, EvmWallet};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
 
-/// The address of an archive on the network. Points to an [`Archive`].
+use super::archive::Metadata;
+use crate::{
+    client::{
+        data::{CostError, DataAddr, GetError, PutError},
+        files::archive::RenameError,
+    },
+    Client,
+};
+
+/// The address of a public archive on the network. Points to an [`PublicArchive`].
 pub type ArchiveAddr = XorName;
 
-use thiserror::Error;
-
-#[derive(Error, Debug, PartialEq, Eq)]
-pub enum RenameError {
-    #[error("File not found in archive: {0}")]
-    FileNotFound(PathBuf),
-}
-
-/// An archive of files that containing file paths, their metadata and the files data addresses
-/// Using archives is useful for uploading entire directories to the network, only needing to keep track of a single address.
-/// Archives are public meaning anyone can read the data in the archive. For private archives use [`crate::client::archive_private::PrivateArchive`].
+/// Public variant of [`crate::client::files::archive::PrivateArchive`]. Differs in that data maps of files are uploaded
+/// to the network, of which the addresses are stored in this archive.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct Archive {
+pub struct PublicArchive {
     map: HashMap<PathBuf, (DataAddr, Metadata)>,
 }
 
-/// Metadata for a file in an archive. Time values are UNIX timestamps.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Metadata {
-    /// When the file was (last) uploaded to the network.
-    pub uploaded: u64,
-    /// File creation time on local file system. See [`std::fs::Metadata::created`] for details per OS.
-    pub created: u64,
-    /// Last file modification time taken from local file system. See [`std::fs::Metadata::modified`] for details per OS.
-    pub modified: u64,
-    /// File size in bytes
-    pub size: u64,
-}
-
-impl Metadata {
-    /// Create a new metadata struct with the current time as uploaded, created and modified.
-    pub fn new_with_size(size: u64) -> Self {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or(Duration::from_secs(0))
-            .as_secs();
-
-        Self {
-            uploaded: now,
-            created: now,
-            modified: now,
-            size,
-        }
-    }
-}
-
-impl Archive {
+impl PublicArchive {
     /// Create a new emtpy local archive
     /// Note that this does not upload the archive to the network
     pub fn new() -> Self {
@@ -93,13 +59,15 @@ impl Archive {
             .as_secs();
         meta.modified = now;
         self.map.insert(new_path.to_path_buf(), (data_addr, meta));
+        debug!("Renamed file successfully in the archive, old path: {old_path:?} new_path: {new_path:?}");
         Ok(())
     }
 
     /// Add a file to a local archive
     /// Note that this does not upload the archive to the network
     pub fn add_file(&mut self, path: PathBuf, data_addr: DataAddr, meta: Metadata) {
-        self.map.insert(path, (data_addr, meta));
+        self.map.insert(path.clone(), (data_addr, meta));
+        debug!("Added a new file to the archive, path: {:?}", path);
     }
 
     /// List all files in the archive
@@ -129,8 +97,8 @@ impl Archive {
     }
 
     /// Deserialize from bytes.
-    pub fn from_bytes(data: Bytes) -> Result<Archive, rmp_serde::decode::Error> {
-        let root: Archive = rmp_serde::from_slice(&data[..])?;
+    pub fn from_bytes(data: Bytes) -> Result<PublicArchive, rmp_serde::decode::Error> {
+        let root: PublicArchive = rmp_serde::from_slice(&data[..])?;
 
         Ok(root)
     }
@@ -146,28 +114,64 @@ impl Archive {
 
 impl Client {
     /// Fetch an archive from the network
-    pub async fn archive_get(&self, addr: ArchiveAddr) -> Result<Archive, GetError> {
-        let data = self.data_get(addr).await?;
-        Ok(Archive::from_bytes(data)?)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use autonomi::client::{Client, archive::ArchiveAddr};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
+    /// let client = Client::connect(&peers).await?;      
+    /// let archive = client.archive_get_public(ArchiveAddr::random(&mut rand::thread_rng())).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn archive_get_public(&self, addr: ArchiveAddr) -> Result<PublicArchive, GetError> {
+        let data = self.data_get_public(addr).await?;
+        Ok(PublicArchive::from_bytes(data)?)
     }
 
     /// Upload an archive to the network
-    pub async fn archive_put(
+    ///
+    /// # Example
+    ///
+    /// Create simple archive containing `file.txt` pointing to random XOR name.
+    ///
+    /// ```no_run
+    /// # use autonomi::client::{Client, data::DataAddr, archive::{PublicArchive, ArchiveAddr, Metadata}};
+    /// # use std::path::PathBuf;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
+    /// # let client = Client::connect(&peers).await?;
+    /// # let wallet = todo!();
+    /// let mut archive = PublicArchive::new();
+    /// archive.add_file(PathBuf::from("file.txt"), DataAddr::random(&mut rand::thread_rng()), Metadata::new_with_size(0));
+    /// let address = client.archive_put_public(archive, &wallet).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn archive_put_public(
         &self,
-        archive: Archive,
+        archive: PublicArchive,
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, PutError> {
         let bytes = archive
             .into_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
-        self.data_put(bytes, wallet.into()).await
+        let result = self.data_put_public(bytes, wallet.into()).await;
+        debug!("Uploaded archive {archive:?} to the network and the address is {result:?}");
+        result
     }
 
     /// Get the cost to upload an archive
-    pub async fn archive_cost(&self, archive: Archive) -> Result<AttoTokens, CostError> {
+    pub async fn archive_cost(&self, archive: PublicArchive) -> Result<AttoTokens, CostError> {
         let bytes = archive
             .into_bytes()
             .map_err(|e| CostError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
-        self.data_cost(bytes).await
+        let result = self.data_cost(bytes).await;
+        debug!("Calculated the cost to upload archive {archive:?} is {result:?}");
+        result
     }
 }

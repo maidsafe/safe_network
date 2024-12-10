@@ -6,14 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::time::Duration;
-
+use crate::commands::SubCmd;
+use ant_bootstrap::PeersArgs;
 use ant_logging::{LogFormat, LogOutputDest};
-use ant_peers_acquisition::PeersArgs;
 use clap::Parser;
 use color_eyre::Result;
-
-use crate::commands::SubCmd;
+use std::time::Duration;
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
@@ -52,6 +50,12 @@ pub(crate) struct Opt {
     /// The maximum duration to wait for a connection to the network before timing out.
     #[clap(long = "timeout", global = true, value_parser = |t: &str| -> Result<Duration> { Ok(t.parse().map(Duration::from_secs)?) })]
     pub connection_timeout: Option<Duration>,
+
+    /// Specify the network ID to use. This will allow you to run the CLI on a different network.
+    ///
+    /// By default, the network ID is set to 1, which represents the mainnet.
+    #[clap(long, verbatim_doc_comment)]
+    pub network_id: Option<u8>,
 
     /// Prevent verification of data storage on the network.
     ///

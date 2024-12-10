@@ -10,7 +10,7 @@ use crate::{
     config::{self, is_running_as_root},
     print_banner, ServiceManager, VerbosityLevel,
 };
-use ant_peers_acquisition::PeersArgs;
+use ant_bootstrap::PeersArgs;
 use ant_service_management::{auditor::AuditorService, control::ServiceController, NodeRegistry};
 use color_eyre::{eyre::eyre, Result};
 use std::path::PathBuf;

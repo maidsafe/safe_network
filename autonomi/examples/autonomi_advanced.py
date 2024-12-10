@@ -25,7 +25,7 @@ def connect_to_network(peers: list[str]) -> Client:
 
 def upload_data(client: Client, data: bytes, payment: PaymentOption) -> str:
     try:
-        addr = client.data_put(data, payment)
+        addr = client.data_put_public(data, payment)
         print(f"Successfully uploaded data to: {addr}")
         return addr
     except Exception as e:
@@ -34,7 +34,7 @@ def upload_data(client: Client, data: bytes, payment: PaymentOption) -> str:
 
 def download_data(client: Client, addr: str) -> bytes:
     try:
-        data = client.data_get(addr)
+        data = client.data_get_public(addr)
         print(f"Successfully downloaded {len(data)} bytes")
         return data
     except Exception as e:

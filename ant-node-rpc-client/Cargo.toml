@@ -19,7 +19,6 @@ nightly = []
 [dependencies]
 ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
 ant-logging = { path = "../ant-logging", version = "0.2.40" }
-ant-peers-acquisition = { path = "../ant-peers-acquisition", version = "0.5.7" }
 ant-protocol = { path = "../ant-protocol", version = "0.17.15", features=["rpc"] }
 ant-node = { path = "../ant-node", version = "0.112.6" }
 ant-service-management = { path = "../ant-service-management", version = "0.4.3" }
@@ -28,7 +27,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 hex = "~0.4.3"
-libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "kad_0.46.2", features = ["kad"]}
+libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "master", features = ["kad"]}
 libp2p-identity = { version="0.2.7", features = ["rand"] }
 thiserror = "1.0.23"
 # # watch out updating this, protoc compiler needs to be installed on all build systems

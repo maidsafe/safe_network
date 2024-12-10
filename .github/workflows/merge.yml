@@ -127,6 +127,10 @@ jobs:
         timeout-minutes: 25
         run: cargo test --release --package autonomi --lib --features="full,fs"
 
+      - name: Run bootstrap tests
+        timeout-minutes: 25
+        run: cargo test --release --package ant-bootstrap
+
       - name: Run node tests
         timeout-minutes: 25
         run: cargo test --release --package ant-node --lib

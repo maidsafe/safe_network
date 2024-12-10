@@ -11,9 +11,9 @@ mod terminal;
 #[macro_use]
 extern crate tracing;
 
+use ant_bootstrap::PeersArgs;
 #[cfg(target_os = "windows")]
 use ant_node_manager::config::is_running_as_root;
-use ant_peers_acquisition::PeersArgs;
 use clap::Parser;
 use color_eyre::eyre::Result;
 use node_launchpad::{

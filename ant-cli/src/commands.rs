@@ -11,10 +11,9 @@ mod register;
 mod vault;
 mod wallet;
 
+use crate::opt::Opt;
 use clap::Subcommand;
 use color_eyre::Result;
-
-use crate::opt::Opt;
 
 #[derive(Subcommand, Debug)]
 pub enum SubCmd {

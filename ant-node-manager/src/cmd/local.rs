@@ -14,9 +14,9 @@ use crate::{
     local::{kill_network, run_network, LocalNetworkOptions},
     print_banner, status_report, VerbosityLevel,
 };
+use ant_bootstrap::PeersArgs;
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
-use ant_peers_acquisition::PeersArgs;
 use ant_releases::{AntReleaseRepoActions, ReleaseType};
 use ant_service_management::{
     control::ServiceController, get_local_node_registry_path, NodeRegistry,
@@ -36,7 +36,7 @@ pub async fn join(
     log_format: Option<LogFormat>,
     owner: Option<String>,
     owner_prefix: Option<String>,
-    peers_args: PeersArgs,
+    _peers_args: PeersArgs,
     rpc_port: Option<PortRange>,
     rewards_address: RewardsAddress,
     evm_network: Option<EvmNetwork>,
@@ -70,21 +70,6 @@ pub async fn join(
     )
     .await?;
 
-    // If no peers are obtained we will attempt to join the existing local network, if one
-    // is running.
-    let peers = match peers_args.get_peers().await {
-        Ok(peers) => Some(peers),
-        Err(err) => match err {
-            ant_peers_acquisition::error::Error::PeersNotObtained => {
-                warn!("PeersNotObtained, peers is set to None");
-                None
-            }
-            _ => {
-                error!("Failed to obtain peers: {err:?}");
-                return Err(err.into());
-            }
-        },
-    };
     let options = LocalNetworkOptions {
         antnode_bin_path,
         enable_metrics_server,
@@ -95,7 +80,7 @@ pub async fn join(
         node_port,
         owner,
         owner_prefix,
-        peers,
+        peers: None,
         rpc_port,
         skip_validation,
         log_format,

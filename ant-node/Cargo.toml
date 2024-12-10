@@ -17,22 +17,20 @@ path = "src/bin/antnode/main.rs"
 default = ["metrics", "upnp", "open-metrics", "encrypt-records"]
 encrypt-records = ["ant-networking/encrypt-records"]
 extension-module = ["pyo3/extension-module"]
-local = ["ant-networking/local", "ant-evm/local"]
+local = ["ant-networking/local", "ant-evm/local", "ant-bootstrap/local"]
 loud = ["ant-networking/loud"] # loud mode: print important messages to console
 metrics = ["ant-logging/process-metrics"]
-network-contacts = ["ant-peers-acquisition/network-contacts"]
 nightly = []
 open-metrics = ["ant-networking/open-metrics", "prometheus-client"]
 otlp = ["ant-logging/otlp"]
 upnp = ["ant-networking/upnp"]
-websockets = ["ant-networking/websockets"]
 
 [dependencies]
+ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
 ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
 ant-evm = { path = "../ant-evm", version = "0.1.4" }
 ant-logging = { path = "../ant-logging", version = "0.2.40" }
 ant-networking = { path = "../ant-networking", version = "0.19.5" }
-ant-peers-acquisition = { path = "../ant-peers-acquisition", version = "0.5.7" }
 ant-protocol = { path = "../ant-protocol", version = "0.17.15" }
 ant-registers = { path = "../ant-registers", version = "0.4.3" }
 ant-service-management = { path = "../ant-service-management", version = "0.4.3" }
@@ -51,7 +49,7 @@ file-rotate = "0.7.3"
 futures = "~0.3.13"
 hex = "~0.4.3"
 itertools = "~0.12.1"
-libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "kad_0.46.2", features = ["tokio", "dns", "kad", "macros"] }
+libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "master", features = ["tokio", "dns", "kad", "macros"] }
 num-traits = "0.2"
 prometheus-client = { version = "0.22", optional = true }
 # watch out updating this, protoc compiler needs to be installed on all build systems

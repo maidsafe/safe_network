@@ -2,15 +2,13 @@
 #![allow(non_local_definitions)]
 
 use crate::client::{
-    archive::ArchiveAddr,
-    archive_private::PrivateArchiveAccess,
-    data_private::PrivateDataAccess,
+    data::DataMapChunk,
+    files::{archive::PrivateArchiveAccess, archive_public::ArchiveAddr},
     payment::PaymentOption as RustPaymentOption,
     vault::{UserData, VaultSecretKey},
     Client as RustClient,
 };
-use crate::{Bytes, Wallet as RustWallet};
-use ant_evm::EvmNetwork;
+use crate::{Bytes, Network, Wallet as RustWallet};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use xor_name::XorName;
@@ -40,40 +38,36 @@ impl PyClient {
         Ok(Self { inner: client })
     }
 
-    fn private_data_put(
-        &self,
-        data: Vec<u8>,
-        payment: &PyPaymentOption,
-    ) -> PyResult<PyPrivateDataAccess> {
+    fn data_put(&self, data: Vec<u8>, payment: &PyPaymentOption) -> PyResult<PyDataMapChunk> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let access = rt
             .block_on(
                 self.inner
-                    .private_data_put(Bytes::from(data), payment.inner.clone()),
+                    .data_put(Bytes::from(data), payment.inner.clone()),
             )
             .map_err(|e| {
                 pyo3::exceptions::PyValueError::new_err(format!("Failed to put private data: {e}"))
             })?;
 
-        Ok(PyPrivateDataAccess { inner: access })
+        Ok(PyDataMapChunk { inner: access })
     }
 
-    fn private_data_get(&self, access: &PyPrivateDataAccess) -> PyResult<Vec<u8>> {
+    fn data_get(&self, access: &PyDataMapChunk) -> PyResult<Vec<u8>> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let data = rt
-            .block_on(self.inner.private_data_get(access.inner.clone()))
+            .block_on(self.inner.data_get(access.inner.clone()))
             .map_err(|e| {
                 pyo3::exceptions::PyValueError::new_err(format!("Failed to get private data: {e}"))
             })?;
         Ok(data.to_vec())
     }
 
-    fn data_put(&self, data: Vec<u8>, payment: &PyPaymentOption) -> PyResult<String> {
+    fn data_put_public(&self, data: Vec<u8>, payment: &PyPaymentOption) -> PyResult<String> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let addr = rt
             .block_on(
                 self.inner
-                    .data_put(bytes::Bytes::from(data), payment.inner.clone()),
+                    .data_put_public(bytes::Bytes::from(data), payment.inner.clone()),
             )
             .map_err(|e| {
                 pyo3::exceptions::PyValueError::new_err(format!("Failed to put data: {e}"))
@@ -82,13 +76,13 @@ impl PyClient {
         Ok(crate::client::address::addr_to_str(addr))
     }
 
-    fn data_get(&self, addr: &str) -> PyResult<Vec<u8>> {
+    fn data_get_public(&self, addr: &str) -> PyResult<Vec<u8>> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let addr = crate::client::address::str_to_addr(addr).map_err(|e| {
             pyo3::exceptions::PyValueError::new_err(format!("Invalid address: {e}"))
         })?;
 
-        let data = rt.block_on(self.inner.data_get(addr)).map_err(|e| {
+        let data = rt.block_on(self.inner.data_get_public(addr)).map_err(|e| {
             pyo3::exceptions::PyValueError::new_err(format!("Failed to get data: {e}"))
         })?;
 
@@ -176,7 +170,7 @@ impl PyWallet {
     #[new]
     fn new(private_key: String) -> PyResult<Self> {
         let wallet = RustWallet::new_from_private_key(
-            EvmNetwork::ArbitrumOne, // TODO: Make this configurable
+            Network::ArbitrumOne, // TODO: Make this configurable
             &private_key,
         )
         .map_err(|e| {
@@ -300,17 +294,17 @@ impl PyUserData {
     }
 }
 
-#[pyclass(name = "PrivateDataAccess")]
+#[pyclass(name = "DataMapChunk")]
 #[derive(Clone)]
-pub(crate) struct PyPrivateDataAccess {
-    inner: PrivateDataAccess,
+pub(crate) struct PyDataMapChunk {
+    inner: DataMapChunk,
 }
 
 #[pymethods]
-impl PyPrivateDataAccess {
+impl PyDataMapChunk {
     #[staticmethod]
     fn from_hex(hex: &str) -> PyResult<Self> {
-        PrivateDataAccess::from_hex(hex)
+        DataMapChunk::from_hex(hex)
             .map(|access| Self { inner: access })
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid hex: {e}")))
     }
@@ -348,7 +342,7 @@ fn autonomi_client_module(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPaymentOption>()?;
     m.add_class::<PyVaultSecretKey>()?;
     m.add_class::<PyUserData>()?;
-    m.add_class::<PyPrivateDataAccess>()?;
+    m.add_class::<PyDataMapChunk>()?;
     m.add_function(wrap_pyfunction!(encrypt, m)?)?;
     Ok(())
 }

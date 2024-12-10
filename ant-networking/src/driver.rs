@@ -21,21 +21,21 @@ use crate::{
     record_store_api::UnifiedRecordStore,
     relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
+    target_arch::Interval,
     target_arch::{interval, spawn, Instant},
-    GetRecordError, Network, CLOSE_GROUP_SIZE,
+    transport, GetRecordError, Network, NodeIssue, CLOSE_GROUP_SIZE,
 };
 #[cfg(feature = "open-metrics")]
 use crate::{
     metrics::service::run_metrics_server, metrics::NetworkMetricsRecorder, MetricsRegistries,
 };
-use crate::{transport, NodeIssue};
-
+use ant_bootstrap::BootstrapCacheStore;
 use ant_evm::PaymentQuote;
 use ant_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
     storage::{try_deserialize_record, RetryStrategy},
     version::{
-        get_key_version_str, IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR,
+        get_network_id, IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR,
         IDENTIFY_PROTOCOL_STR, REQ_RESPONSE_VERSION_STR,
     },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
@@ -239,6 +239,12 @@ pub enum VerificationKind {
     },
 }
 
+impl From<std::convert::Infallible> for NodeEvent {
+    fn from(_: std::convert::Infallible) -> Self {
+        panic!("NodeBehaviour is not Infallible!")
+    }
+}
+
 /// The behaviors are polled in the order they are defined.
 /// The first struct member is polled until it returns Poll::Pending before moving on to later members.
 /// Prioritize the behaviors related to connection handling.
@@ -260,17 +266,17 @@ pub(super) struct NodeBehaviour {
 
 #[derive(Debug)]
 pub struct NetworkBuilder {
+    bootstrap_cache: Option<BootstrapCacheStore>,
+    concurrency_limit: Option<usize>,
     is_behind_home_network: bool,
     keypair: Keypair,
-    local: bool,
     listen_addr: Option<SocketAddr>,
-    request_timeout: Option<Duration>,
-    concurrency_limit: Option<usize>,
-    initial_peers: Vec<Multiaddr>,
+    local: bool,
     #[cfg(feature = "open-metrics")]
     metrics_registries: Option<MetricsRegistries>,
     #[cfg(feature = "open-metrics")]
     metrics_server_port: Option<u16>,
+    request_timeout: Option<Duration>,
     #[cfg(feature = "upnp")]
     upnp: bool,
 }
@@ -278,20 +284,24 @@ pub struct NetworkBuilder {
 impl NetworkBuilder {
     pub fn new(keypair: Keypair, local: bool) -> Self {
         Self {
+            bootstrap_cache: None,
+            concurrency_limit: None,
             is_behind_home_network: false,
             keypair,
-            local,
             listen_addr: None,
-            request_timeout: None,
-            concurrency_limit: None,
-            initial_peers: Default::default(),
+            local,
             #[cfg(feature = "open-metrics")]
             metrics_registries: None,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: None,
+            request_timeout: None,
             #[cfg(feature = "upnp")]
             upnp: false,
         }
+    }
+
+    pub fn bootstrap_cache(&mut self, bootstrap_cache: BootstrapCacheStore) {
+        self.bootstrap_cache = Some(bootstrap_cache);
     }
 
     pub fn is_behind_home_network(&mut self, enable: bool) {
@@ -308,10 +318,6 @@ impl NetworkBuilder {
 
     pub fn concurrency_limit(&mut self, concurrency_limit: usize) {
         self.concurrency_limit = Some(concurrency_limit);
-    }
-
-    pub fn initial_peers(&mut self, initial_peers: Vec<Multiaddr>) {
-        self.initial_peers = initial_peers;
     }
 
     /// Set the registries used inside the metrics server.
@@ -388,7 +394,7 @@ impl NetworkBuilder {
             check_and_wipe_storage_dir_if_necessary(
                 root_dir.clone(),
                 storage_dir_path.clone(),
-                get_key_version_str(),
+                get_network_id(),
             )?;
 
             // Configures the disk_store to store records under the provided path and increase the max record size
@@ -425,7 +431,6 @@ impl NetworkBuilder {
             Some(store_cfg),
             false,
             ProtocolSupport::Full,
-            IDENTIFY_NODE_VERSION_STR.to_string(),
             #[cfg(feature = "upnp")]
             upnp,
         )?;
@@ -440,17 +445,6 @@ impl NetworkBuilder {
         swarm_driver
             .listen_on(addr_quic)
             .expect("Multiaddr should be supported by our configured transports");
-
-        // Listen on WebSocket
-        #[cfg(any(feature = "websockets", target_arch = "wasm32"))]
-        {
-            let addr_ws = Multiaddr::from(listen_socket_addr.ip())
-                .with(Protocol::Tcp(listen_socket_addr.port()))
-                .with(Protocol::Ws("/".into()));
-            swarm_driver
-                .listen_on(addr_ws)
-                .expect("Multiaddr should be supported by our configured transports");
-        }
 
         Ok((network, events_receiver, swarm_driver))
     }
@@ -476,7 +470,6 @@ impl NetworkBuilder {
             None,
             true,
             ProtocolSupport::Outbound,
-            IDENTIFY_CLIENT_VERSION_STR.to_string(),
             #[cfg(feature = "upnp")]
             false,
         )?;
@@ -491,9 +484,13 @@ impl NetworkBuilder {
         record_store_cfg: Option<NodeRecordStoreConfig>,
         is_client: bool,
         req_res_protocol: ProtocolSupport,
-        identify_version: String,
         #[cfg(feature = "upnp")] upnp: bool,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+        let identify_protocol_str = IDENTIFY_PROTOCOL_STR
+            .read()
+            .expect("Failed to obtain read lock for IDENTIFY_PROTOCOL_STR")
+            .clone();
+
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         #[cfg(not(target_arch = "wasm32"))]
@@ -557,7 +554,7 @@ impl NetworkBuilder {
                 "The protocol version string that is used to connect to the correct network",
                 Info::new(vec![(
                     "identify_protocol_str".to_string(),
-                    IDENTIFY_PROTOCOL_STR.to_string(),
+                    identify_protocol_str.clone(),
                 )]),
             );
 
@@ -571,14 +568,16 @@ impl NetworkBuilder {
         let request_response = {
             let cfg = RequestResponseConfig::default()
                 .with_request_timeout(self.request_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S));
+            let req_res_version_str = REQ_RESPONSE_VERSION_STR
+                .read()
+                .expect("Failed to obtain read lock for REQ_RESPONSE_VERSION_STR")
+                .clone();
 
-            info!(
-                "Building request response with {:?}",
-                REQ_RESPONSE_VERSION_STR.as_str()
-            );
+            info!("Building request response with {req_res_version_str:?}",);
             request_response::cbor::Behaviour::new(
                 [(
-                    StreamProtocol::new(&REQ_RESPONSE_VERSION_STR),
+                    StreamProtocol::try_from_owned(req_res_version_str)
+                        .expect("StreamProtocol should start with a /"),
                     req_res_protocol,
                 )],
                 cfg,
@@ -634,15 +633,24 @@ impl NetworkBuilder {
         #[cfg(feature = "local")]
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
+        let agent_version = if is_client {
+            IDENTIFY_CLIENT_VERSION_STR
+                .read()
+                .expect("Failed to obtain read lock for IDENTIFY_CLIENT_VERSION_STR")
+                .clone()
+        } else {
+            IDENTIFY_NODE_VERSION_STR
+                .read()
+                .expect("Failed to obtain read lock for IDENTIFY_NODE_VERSION_STR")
+                .clone()
+        };
         // Identify Behaviour
-        let identify_protocol_str = IDENTIFY_PROTOCOL_STR.to_string();
-        info!("Building Identify with identify_protocol_str: {identify_protocol_str:?} and identify_version: {identify_version:?}");
+        info!("Building Identify with identify_protocol_str: {identify_protocol_str:?} and identify_protocol_str: {identify_protocol_str:?}");
         let identify = {
-            let mut cfg =
-                libp2p::identify::Config::new(identify_protocol_str, self.keypair.public())
-                    .with_agent_version(identify_version);
-            // Enlength the identify interval from default 5 mins to 1 hour.
-            cfg.interval = RESEND_IDENTIFY_INVERVAL;
+            let cfg = libp2p::identify::Config::new(identify_protocol_str, self.keypair.public())
+                .with_agent_version(agent_version)
+                // Enlength the identify interval from default 5 mins to 1 hour.
+                .with_interval(RESEND_IDENTIFY_INVERVAL);
             libp2p::identify::Behaviour::new(cfg)
         };
 
@@ -720,6 +728,7 @@ impl NetworkBuilder {
             close_group: Vec::with_capacity(CLOSE_GROUP_SIZE),
             peers_in_rt: 0,
             bootstrap,
+            bootstrap_cache: self.bootstrap_cache,
             relay_manager,
             connected_relay_clients: Default::default(),
             external_address_manager,
@@ -815,6 +824,7 @@ pub struct SwarmDriver {
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousNetworkDiscover,
+    pub(crate) bootstrap_cache: Option<BootstrapCacheStore>,
     pub(crate) external_address_manager: Option<ExternalAddressManager>,
     pub(crate) relay_manager: Option<RelayManager>,
     /// The peers that are using our relay service.
@@ -843,7 +853,7 @@ pub struct SwarmDriver {
     pub(crate) bootstrap_peers: BTreeMap<Option<u32>, HashSet<PeerId>>,
     // Peers that having live connection to. Any peer got contacted during kad network query
     // will have live connection established. And they may not appear in the RT.
-    pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Instant)>,
+    pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Multiaddr, Instant)>,
     /// The list of recently established connections ids.
     /// This is used to prevent log spamming.
     pub(crate) latest_established_connection_ids: HashMap<usize, (IpAddr, Instant)>,
@@ -875,6 +885,24 @@ impl SwarmDriver {
         let mut network_discover_interval = interval(NETWORK_DISCOVER_INTERVAL);
         let mut set_farthest_record_interval = interval(CLOSET_RECORD_CHECK_INTERVAL);
         let mut relay_manager_reservation_interval = interval(RELAY_MANAGER_RESERVATION_INTERVAL);
+
+        let mut bootstrap_cache_save_interval = self.bootstrap_cache.as_ref().and_then(|cache| {
+            if cache.config().disable_cache_writing {
+                None
+            } else {
+                // add a variance of 10% to the interval, to avoid all nodes writing to disk at the same time.
+                let duration =
+                    Self::duration_with_variance(cache.config().min_cache_save_duration, 10);
+                Some(interval(duration))
+            }
+        });
+        if let Some(interval) = bootstrap_cache_save_interval.as_mut() {
+            interval.tick().await; // first tick completes immediately
+            info!(
+                "Bootstrap cache save interval is set to {:?}",
+                interval.period()
+            );
+        }
 
         // temporarily skip processing IncomingConnectionError swarm event to avoid log spamming
         let mut previous_incoming_connection_error_event = None;
@@ -1004,6 +1032,55 @@ impl SwarmDriver {
                     if let Some(relay_manager) = &mut self.relay_manager {
                         relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes)
                     }
+                },
+                Some(()) = Self::conditional_interval(&mut bootstrap_cache_save_interval) => {
+                    let Some(bootstrap_cache) = self.bootstrap_cache.as_mut() else {
+                        continue;
+                    };
+                    let Some(current_interval) = bootstrap_cache_save_interval.as_mut() else {
+                        continue;
+                    };
+                    let start = Instant::now();
+
+                    let config = bootstrap_cache.config().clone();
+                    let mut old_cache = bootstrap_cache.clone();
+
+                    let new = match BootstrapCacheStore::new(config) {
+                        Ok(new) => new,
+                        Err(err) => {
+                            error!("Failed to create a new empty cache: {err}");
+                            continue;
+                        }
+                    };
+                    *bootstrap_cache = new;
+
+                    // save the cache to disk
+                    spawn(async move {
+                        if let Err(err) = old_cache.sync_and_flush_to_disk(true) {
+                            error!("Failed to save bootstrap cache: {err}");
+                        }
+                    });
+
+                    if current_interval.period() >= bootstrap_cache.config().max_cache_save_duration {
+                        continue;
+                    }
+
+                    // add a variance of 1% to the max interval to avoid all nodes writing to disk at the same time.
+                    let max_cache_save_duration =
+                        Self::duration_with_variance(bootstrap_cache.config().max_cache_save_duration, 1);
+
+                    // scale up the interval until we reach the max
+                    let scaled = current_interval.period().as_secs().saturating_mul(bootstrap_cache.config().cache_save_scaling_factor);
+                    let new_duration = Duration::from_secs(std::cmp::min(scaled, max_cache_save_duration.as_secs()));
+                    info!("Scaling up the bootstrap cache save interval to {new_duration:?}");
+
+                    // `Interval` ticks immediately for Tokio, but not for `wasmtimer`, which is used for wasm32.
+                    *current_interval = interval(new_duration);
+                    #[cfg(not(target_arch = "wasm32"))]
+                    current_interval.tick().await;
+
+                    trace!("Bootstrap cache synced in {:?}", start.elapsed());
+
                 },
             }
         }
@@ -1156,13 +1233,35 @@ impl SwarmDriver {
         info!("Listening on {id:?} with addr: {addr:?}");
         Ok(())
     }
+
+    /// Returns a new duration that is within +/- variance of the provided duration.
+    fn duration_with_variance(duration: Duration, variance: u32) -> Duration {
+        let actual_variance = duration / variance;
+        let random_adjustment =
+            Duration::from_secs(rand::thread_rng().gen_range(0..actual_variance.as_secs()));
+        if random_adjustment.as_secs() % 2 == 0 {
+            duration - random_adjustment
+        } else {
+            duration + random_adjustment
+        }
+    }
+
+    /// To tick an optional interval inside tokio::select! without looping forever.
+    async fn conditional_interval(i: &mut Option<Interval>) -> Option<()> {
+        match i {
+            Some(i) => {
+                i.tick().await;
+                Some(())
+            }
+            None => None,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::check_and_wipe_storage_dir_if_necessary;
-
-    use std::{fs, io::Read};
+    use std::{fs, io::Read, time::Duration};
 
     #[tokio::test]
     async fn version_file_update() {
@@ -1218,5 +1317,19 @@ mod tests {
         }
         // The storage_dir shall be removed as version_key changed
         assert!(fs::metadata(storage_dir.clone()).is_err());
+    }
+
+    #[tokio::test]
+    async fn test_duration_variance_fn() {
+        let duration = Duration::from_secs(100);
+        let variance = 10;
+        for _ in 0..10000 {
+            let new_duration = crate::SwarmDriver::duration_with_variance(duration, variance);
+            if new_duration < duration - duration / variance
+                || new_duration > duration + duration / variance
+            {
+                panic!("new_duration: {new_duration:?} is not within the expected range",);
+            }
+        }
     }
 }

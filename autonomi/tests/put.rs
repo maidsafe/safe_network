@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-#![cfg(feature = "data")]
-
 use ant_logging::LogBuilder;
 use autonomi::Client;
 use eyre::Result;
@@ -23,11 +21,11 @@ async fn put() -> Result<()> {
     let wallet = get_funded_wallet();
     let data = gen_random_data(1024 * 1024 * 10);
 
-    let addr = client.data_put(data.clone(), wallet.into()).await?;
+    let addr = client.data_put_public(data.clone(), wallet.into()).await?;
 
     sleep(Duration::from_secs(10)).await;
 
-    let data_fetched = client.data_get(addr).await?;
+    let data_fetched = client.data_get_public(addr).await?;
     assert_eq!(data, data_fetched, "data fetched should match data put");
 
     Ok(())

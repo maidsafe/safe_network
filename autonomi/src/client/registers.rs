@@ -96,7 +96,11 @@ impl Register {
         if let Some(value) = initial_value {
             register.write_atop(&value, &owner)?;
         }
-
+        debug!(
+            "Created register {:?} with address: {:?}",
+            register,
+            register.address()
+        );
         Ok(register)
     }
 
@@ -166,10 +170,12 @@ impl Client {
             }
         }
 
-        Ok(Register {
+        let register = Register {
             signed_reg,
             crdt_reg,
-        })
+        };
+        debug!("Fetched register {register:?} from the address: {address} in the network");
+        Ok(register)
     }
 
     /// Updates a Register on the network with a new value. This will overwrite existing value(s).
@@ -217,7 +223,11 @@ impl Client {
                     register.address()
                 )
             })?;
-
+        debug!(
+            "Updated register {:?} with new value {:?}",
+            register.address(),
+            new_value
+        );
         Ok(())
     }
 
@@ -244,7 +254,7 @@ impl Client {
                 .map(|quote| quote.2.cost.as_atto())
                 .sum::<Amount>(),
         );
-
+        debug!("Calculated the cost to create register with name: {name} is {total_cost}");
         Ok(total_cost)
     }
 
@@ -255,12 +265,12 @@ impl Client {
         RegisterAddress::new(name, pk)
     }
 
-    /// Creates a new Register with a name and an initial value and uploads it to the network.
+    /// Creates a new Register with a name and optional initial value and uploads it to the network.
     ///
     /// The Register is created with the owner as the only writer.
     pub async fn register_create(
         &self,
-        value: Bytes,
+        value: Option<Bytes>,
         name: &str,
         owner: RegisterSecretKey,
         wallet: &EvmWallet,
@@ -272,12 +282,12 @@ impl Client {
             .await
     }
 
-    /// Creates a new Register with a name and an initial value and uploads it to the network.
+    /// Creates a new Register with a name and optional initial value and uploads it to the network.
     ///
     /// Unlike `register_create`, this function allows you to specify the permissions for the register.
     pub async fn register_create_with_permissions(
         &self,
-        value: Bytes,
+        value: Option<Bytes>,
         name: &str,
         owner: RegisterSecretKey,
         permissions: RegisterPermissions,
@@ -287,7 +297,7 @@ impl Client {
         let name = XorName::from_content_parts(&[name.as_bytes()]);
 
         // Owner can write to the register.
-        let register = Register::new(Some(value), name, owner, permissions)?;
+        let register = Register::new(value, name, owner, permissions)?;
         let address = register.address();
 
         let reg_xor = address.xorname();

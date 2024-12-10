@@ -13,25 +13,62 @@ use std::{
 
 use ant_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
-use super::{
-    archive::{Metadata, RenameError},
-    data::{GetError, PutError},
-    data_private::PrivateDataAccess,
+use crate::{
+    client::{
+        data::{DataMapChunk, GetError, PutError},
+        payment::PaymentOption,
+    },
     Client,
 };
-use crate::client::payment::PaymentOption;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-/// The address of a private archive
-/// Contains the [`PrivateDataAccess`] leading to the [`PrivateArchive`] data
-pub type PrivateArchiveAccess = PrivateDataAccess;
+/// Private archive data map, allowing access to the [`PrivateArchive`] data.
+pub type PrivateArchiveAccess = DataMapChunk;
 
-/// A private archive of files that containing file paths, their metadata and the files data maps
-/// Using archives is useful for uploading entire directories to the network, only needing to keep track of a single address.
+#[derive(Error, Debug, PartialEq, Eq)]
+pub enum RenameError {
+    #[error("File not found in archive: {0}")]
+    FileNotFound(PathBuf),
+}
+
+/// Metadata for a file in an archive. Time values are UNIX timestamps.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Metadata {
+    /// When the file was (last) uploaded to the network.
+    pub uploaded: u64,
+    /// File creation time on local file system. See [`std::fs::Metadata::created`] for details per OS.
+    pub created: u64,
+    /// Last file modification time taken from local file system. See [`std::fs::Metadata::modified`] for details per OS.
+    pub modified: u64,
+    /// File size in bytes
+    pub size: u64,
+}
+
+impl Metadata {
+    /// Create a new metadata struct with the current time as uploaded, created and modified.
+    pub fn new_with_size(size: u64) -> Self {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_secs();
+
+        Self {
+            uploaded: now,
+            created: now,
+            modified: now,
+            size,
+        }
+    }
+}
+
+/// Directory structure mapping filepaths to their data maps and metadata.
+///
+/// The data maps are stored within this structure instead of uploading them to the network, keeping the data private.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct PrivateArchive {
-    map: HashMap<PathBuf, (PrivateDataAccess, Metadata)>,
+    map: HashMap<PathBuf, (DataMapChunk, Metadata)>,
 }
 
 impl PrivateArchive {
@@ -56,13 +93,15 @@ impl PrivateArchive {
             .as_secs();
         meta.modified = now;
         self.map.insert(new_path.to_path_buf(), (data_addr, meta));
+        debug!("Renamed file successfully in the private archive, old path: {old_path:?} new_path: {new_path:?}");
         Ok(())
     }
 
     /// Add a file to a local archive
     /// Note that this does not upload the archive to the network
-    pub fn add_file(&mut self, path: PathBuf, data_map: PrivateDataAccess, meta: Metadata) {
-        self.map.insert(path, (data_map, meta));
+    pub fn add_file(&mut self, path: PathBuf, data_map: DataMapChunk, meta: Metadata) {
+        self.map.insert(path.clone(), (data_map, meta));
+        debug!("Added a new file to the archive, path: {:?}", path);
     }
 
     /// List all files in the archive
@@ -74,23 +113,24 @@ impl PrivateArchive {
     }
 
     /// List all data addresses of the files in the archive
-    pub fn addresses(&self) -> Vec<PrivateDataAccess> {
+    pub fn addresses(&self) -> Vec<DataMapChunk> {
         self.map
             .values()
             .map(|(data_map, _)| data_map.clone())
             .collect()
     }
 
-    /// Iterate over the archive items
-    /// Returns an iterator over (PathBuf, SecretDataMap, Metadata)
-    pub fn iter(&self) -> impl Iterator<Item = (&PathBuf, &PrivateDataAccess, &Metadata)> {
+    /// Iterate over the archive items.
+    ///
+    /// Returns an iterator over ([`PathBuf`], [`DataMapChunk`], [`Metadata`])
+    pub fn iter(&self) -> impl Iterator<Item = (&PathBuf, &DataMapChunk, &Metadata)> {
         self.map
             .iter()
             .map(|(path, (data_map, meta))| (path, data_map, meta))
     }
 
     /// Get the underlying map
-    pub fn map(&self) -> &HashMap<PathBuf, (PrivateDataAccess, Metadata)> {
+    pub fn map(&self) -> &HashMap<PathBuf, (DataMapChunk, Metadata)> {
         &self.map
     }
 
@@ -111,17 +151,17 @@ impl PrivateArchive {
 }
 
 impl Client {
-    /// Fetch a private archive from the network
-    pub async fn private_archive_get(
+    /// Fetch a [`PrivateArchive`] from the network
+    pub async fn archive_get(
         &self,
         addr: PrivateArchiveAccess,
     ) -> Result<PrivateArchive, GetError> {
-        let data = self.private_data_get(addr).await?;
+        let data = self.data_get(addr).await?;
         Ok(PrivateArchive::from_bytes(data)?)
     }
 
-    /// Upload a private archive to the network
-    pub async fn private_archive_put(
+    /// Upload a [`PrivateArchive`] to the network
+    pub async fn archive_put(
         &self,
         archive: PrivateArchive,
         payment_option: PaymentOption,
@@ -129,6 +169,8 @@ impl Client {
         let bytes = archive
             .into_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
-        self.private_data_put(bytes, payment_option).await
+        let result = self.data_put(bytes, payment_option).await;
+        debug!("Uploaded private archive {archive:?} to the network and address is {result:?}");
+        result
     }
 }

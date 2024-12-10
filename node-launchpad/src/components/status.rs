@@ -31,9 +31,9 @@ use crate::{
         clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE,
     },
 };
+use ant_bootstrap::PeersArgs;
 use ant_node_manager::add_services::config::PortRange;
 use ant_node_manager::config::get_node_registry_path;
-use ant_peers_acquisition::PeersArgs;
 use ant_service_management::{
     control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
 };

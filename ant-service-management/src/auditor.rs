@@ -54,17 +54,6 @@ impl ServiceStateActions for AuditorService<'_> {
             OsString::from(self.service_data.log_dir_path.to_string_lossy().to_string()),
         ];
 
-        if !options.bootstrap_peers.is_empty() {
-            let peers_str = options
-                .bootstrap_peers
-                .iter()
-                .map(|peer| peer.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
-            args.push(OsString::from("--peer"));
-            args.push(OsString::from(peers_str));
-        }
-
         args.push(OsString::from("server"));
 
         Ok(ServiceInstallCtx {
