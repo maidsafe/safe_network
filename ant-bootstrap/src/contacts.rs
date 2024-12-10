@@ -214,6 +214,14 @@ impl ContactsFetcher {
                     "Successfully parsed JSON response with {} peers",
                     json_endpoints.peers.len()
                 );
+                let our_network_version = crate::get_network_version();
+
+                if json_endpoints.network_version != our_network_version {
+                    warn!(
+                        "Network version mismatch. Expected: {our_network_version}, got: {}. Skipping.", json_endpoints.network_version
+                    );
+                    return Ok(vec![]);
+                }
                 let bootstrap_addresses = json_endpoints
                     .peers
                     .into_iter()
