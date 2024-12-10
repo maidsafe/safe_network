@@ -668,6 +668,7 @@ impl SwarmDriver {
                             }
                             RecordKind::ChunkWithPayment
                             | RecordKind::RegisterWithPayment
+                            | RecordKind::TransactionWithPayment
                             | RecordKind::ScratchpadWithPayment => {
                                 error!("Record {record_key:?} with payment shall not be stored locally.");
                                 return Err(NetworkError::InCorrectRecordHeader);
