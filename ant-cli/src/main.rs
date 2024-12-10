@@ -34,6 +34,9 @@ use tracing::Level;
 async fn main() -> Result<()> {
     color_eyre::install().expect("Failed to initialise error handler");
     let opt = Opt::parse();
+    if let Some(network_id) = opt.network_id {
+        ant_protocol::version::set_network_id(network_id);
+    }
     let _log_guards = init_logging_and_metrics(&opt)?;
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));

@@ -23,7 +23,6 @@ local = ["ant-networking/local", "ant-evm/local"]
 loud = []
 registers = []
 vault = ["registers"]
-websockets = ["ant-networking/websockets"]
 
 [dependencies]
 ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
