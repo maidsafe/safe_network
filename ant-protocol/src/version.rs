@@ -47,33 +47,18 @@ lazy_static! {
         ));
 }
 
-/// Update the NETWORK_ID and all the version strings that depend on it.
+/// Update the NETWORK_ID. The other version strings will reference this value.
 /// By default, the network id is set to 1 which represents the mainnet.
 ///
 /// This should be called before starting the node or client.
 /// The values will be read often and this can cause issues if the values are changed after the node is started.
 pub fn set_network_id(id: u8) {
+    info!("Setting network id to: {id}");
     let mut network_id = NETWORK_ID
         .write()
         .expect("Failed to obtain write lock for NETWORK_ID");
     *network_id = id;
-
-    let mut node_version = IDENTIFY_NODE_VERSION_STR
-        .write()
-        .expect("Failed to obtain write lock for IDENTIFY_NODE_VERSION_STR");
-    *node_version = format!("ant/node/{}/{}", get_truncate_version_str(), id);
-    let mut client_version = IDENTIFY_CLIENT_VERSION_STR
-        .write()
-        .expect("Failed to obtain write lock for IDENTIFY_CLIENT_VERSION_STR");
-    *client_version = format!("ant/client/{}/{}", get_truncate_version_str(), id);
-    let mut req_response_version = REQ_RESPONSE_VERSION_STR
-        .write()
-        .expect("Failed to obtain write lock for REQ_RESPONSE_VERSION_STR");
-    *req_response_version = format!("/ant/{}/{}", get_truncate_version_str(), id);
-    let mut identify_protocol = IDENTIFY_PROTOCOL_STR
-        .write()
-        .expect("Failed to obtain write lock for IDENTIFY_PROTOCOL_STR");
-    *identify_protocol = format!("ant/{}/{}", get_truncate_version_str(), id);
+    info!("Network id set to: {id}");
 }
 
 /// Get the current NETWORK_ID as string.
@@ -104,6 +89,7 @@ mod tests {
 
     #[test]
     fn test_print_version_strings() -> Result<(), Box<dyn std::error::Error>> {
+        set_network_id(3);
         println!(
             "\nIDENTIFY_NODE_VERSION_STR: {}",
             *IDENTIFY_NODE_VERSION_STR
