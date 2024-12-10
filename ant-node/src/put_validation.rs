@@ -203,10 +203,6 @@ impl Node {
 
                 let already_exists = self.validate_key_and_existence(&net_addr, &key).await?;
 
-                // The transaction may already exist during the replication.
-                // The payment shall get deposit to self even the transaction already presents.
-                // However, if the transaction already presents, the incoming one maybe for edit only.
-                // Hence the corresponding payment error shall not be thrown out.
                 if let Err(err) = self
                     .payment_for_us_exists_and_is_still_valid(&net_addr, payment)
                     .await
@@ -565,7 +561,7 @@ impl Node {
         Ok(())
     }
 
-    /// Validate and store `Vec<AAATransaction>` to the RecordStore
+    /// Validate and store `Vec<Transaction>` to the RecordStore
     /// If we already have a transaction at this address, the Vec is extended and stored.
     pub(crate) async fn validate_merge_and_store_transactions(
         &self,
