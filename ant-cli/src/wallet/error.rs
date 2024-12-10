@@ -24,8 +24,8 @@ pub enum Error {
     FailedToCreateWalletsFolder,
     #[error("Could not find private key file")]
     PrivateKeyFileNotFound,
-    #[error("No wallets found. Create one using `wallet create`")]
-    NoWalletsFound,
+    #[error("No wallets found and No secret Keys found in ENV, create one using `wallet create`")]
+    NoWalletsFoundAndNoSecretKeysInEnv,
     #[error("Invalid wallet selection input")]
     InvalidSelection,
 }

@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::keys::get_secret_key_from_env;
 use crate::wallet::encryption::{decrypt_private_key, encrypt_private_key};
 use crate::wallet::error::Error;
 use crate::wallet::input::{get_password_input, get_wallet_selection_input};
@@ -133,7 +134,11 @@ pub(crate) fn select_wallet_address() -> Result<String, Error> {
     let wallet_files = get_wallet_files(&wallets_folder)?;
 
     let wallet_address = match wallet_files.len() {
-        0 => Err(Error::NoWalletsFound),
+        0 => {
+            let secret_key =
+                get_secret_key_from_env().map_err(|_| Error::NoWalletsFoundAndNoSecretKeysInEnv)?;
+            Ok(secret_key)
+        }
         1 => Ok(filter_wallet_file_extension(&wallet_files[0])),
         _ => get_wallet_selection(wallet_files),
     }?;
