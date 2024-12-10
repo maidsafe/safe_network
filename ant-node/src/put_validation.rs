@@ -203,6 +203,10 @@ impl Node {
 
                 let already_exists = self.validate_key_and_existence(&net_addr, &key).await?;
 
+                // The transaction may already exist during the replication.
+                // The payment shall get deposit to self even the transaction already presents.
+                // However, if the transaction is already present, the incoming one shall be
+                // appended with the existing one, if content is different.
                 if let Err(err) = self
                     .payment_for_us_exists_and_is_still_valid(&net_addr, payment)
                     .await
