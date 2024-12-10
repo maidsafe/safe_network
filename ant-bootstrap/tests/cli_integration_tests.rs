@@ -35,7 +35,6 @@ async fn test_first_flag() -> Result<(), Box<dyn std::error::Error>> {
         local: false,
         disable_mainnet_contacts: false,
         ignore_cache: false,
-        bootstrap_cache_dir: None,
     };
 
     let addrs = args.get_addrs(Some(config)).await?;
@@ -61,7 +60,6 @@ async fn test_peer_argument() -> Result<(), Box<dyn std::error::Error>> {
         local: false,
         disable_mainnet_contacts: true,
         ignore_cache: false,
-        bootstrap_cache_dir: None,
     };
 
     let addrs = args.get_addrs(None).await?;
@@ -96,7 +94,6 @@ async fn test_network_contacts_fallback() -> Result<(), Box<dyn std::error::Erro
         local: false,
         disable_mainnet_contacts: false,
         ignore_cache: false,
-        bootstrap_cache_dir: None,
     };
 
     let addrs = args.get_addrs(Some(config)).await?;
@@ -127,7 +124,6 @@ async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
         local: true,
         disable_mainnet_contacts: false,
         ignore_cache: false,
-        bootstrap_cache_dir: None,
     };
 
     let addrs = args.get_addrs(Some(config)).await?;
@@ -163,7 +159,6 @@ async fn test_test_network_peers() -> Result<(), Box<dyn std::error::Error>> {
         local: false,
         disable_mainnet_contacts: true,
         ignore_cache: false,
-        bootstrap_cache_dir: None,
     };
 
     let addrs = args.get_addrs(Some(config)).await?;

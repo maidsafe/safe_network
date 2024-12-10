@@ -447,7 +447,6 @@ pub async fn run_node(
             local: true,
             disable_mainnet_contacts: true,
             ignore_cache: true,
-            bootstrap_cache_dir: None,
         },
         pid: Some(node_info.pid),
         rewards_address: run_options.rewards_address,
