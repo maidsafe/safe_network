@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::common::{Address, Amount, QuotePayment, QuoteHash, TxHash, U256};
+use crate::common::{Address, Amount, QuoteHash, QuotePayment, TxHash, U256};
 use crate::contract::network_token::NetworkToken;
 use crate::contract::payment_vault::handler::PaymentVaultHandler;
 use crate::contract::payment_vault::MAX_TRANSFERS_PER_TRANSACTION;

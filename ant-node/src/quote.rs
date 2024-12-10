@@ -22,12 +22,8 @@ impl Node {
     ) -> Result<PaymentQuote, ProtocolError> {
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
-        let bytes = PaymentQuote::bytes_for_signing(
-            content,
-            timestamp,
-            quoting_metrics,
-            payment_address,
-        );
+        let bytes =
+            PaymentQuote::bytes_for_signing(content, timestamp, quoting_metrics, payment_address);
 
         let Ok(signature) = network.sign(&bytes) else {
             return Err(ProtocolError::QuoteGenerationFailed);
