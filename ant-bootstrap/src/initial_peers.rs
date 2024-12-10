@@ -81,11 +81,6 @@ pub struct PeersArgs {
 impl PeersArgs {
     /// Get bootstrap peers sorted by the failure rate. The peer with the lowest failure rate will be
     /// the first in the list.
-    /// Order of precedence:
-    /// 1. Addresses from arguments
-    /// 2. Addresses from environment variable SAFE_PEERS
-    /// 3. Addresses from cache. `Self::bootstrap_cache_dir` will take precedence over the path provided inside `config`
-    /// 4. Addresses from network contacts URL
     pub async fn get_addrs(
         &self,
         config: Option<BootstrapCacheConfig>,
@@ -101,11 +96,6 @@ impl PeersArgs {
 
     /// Get bootstrap peers sorted by the failure rate. The peer with the lowest failure rate will be
     /// the first in the list.
-    /// Order of precedence:
-    /// 1. Addresses from arguments
-    /// 2. Addresses from environment variable SAFE_PEERS
-    /// 3. Addresses from cache. `Self::bootstrap_cache_dir` will take precedence over the path provided inside `config`
-    /// 4. Addresses from network contacts URL
     pub async fn get_bootstrap_addr(
         &self,
         config: Option<BootstrapCacheConfig>,
@@ -137,20 +127,13 @@ impl PeersArgs {
         // Read from ANT_PEERS environment variable if present
         bootstrap_addresses.extend(Self::read_bootstrap_addr_from_env());
 
-        // If we have a network contacts URL, fetch addrs from there.
-        if !self.network_contacts_url.is_empty() {
-            info!(
-                "Fetching bootstrap address from network contacts URLs: {:?}",
-                self.network_contacts_url
-            );
-            let addrs = self
-                .network_contacts_url
-                .iter()
-                .map(|url| url.parse::<Url>().map_err(|_| Error::FailedToParseUrl))
-                .collect::<Result<Vec<Url>>>()?;
-            let contacts_fetcher = ContactsFetcher::with_endpoints(addrs)?;
-            let addrs = contacts_fetcher.fetch_bootstrap_addresses().await?;
-            bootstrap_addresses.extend(addrs);
+        if let Some(count) = count {
+            if bootstrap_addresses.len() >= count {
+                bootstrap_addresses.sort_by_key(|addr| addr.failure_rate() as u64);
+                bootstrap_addresses.truncate(count);
+                info!("Returning early as enough bootstrap addresses are found");
+                return Ok(bootstrap_addresses);
+            }
         }
 
         // load from cache if present
@@ -176,6 +159,42 @@ impl PeersArgs {
                                 .min_by_key(|addr| addr.failure_rate() as u64)
                         })
                         .collect();
+
+                    if let Some(count) = count {
+                        if bootstrap_addresses.len() >= count {
+                            bootstrap_addresses.sort_by_key(|addr| addr.failure_rate() as u64);
+                            bootstrap_addresses.truncate(count);
+                            info!("Returning early as enough bootstrap addresses are found");
+                            return Ok(bootstrap_addresses);
+                        }
+                    }
+                }
+            }
+        } else {
+            info!("Ignoring cache, not loading bootstrap addresses from cache");
+        }
+
+        // If we have a network contacts URL, fetch addrs from there.
+        if !self.network_contacts_url.is_empty() {
+            info!(
+                "Fetching bootstrap address from network contacts URLs: {:?}",
+                self.network_contacts_url
+            );
+            let addrs = self
+                .network_contacts_url
+                .iter()
+                .map(|url| url.parse::<Url>().map_err(|_| Error::FailedToParseUrl))
+                .collect::<Result<Vec<Url>>>()?;
+            let contacts_fetcher = ContactsFetcher::with_endpoints(addrs)?;
+            let addrs = contacts_fetcher.fetch_bootstrap_addresses().await?;
+            bootstrap_addresses.extend(addrs);
+
+            if let Some(count) = count {
+                if bootstrap_addresses.len() >= count {
+                    bootstrap_addresses.sort_by_key(|addr| addr.failure_rate() as u64);
+                    bootstrap_addresses.truncate(count);
+                    info!("Returning early as enough bootstrap addresses are found");
+                    return Ok(bootstrap_addresses);
                 }
             }
         }
