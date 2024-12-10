@@ -8,10 +8,9 @@ use alloy::providers::ext::AnvilApi;
 use alloy::providers::{ProviderBuilder, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use evmlib::common::{Amount, TxHash};
-use evmlib::contract::payment_vault::MAX_TRANSFERS_PER_TRANSACTION;
+use evmlib::contract::payment_vault::{verify_data_payment, MAX_TRANSFERS_PER_TRANSACTION};
 use evmlib::quoting_metrics::QuotingMetrics;
 use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
-use evmlib::transaction::verify_data_payment;
 use evmlib::wallet::{transfer_tokens, wallet_address, Wallet};
 use evmlib::{CustomNetwork, Network};
 use std::collections::HashSet;
@@ -90,7 +89,12 @@ async fn test_pay_for_quotes_and_data_payment_verification() {
     for (quote_hash, reward_addr, _) in quote_payments.iter() {
         let result = verify_data_payment(
             &network,
-            vec![(*quote_hash, QuotingMetrics::default(), *reward_addr)]
+            vec![*quote_hash],
+            vec![(
+                *quote_hash,
+                QuotingMetrics::default(),
+                *reward_addr,
+            )],
         )
         .await;
 

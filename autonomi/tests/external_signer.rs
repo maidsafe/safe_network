@@ -1,7 +1,5 @@
 #![cfg(feature = "external-signer")]
 
-use alloy::network::TransactionBuilder;
-use alloy::providers::Provider;
 use ant_evm::{QuoteHash, TxHash};
 use ant_logging::LogBuilder;
 use autonomi::client::archive::Metadata;
@@ -10,7 +8,7 @@ use autonomi::client::external_signer::encrypt_data;
 use autonomi::client::payment::Receipt;
 use autonomi::client::vault::user_data::USER_DATA_VAULT_CONTENT_IDENTIFIER;
 use autonomi::client::vault::VaultSecretKey;
-use autonomi::{receipt_from_quotes_and_payments, Client, Wallet};
+use autonomi::{Client, Wallet};
 use bytes::Bytes;
 use std::collections::BTreeMap;
 use std::time::Duration;
@@ -35,7 +33,7 @@ async fn pay_for_data(client: &Client, wallet: &Wallet, data: Bytes) -> eyre::Re
 async fn pay_for_content_addresses(
     client: &Client,
     wallet: &Wallet,
-    content_addrs: impl Iterator<Item = XorName>,
+    content_addrs: impl Iterator<Item = XorName> + Clone,
 ) -> eyre::Result<Receipt> {
     let (quotes, quote_payments, _free_chunks) = client
         .get_quotes_for_content_addresses(content_addrs)

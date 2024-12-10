@@ -15,7 +15,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 data = []
-default = ["data", "vault"]
+default = ["data", "vault", "external-signer"]
 external-signer = ["ant-evm/external-signer", "data"]
 extension-module = ["pyo3/extension-module"]
 fs = ["tokio/fs", "data"]

@@ -203,7 +203,7 @@ impl Client {
                 None => return Err(PutError::PaymentUnexpectedlyInvalid(scratch_address)),
             };
 
-            total_cost = price.clone();
+            total_cost = *price;
 
             Record {
                 key: scratch_key,
