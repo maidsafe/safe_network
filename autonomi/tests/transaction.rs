@@ -15,7 +15,7 @@ use eyre::Result;
 use test_utils::{evm::get_funded_wallet, peers_from_env};
 
 #[tokio::test]
-async fn transaction() -> Result<()> {
+async fn transaction_put() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("transaction", false);
 
     let client = Client::connect(&peers_from_env()?).await?;
@@ -23,7 +23,7 @@ async fn transaction() -> Result<()> {
 
     let key = bls::SecretKey::random();
     let content = [0u8; 32];
-    let mut transaction = Transaction::new(key.public_key(), vec![], content, vec![], &key);
+    let transaction = Transaction::new(key.public_key(), vec![], content, vec![], &key);
 
     client.transaction_put(transaction, &wallet).await?;
 
