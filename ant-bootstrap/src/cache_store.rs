@@ -23,11 +23,9 @@ use std::{
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CacheData {
-    pub(crate) peers: std::collections::HashMap<PeerId, BootstrapAddresses>,
-    #[serde(default = "SystemTime::now")]
-    last_updated: SystemTime,
-    #[serde(default = "default_version")]
-    version: u32,
+    pub peers: std::collections::HashMap<PeerId, BootstrapAddresses>,
+    pub last_updated: SystemTime,
+    pub network_version: String,
 }
 
 impl CacheData {
@@ -128,16 +126,12 @@ impl CacheData {
     }
 }
 
-fn default_version() -> u32 {
-    1
-}
-
 impl Default for CacheData {
     fn default() -> Self {
         Self {
             peers: std::collections::HashMap::new(),
             last_updated: SystemTime::now(),
-            version: default_version(),
+            network_version: crate::get_network_version(),
         }
     }
 }

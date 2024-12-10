@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::error::{Error, Result};
-use ant_protocol::version::{get_network_id, get_truncate_version_str};
 use std::{
     path::{Path, PathBuf},
     time::Duration,
@@ -125,6 +124,5 @@ fn default_cache_path() -> Result<PathBuf> {
 
 /// Returns the name of the cache file
 pub fn cache_file_name() -> String {
-    let network_id = format!("{}_{}", get_network_id(), get_truncate_version_str());
-    format!("bootstrap_cache_{network_id}.json")
+    format!("bootstrap_cache_{}.json", crate::get_network_version())
 }
