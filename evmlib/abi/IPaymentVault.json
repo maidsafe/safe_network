@@ -1,5 +1,20 @@
 [
   {
+    "inputs": [],
+    "name": "AntTokenNull",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BatchLimitExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidInputLength",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -23,16 +38,6 @@
     ],
     "name": "DataPaymentMade",
     "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "AntTokenNull",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "BatchLimitExceeded",
-    "type": "error"
   },
   {
     "inputs": [
@@ -120,69 +125,93 @@
       {
         "components": [
           {
-            "internalType": "uint256",
-            "name": "closeRecordsStored",
-            "type": "uint256"
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "closeRecordsStored",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "maxRecords",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "receivedPaymentCount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "liveTime",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "networkDensity",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "networkSize",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPaymentVault.QuotingMetrics",
+            "name": "metrics",
+            "type": "tuple"
           },
           {
-            "internalType": "uint256",
-            "name": "maxRecords",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "receivedPaymentCount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "liveTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "networkDensity",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "networkSize",
-            "type": "uint256"
+            "components": [
+              {
+                "internalType": "address",
+                "name": "rewardsAddress",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bytes32",
+                "name": "quoteHash",
+                "type": "bytes32"
+              }
+            ],
+            "internalType": "struct IPaymentVault.DataPayment",
+            "name": "dataPayment",
+            "type": "tuple"
           }
         ],
-        "internalType": "struct IPaymentVault.QuotingMetrics",
-        "name": "_metrics",
-        "type": "tuple"
-      },
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "rewardsAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "quoteHash",
-            "type": "bytes32"
-          }
-        ],
-        "internalType": "struct IPaymentVault.DataPayment",
-        "name": "_payment",
-        "type": "tuple"
+        "internalType": "struct IPaymentVault.PaymentVerification[]",
+        "name": "_payments",
+        "type": "tuple[]"
       }
     ],
     "name": "verifyPayment",
     "outputs": [
       {
-        "internalType": "bool",
-        "name": "isValid",
-        "type": "bool"
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "quoteHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amountPaid",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "isValid",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct IPaymentVault.PaymentVerificationResult[3]",
+        "name": "verificationResults",
+        "type": "tuple[3]"
       }
     ],
     "stateMutability": "view",

@@ -61,7 +61,7 @@ wasm-bindgen-futures = "0.4.43"
 xor_name = "5.0.0"
 
 [dev-dependencies]
-alloy = { version = "0.5.3", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
+alloy = { version = "0.7.3", default-features = false, features = ["contract", "json-rpc", "network", "node-bindings", "provider-http", "reqwest-rustls-tls", "rpc-client", "rpc-types", "signer-local", "std"] }
 ant-logging = { path = "../ant-logging", version = "0.2.40" }
 ant-peers-acquisition = { path = "../ant-peers-acquisition", version = "0.5.7" }
 eyre = "0.6.5"

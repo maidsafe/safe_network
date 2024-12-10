@@ -3,17 +3,23 @@ use crate::quoting_metrics::QuotingMetrics;
 use alloy::primitives::FixedBytes;
 use alloy::sol;
 
+pub const REQUIRED_PAYMENT_VERIFICATION_LENGTH: usize = 5;
+
 sol!(
     #[allow(missing_docs)]
+    #[derive(Debug)]
     #[sol(rpc)]
     IPaymentVault,
     "abi/IPaymentVault.json"
 );
 
-pub struct PaymentVerification {
-    pub quote_hash: FixedBytes<32>,
-    pub amount_paid: Amount,
-    pub is_valid: bool,
+impl From<(QuoteHash, QuotingMetrics, Address)> for IPaymentVault::PaymentVerification {
+    fn from(value: (QuoteHash, QuotingMetrics, Address)) -> Self {
+        Self {
+            metrics: value.1.into(),
+            dataPayment: (value.0, value.2, Amount::ZERO).into(),
+        }
+    }
 }
 
 impl From<(QuoteHash, Address, Amount)> for IPaymentVault::DataPayment {

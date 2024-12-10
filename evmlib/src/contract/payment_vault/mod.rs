@@ -1,6 +1,5 @@
 use crate::common::{Address, Amount, QuoteHash};
 use crate::contract::payment_vault::handler::PaymentVaultHandler;
-use crate::contract::payment_vault::interface::PaymentVerification;
 use crate::quoting_metrics::QuotingMetrics;
 use crate::utils::http_provider;
 use crate::Network;
@@ -12,7 +11,7 @@ pub mod interface;
 
 pub const MAX_TRANSFERS_PER_TRANSACTION: usize = 256;
 
-/// Helper function to return a quote for the given quoting metrics
+/// Helper function to return a quote for the given quoting metrics.
 pub async fn get_market_price(
     network: &Network,
     quoting_metrics: QuotingMetrics,
@@ -22,7 +21,8 @@ pub async fn get_market_price(
     payment_vault.get_quote(quoting_metrics).await
 }
 
-/// Helper function to verify whether a data payment is valid
+/// Helper function to verify whether a data payment is valid.
+/// Returns the amount paid to the owned quote hashes.
 pub async fn verify_data_payment(
     network: &Network,
     owned_quote_hashes: Vec<QuoteHash>,
@@ -33,24 +33,21 @@ pub async fn verify_data_payment(
 
     let mut amount = Amount::ZERO;
 
-    // TODO: @mick change this for loop to a batch when the smart contract changes
-    for (quote_hash, quoting_metrics, rewards_address) in payment {
-        let payment_verification: PaymentVerification = payment_vault
-            .verify_payment(quoting_metrics, (quote_hash, rewards_address, Amount::ZERO))
-            .await
-            .map(|is_valid| PaymentVerification {
-                quote_hash,
-                amount_paid: Amount::from(1), // TODO: update placeholder amount when the smart contract changes
-                is_valid,
-            })?;
+    let payment_verifications: Vec<_> = payment
+        .into_iter()
+        .map(interface::IPaymentVault::PaymentVerification::from)
+        .collect();
 
+    let payment_verification_results = payment_vault.verify_payment(payment_verifications).await?;
+
+    for payment_verification_result in payment_verification_results {
         // CODE REVIEW: should we fail on a single invalid payment?
-        if !payment_verification.is_valid {
+        if !payment_verification_result.isValid {
             return Err(error::Error::PaymentInvalid);
         }
 
-        if owned_quote_hashes.contains(&quote_hash) {
-            amount += payment_verification.amount_paid;
+        if owned_quote_hashes.contains(&payment_verification_result.quoteHash) {
+            amount += payment_verification_result.amountPaid;
         }
     }
 

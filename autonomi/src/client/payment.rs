@@ -1,17 +1,14 @@
 use crate::client::data::PayError;
 use crate::client::quote::StoreQuote;
 use crate::Client;
-use ant_evm::{AttoTokens, EncodedPeerId, EvmWallet, ProofOfPayment, QuoteHash, TxHash};
-use std::collections::{BTreeMap, HashMap};
+use ant_evm::{AttoTokens, EncodedPeerId, EvmWallet, ProofOfPayment};
+use std::collections::HashMap;
 use xor_name::XorName;
 
 /// Contains the proof of payments for each XOR address and the amount paid
 pub type Receipt = HashMap<XorName, (ProofOfPayment, AttoTokens)>;
 
-pub fn receipt_from_store_quotes_and_payments(
-    quotes: StoreQuote,
-    payments: BTreeMap<QuoteHash, TxHash>,
-) -> Receipt {
+pub fn receipt_from_store_quotes(quotes: StoreQuote) -> Receipt {
     let mut receipt = Receipt::new();
 
     for (content_addr, quote_for_address) in quotes.0 {
@@ -22,11 +19,6 @@ pub fn receipt_from_store_quotes_and_payments(
         };
 
         for (peer_id, quote, _amount) in quote_for_address.0 {
-            // skip quotes that haven't been paid
-            if !payments.contains_key(&quote.hash()) {
-                continue;
-            }
-
             proof_of_payment
                 .peer_quotes
                 .push((EncodedPeerId::from(peer_id), quote));
