@@ -29,11 +29,15 @@ pub struct StoreQuote(pub(crate) HashMap<XorName, QuoteForAddress>);
 
 impl StoreQuote {
     pub fn price(&self) -> Amount {
-        self.0.iter().map(|(_, quote)| quote.price()).sum()
+        self.0.values().map(|quote| quote.price()).sum()
     }
 
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     pub fn payments(&self) -> Vec<QuotePayment> {

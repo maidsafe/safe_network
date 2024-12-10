@@ -30,15 +30,11 @@ const LIVE_TIME_MARGIN: u64 = 10;
 pub struct EncodedPeerId(Vec<u8>);
 
 impl EncodedPeerId {
-    pub fn to_peer_id(&self) -> Result<PeerId, libp2p::identity::DecodingError> {
-        match PublicKey::try_decode_protobuf(&self.0) {
-            Ok(pub_key) => Ok(PeerId::from_public_key(&pub_key)),
-            Err(e) => Err(e),
-        }
+    pub fn to_peer_id(&self) -> Result<PeerId, libp2p::identity::ParseError> {
+        PeerId::from_bytes(&self.0)
     }
 }
 
-// TODO: @anselme is this conversion right?
 impl From<PeerId> for EncodedPeerId {
     fn from(peer_id: PeerId) -> Self {
         let bytes = peer_id.to_bytes();
@@ -321,6 +317,14 @@ mod tests {
 
     use libp2p::identity::Keypair;
     use std::{thread::sleep, time::Duration};
+
+    #[test]
+    fn test_encode_decode_peer_id() {
+        let id = PeerId::random();
+        let encoded = EncodedPeerId::from(id);
+        let decoded = encoded.to_peer_id().expect("decode to work");
+        assert_eq!(id, decoded);
+    }
 
     #[test]
     fn test_is_newer_than() {
