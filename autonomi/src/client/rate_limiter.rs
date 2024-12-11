@@ -18,7 +18,6 @@ impl RateLimiter {
             let interval = Duration::from_millis(interval_in_ms);
 
             if elapsed_time < interval {
-                println!("Waiting for: {:?}", interval - elapsed_time);
                 sleep(interval - elapsed_time).await;
             }
         }
