@@ -355,7 +355,7 @@ impl Client {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             retry_strategy: None,
-            use_put_record_to: Some(payees), // CODE REVIEW: should we put to all or just one here?
+            use_put_record_to: Some(payees),
             verification: Some((VerificationKind::Network, get_cfg)),
         };
 

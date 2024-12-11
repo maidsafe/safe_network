@@ -31,12 +31,8 @@ impl Client {
         let free_chunks = content_addrs
             .filter(|addr| !quote.0.contains_key(addr))
             .collect();
-        let quotes_per_addr = quote.0.into_iter().collect();
+        let quotes_per_addr: HashMap<_, _> = quote.0.into_iter().collect();
 
-        debug!(
-            "Got the quotes , quote_payments and freechunks from the network {:?}",
-            (quotes_per_addr.clone(), payments.clone(), free_chunks.clone())
-        );
         Ok((quotes_per_addr, payments, free_chunks))
     }
 }

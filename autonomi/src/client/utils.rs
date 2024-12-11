@@ -151,11 +151,11 @@ impl Client {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
             retry_strategy: Some(RetryStrategy::Balanced),
-            use_put_record_to: Some(storing_nodes), // CODE REVIEW: do we put to all payees or just one?
+            use_put_record_to: Some(storing_nodes.clone()),
             verification,
         };
         let payment_upload = Ok(self.network.put_record(record, &put_cfg).await?);
-        debug!("Successfully stored chunk: {chunk:?} to {storing_node:?}");
+        debug!("Successfully stored chunk: {chunk:?} to {storing_nodes:?}");
         payment_upload
     }
 

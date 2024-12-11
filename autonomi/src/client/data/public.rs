@@ -10,8 +10,6 @@ use bytes::Bytes;
 use libp2p::kad::Quorum;
 use std::collections::HashSet;
 
-use xor_name::XorName;
-
 use crate::client::payment::{PaymentOption, Receipt};
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};

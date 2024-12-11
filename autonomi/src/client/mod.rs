@@ -34,7 +34,7 @@ mod utils;
 use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore};
 pub use ant_evm::Amount;
 
-use crate::EvmNetwork;
+use ant_evm::EvmNetwork;
 use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use ant_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use libp2p::{identity::Keypair, Multiaddr};

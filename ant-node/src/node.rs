@@ -13,7 +13,7 @@ use super::{
 use crate::metrics::NodeMetricsRecorder;
 use crate::RunningNode;
 use ant_bootstrap::BootstrapCacheStore;
-use ant_evm::{AttoTokens, RewardsAddress};
+use ant_evm::RewardsAddress;
 #[cfg(feature = "open-metrics")]
 use ant_networking::MetricsRegistries;
 use ant_networking::{Instant, Network, NetworkBuilder, NetworkEvent, NodeIssue, SwarmDriver};

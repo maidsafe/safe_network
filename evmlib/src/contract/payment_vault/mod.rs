@@ -41,7 +41,7 @@ pub async fn verify_data_payment(
     let payment_verification_results = payment_vault.verify_payment(payment_verifications).await?;
 
     for payment_verification_result in payment_verification_results {
-        // CODE REVIEW: should we fail on a single invalid payment?
+        // TODO we currently fail on a single invalid payment, maybe we should deal with this in a different way
         if !payment_verification_result.isValid {
             return Err(error::Error::PaymentInvalid);
         }

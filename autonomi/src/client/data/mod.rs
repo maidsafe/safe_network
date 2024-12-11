@@ -215,7 +215,7 @@ impl Client {
         if let Some(channel) = self.client_event_sender.as_ref() {
             let tokens_spent = receipt
                 .values()
-                .map(|proof| proof.quote.cost.as_atto())
+                .map(|(_, cost)| cost.as_atto())
                 .sum::<Amount>();
 
             let summary = UploadSummary {
