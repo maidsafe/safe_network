@@ -435,6 +435,7 @@ pub async fn run_node(
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: run_options.metrics_port,
+        network_id: None,
         node_ip: None,
         node_port: run_options.node_port,
         number: run_options.number,
