@@ -49,7 +49,7 @@ file-rotate = "0.7.3"
 futures = "~0.3.13"
 hex = "~0.4.3"
 itertools = "~0.12.1"
-libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "master", features = ["tokio", "dns", "kad", "macros"] }
+libp2p = { version = "0.54.1", features = ["tokio", "dns", "kad", "macros"] }
 num-traits = "0.2"
 prometheus-client = { version = "0.22", optional = true }
 # watch out updating this, protoc compiler needs to be installed on all build systems
@@ -83,7 +83,7 @@ walkdir = "~2.5.0"
 xor_name = "5.0.0"
 
 [dev-dependencies]
-ant-protocol = { path = "../ant-protocol", version = "0.17.15", features = ["rpc"]}
+ant-protocol = { path = "../ant-protocol", version = "0.17.15", features = ["rpc"] }
 assert_fs = "1.0.0"
 evmlib = { path = "../evmlib", version = "0.1.4" }
 autonomi = { path = "../autonomi", version = "0.2.4", features = ["registers"] }

@@ -8,11 +8,11 @@
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
 use crate::record_store::{ClientRecordStore, NodeRecordStore};
-use ant_evm::QuotingMetrics;
+use ant_evm::{QuotingMetrics, U256};
 use ant_protocol::{storage::RecordType, NetworkAddress};
 use libp2p::kad::{
     store::{RecordStore, Result},
-    KBucketDistance as Distance, ProviderRecord, Record, RecordKey,
+    ProviderRecord, Record, RecordKey,
 };
 use std::{borrow::Cow, collections::HashMap};
 
@@ -136,7 +136,7 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn get_farthest_replication_distance(&self) -> Option<Distance> {
+    pub(crate) fn get_farthest_replication_distance(&self) -> Option<U256> {
         match self {
             Self::Client(_store) => {
                 warn!("Calling get_distance_range at Client. This should not happen");
@@ -146,7 +146,7 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn set_distance_range(&mut self, distance: Distance) {
+    pub(crate) fn set_distance_range(&mut self, distance: U256) {
         match self {
             Self::Client(_store) => {
                 warn!("Calling set_distance_range at Client. This should not happen");
