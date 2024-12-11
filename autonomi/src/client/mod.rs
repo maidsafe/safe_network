@@ -29,6 +29,7 @@ pub mod vault;
 pub mod wasm;
 
 // private module with utility functions
+mod rate_limiter;
 mod utils;
 
 use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore};

@@ -74,17 +74,17 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct IPaymentVault.QuotingMetrics",
+        "internalType": "struct IPaymentVault.QuotingMetrics[]",
         "name": "_metrics",
-        "type": "tuple"
+        "type": "tuple[]"
       }
     ],
     "name": "getQuote",
     "outputs": [
       {
-        "internalType": "uint256",
-        "name": "price",
-        "type": "uint256"
+        "internalType": "uint256[]",
+        "name": "prices",
+        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",

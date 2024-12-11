@@ -7,8 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{data::CostError, Client};
+use crate::client::rate_limiter::RateLimiter;
 use ant_evm::payment_vault::get_market_price;
-use ant_evm::{Amount, PaymentQuote, QuotePayment, QuotingMetrics};
+use ant_evm::{Amount, EvmNetwork, PaymentQuote, QuotePayment, QuotingMetrics};
 use ant_networking::{Network, NetworkError};
 use ant_protocol::{storage::ChunkAddress, NetworkAddress};
 use libp2p::PeerId;
@@ -63,10 +64,11 @@ impl Client {
             .collect();
         let raw_quotes_per_addr = futures::future::try_join_all(futures).await?;
 
-        debug!("Fetched store quotes: {raw_quotes_per_addr:?}");
-
         // choose the quotes to pay for each address
         let mut quotes_to_pay_per_addr = HashMap::new();
+
+        let mut rate_limiter = RateLimiter::new();
+
         for (content_addr, raw_quotes) in raw_quotes_per_addr {
             // ask smart contract for the market price
             let quoting_metrics: Vec<QuotingMetrics> = raw_quotes
@@ -74,7 +76,14 @@ impl Client {
                 .iter()
                 .map(|(_, q)| q.quoting_metrics.clone())
                 .collect();
-            let all_prices = get_market_price(&self.evm_network, quoting_metrics).await?;
+
+            let all_prices = get_market_price_with_rate_limiter_and_retries(
+                &self.evm_network,
+                &mut rate_limiter,
+                quoting_metrics.clone(),
+            )
+            .await?;
+
             let mut prices: Vec<(PeerId, PaymentQuote, Amount)> = all_prices
                 .into_iter()
                 .zip(raw_quotes.into_iter())
@@ -155,6 +164,39 @@ async fn fetch_store_quote_with_retries(
                     "Error while fetching store quote: {err:?}, stopping after {retries} retries"
                 );
                 break Err(CostError::CouldNotGetStoreQuote(content_addr));
+            }
+        }
+    }
+}
+
+async fn get_market_price_with_rate_limiter_and_retries(
+    evm_network: &EvmNetwork,
+    rate_limiter: &mut RateLimiter,
+    quoting_metrics: Vec<QuotingMetrics>,
+) -> Result<Vec<Amount>, ant_evm::payment_vault::error::Error> {
+    const MAX_RETRIES: u64 = 2;
+    let mut retries: u64 = 0;
+    let mut interval_in_ms: u64 = 1000;
+
+    loop {
+        rate_limiter
+            .wait_interval_since_last_request(interval_in_ms)
+            .await;
+
+        match get_market_price(evm_network, quoting_metrics.clone()).await {
+            Ok(amounts) => {
+                break Ok(amounts);
+            }
+            Err(err) => {
+                if err.to_string().contains("429") && retries < MAX_RETRIES {
+                    retries += 1;
+                    interval_in_ms *= retries * 2;
+                    error!("Error while fetching quote market price: {err:?}, retry #{retries}");
+                    continue;
+                } else {
+                    error!("Error while fetching quote market price: {err:?}, stopping after {retries} retries");
+                    break Err(err);
+                }
             }
         }
     }
