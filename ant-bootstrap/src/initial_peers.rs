@@ -70,7 +70,7 @@ impl PeersArgs {
     /// Get bootstrap peers
     /// Order of precedence:
     /// 1. Addresses from arguments
-    /// 2. Addresses from environment variable SAFE_PEERS
+    /// 2. Addresses from environment variable `ANT_PEERS`
     /// 3. Addresses from cache
     /// 4. Addresses from network contacts URL
     pub async fn get_addrs(&self, config: Option<BootstrapCacheConfig>) -> Result<Vec<Multiaddr>> {
@@ -85,7 +85,7 @@ impl PeersArgs {
     /// Get bootstrap peers
     /// Order of precedence:
     /// 1. Addresses from arguments
-    /// 2. Addresses from environment variable SAFE_PEERS
+    /// 2. Addresses from environment variable `ANT_PEERS`
     /// 3. Addresses from cache
     /// 4. Addresses from network contacts URL
     pub async fn get_bootstrap_addr(
@@ -98,25 +98,9 @@ impl PeersArgs {
             return Ok(vec![]);
         }
 
-        // If local mode is enabled, return empty store (will use mDNS)
-        if self.local || cfg!(feature = "local") {
-            info!("Local mode enabled, using only local discovery.");
-            return Ok(vec![]);
-        }
-
         let mut bootstrap_addresses = vec![];
 
-        // Add addrs from arguments if present
-        for addr in &self.addrs {
-            if let Some(addr) = craft_valid_multiaddr(addr, false) {
-                info!("Adding addr from arguments: {addr}");
-                bootstrap_addresses.push(BootstrapAddr::new(addr));
-            } else {
-                warn!("Invalid multiaddress format from arguments: {addr}");
-            }
-        }
-
-        // Read from ANT_PEERS environment variable if present
+        // Read from `ANT_PEERS` environment variable if present
         if let Ok(addrs) = std::env::var(ANT_PEERS_ENV) {
             for addr_str in addrs.split(',') {
                 if let Some(addr) = craft_valid_multiaddr_from_str(addr_str, false) {
@@ -125,6 +109,23 @@ impl PeersArgs {
                 } else {
                     warn!("Invalid multiaddress format from environment variable: {addr_str}");
                 }
+            }
+            return Ok(bootstrap_addresses);
+        }
+
+        // If local mode is enabled, return empty store (will use mDNS)
+        if self.local || cfg!(feature = "local") {
+            info!("Local mode enabled, using only local discovery.");
+            return Ok(vec![]);
+        }
+
+        // Add addrs from arguments if present
+        for addr in &self.addrs {
+            if let Some(addr) = craft_valid_multiaddr(addr, false) {
+                info!("Adding addr from arguments: {addr}");
+                bootstrap_addresses.push(BootstrapAddr::new(addr));
+            } else {
+                warn!("Invalid multiaddress format from arguments: {addr}");
             }
         }
 
