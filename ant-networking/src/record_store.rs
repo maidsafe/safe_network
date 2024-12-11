@@ -1003,8 +1003,6 @@ mod tests {
     use bls::SecretKey;
     use xor_name::XorName;
 
-    use ant_evm::utils::dummy_address;
-    use ant_evm::{PaymentQuote, RewardsAddress};
     use ant_protocol::convert_distance_to_u256;
     use ant_protocol::storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, Scratchpad,
