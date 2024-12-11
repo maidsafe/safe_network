@@ -79,22 +79,28 @@ pub struct PeersArgs {
 }
 
 impl PeersArgs {
-    /// Get bootstrap peers
+    /// Get bootstrap peers sorted by the failure rate. The peer with the lowest failure rate will be
+    /// the first in the list.
     /// Order of precedence:
     /// 1. Addresses from arguments
     /// 2. Addresses from environment variable SAFE_PEERS
     /// 3. Addresses from cache. `Self::bootstrap_cache_dir` will take precedence over the path provided inside `config`
     /// 4. Addresses from network contacts URL
-    pub async fn get_addrs(&self, config: Option<BootstrapCacheConfig>) -> Result<Vec<Multiaddr>> {
+    pub async fn get_addrs(
+        &self,
+        config: Option<BootstrapCacheConfig>,
+        count: Option<usize>,
+    ) -> Result<Vec<Multiaddr>> {
         Ok(self
-            .get_bootstrap_addr(config)
+            .get_bootstrap_addr(config, count)
             .await?
             .into_iter()
             .map(|addr| addr.addr)
             .collect())
     }
 
-    /// Get bootstrap peers
+    /// Get bootstrap peers sorted by the failure rate. The peer with the lowest failure rate will be
+    /// the first in the list.
     /// Order of precedence:
     /// 1. Addresses from arguments
     /// 2. Addresses from environment variable SAFE_PEERS
@@ -103,6 +109,7 @@ impl PeersArgs {
     pub async fn get_bootstrap_addr(
         &self,
         config: Option<BootstrapCacheConfig>,
+        count: Option<usize>,
     ) -> Result<Vec<BootstrapAddr>> {
         // If this is the first node, return an empty list
         if self.first {
@@ -146,12 +153,6 @@ impl PeersArgs {
             bootstrap_addresses.extend(addrs);
         }
 
-        // Return here if we fetched peers from the args
-        if !bootstrap_addresses.is_empty() {
-            bootstrap_addresses.sort_by_key(|addr| addr.failure_rate() as u64);
-            return Ok(bootstrap_addresses);
-        }
-
         // load from cache if present
         if !self.ignore_cache {
             let cfg = if let Some(config) = config {
@@ -179,11 +180,6 @@ impl PeersArgs {
             }
         }
 
-        if !bootstrap_addresses.is_empty() {
-            bootstrap_addresses.sort_by_key(|addr| addr.failure_rate() as u64);
-            return Ok(bootstrap_addresses);
-        }
-
         if !self.disable_mainnet_contacts {
             let contacts_fetcher = ContactsFetcher::with_mainnet_endpoints()?;
             let addrs = contacts_fetcher.fetch_bootstrap_addresses().await?;
@@ -192,6 +188,9 @@ impl PeersArgs {
 
         if !bootstrap_addresses.is_empty() {
             bootstrap_addresses.sort_by_key(|addr| addr.failure_rate() as u64);
+            if let Some(count) = count {
+                bootstrap_addresses.truncate(count);
+            }
             Ok(bootstrap_addresses)
         } else {
             error!("No initial bootstrap peers found through any means");
