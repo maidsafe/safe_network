@@ -31,12 +31,6 @@ pub enum Error {
     #[error("Failed to parse NodeEvent")]
     NodeEventParsingFailed,
 
-    #[error("Failed to send a cmd to the node: {0}")]
-    NodeCmdFailed(String),
-
-    #[error("Overflow occurred while adding values")]
-    NumericOverflow,
-
     // ---------- Record Errors
     #[error("Record was not stored as no payment supplied: {0:?}")]
     InvalidPutWithoutPayment(PrettyPrintRecordKey<'static>),
@@ -87,12 +81,6 @@ pub enum Error {
     /// The request is invalid or the arguments of the function are invalid
     #[error("Invalid request: {0}")]
     InvalidRequest(String),
-    /// Error occurred in an async thread
-    #[error("Error occured in async thread: {0}")]
-    JoinErrorInAsyncThread(String),
-
     #[error("EVM Network error: {0}")]
     EvmNetwork(String),
-    #[error("Invalid quote timestamp: {0}")]
-    InvalidQuoteTimestamp(String),
 }
