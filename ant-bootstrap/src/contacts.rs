@@ -33,6 +33,8 @@ const MAX_RETRIES_ON_FETCH_FAILURE: usize = 3;
 
 /// Discovers initial peers from a list of endpoints
 pub struct ContactsFetcher {
+    /// The number of addrs to fetch
+    max_addrs: usize,
     /// The list of endpoints
     endpoints: Vec<Url>,
     /// Reqwest Client
@@ -58,10 +60,16 @@ impl ContactsFetcher {
         let request_client = Client::builder().build()?;
 
         Ok(Self {
+            max_addrs: usize::MAX,
             endpoints,
             request_client,
             ignore_peer_id: false,
         })
+    }
+
+    /// Set the number of addrs to fetch
+    pub fn set_max_addrs(&mut self, max_addrs: usize) {
+        self.max_addrs = max_addrs;
     }
 
     /// Create a new struct with the mainnet endpoints
@@ -133,6 +141,14 @@ impl ContactsFetcher {
                             .collect::<Vec<_>>()
                     );
                     bootstrap_addresses.append(&mut endpoing_bootstrap_addresses);
+                    if bootstrap_addresses.len() >= self.max_addrs {
+                        info!(
+                            "Fetched enough bootstrap addresses. Stopping. needed: {} Total fetched: {}",
+                            self.max_addrs,
+                            bootstrap_addresses.len()
+                        );
+                        break;
+                    }
                 }
                 Err(e) => {
                     warn!("Failed to fetch bootstrap addrs from {}: {}", endpoint, e);

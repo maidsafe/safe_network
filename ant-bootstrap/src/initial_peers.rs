@@ -182,7 +182,10 @@ impl PeersArgs {
                 .iter()
                 .map(|url| url.parse::<Url>().map_err(|_| Error::FailedToParseUrl))
                 .collect::<Result<Vec<Url>>>()?;
-            let contacts_fetcher = ContactsFetcher::with_endpoints(addrs)?;
+            let mut contacts_fetcher = ContactsFetcher::with_endpoints(addrs)?;
+            if let Some(count) = count {
+                contacts_fetcher.set_max_addrs(count);
+            }
             let addrs = contacts_fetcher.fetch_bootstrap_addresses().await?;
             bootstrap_addresses.extend(addrs);
 
@@ -197,7 +200,10 @@ impl PeersArgs {
         }
 
         if !self.disable_mainnet_contacts {
-            let contacts_fetcher = ContactsFetcher::with_mainnet_endpoints()?;
+            let mut contacts_fetcher = ContactsFetcher::with_mainnet_endpoints()?;
+            if let Some(count) = count {
+                contacts_fetcher.set_max_addrs(count);
+            }
             let addrs = contacts_fetcher.fetch_bootstrap_addresses().await?;
             bootstrap_addresses.extend(addrs);
         }
