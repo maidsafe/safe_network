@@ -8,16 +8,12 @@
 
 use super::{data::CostError, Client};
 use ant_evm::payment_vault::get_market_price;
-use ant_evm::{Amount, PaymentQuote, QuotePayment};
-use ant_networking::target_arch::{sleep, Duration, Instant};
+use ant_evm::{Amount, PaymentQuote, QuotePayment, QuotingMetrics};
 use ant_networking::{Network, NetworkError};
 use ant_protocol::{storage::ChunkAddress, NetworkAddress};
 use libp2p::PeerId;
 use std::collections::HashMap;
 use xor_name::XorName;
-
-// set rate limit to 2 req/s
-const TIME_BETWEEN_RPC_CALLS_IN_MS: u64 = 500;
 
 /// A quote for a single address
 pub struct QuoteForAddress(pub(crate) Vec<(PeerId, PaymentQuote, Amount)>);
@@ -73,30 +69,17 @@ impl Client {
         let mut quotes_to_pay_per_addr = HashMap::new();
         for (content_addr, raw_quotes) in raw_quotes_per_addr {
             // ask smart contract for the market price
-            let mut prices = vec![];
-
-            // rate limit
-            let mut maybe_last_call: Option<Instant> = None;
-
-            for (peer, quote) in raw_quotes {
-                // NB TODO @mick we need to batch this smart contract call
-                // check if we have to wait for the rate limit
-                if let Some(last_call) = maybe_last_call {
-                    let elapsed = Instant::now() - last_call;
-                    let time_to_sleep_ms =
-                        TIME_BETWEEN_RPC_CALLS_IN_MS as u128 - elapsed.as_millis();
-                    if time_to_sleep_ms > 0 {
-                        sleep(Duration::from_millis(time_to_sleep_ms as u64)).await;
-                    }
-                }
-
-                let price =
-                    get_market_price(&self.evm_network, quote.quoting_metrics.clone()).await?;
-
-                maybe_last_call = Some(Instant::now());
-
-                prices.push((peer, quote, price));
-            }
+            let quoting_metrics: Vec<QuotingMetrics> = raw_quotes
+                .clone()
+                .iter()
+                .map(|(_, q)| q.quoting_metrics.clone())
+                .collect();
+            let all_prices = get_market_price(&self.evm_network, quoting_metrics).await?;
+            let mut prices: Vec<(PeerId, PaymentQuote, Amount)> = all_prices
+                .into_iter()
+                .zip(raw_quotes.into_iter())
+                .map(|(price, (peer, quote))| (peer, quote, price))
+                .collect();
 
             // sort by price
             prices.sort_by(|(_, _, price_a), (_, _, price_b)| price_a.cmp(price_b));

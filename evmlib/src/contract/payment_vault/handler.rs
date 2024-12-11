@@ -31,12 +31,33 @@ where
     }
 
     /// Fetch a quote from the contract
-    pub async fn get_quote<I: Into<IPaymentVault::QuotingMetrics>>(
+    pub async fn get_quote<I: IntoIterator<Item: Into<IPaymentVault::QuotingMetrics>>>(
         &self,
         metrics: I,
-    ) -> Result<Amount, Error> {
-        let amount = self.contract.getQuote(metrics.into()).call().await?.price;
-        Ok(amount)
+    ) -> Result<Vec<Amount>, Error> {
+        // NB TODO @mick we need to batch this smart contract call
+        let mut amounts = vec![];
+
+        // set rate limit to 2 req/s
+        const TIME_BETWEEN_RPC_CALLS_IN_MS: u64 = 700;
+        let mut maybe_last_call: Option<std::time::Instant> = None;
+        for metric in metrics {
+            // check if we have to wait for the rate limit
+            if let Some(last_call) = maybe_last_call {
+                let elapsed = std::time::Instant::now() - last_call;
+                let time_to_sleep_ms = TIME_BETWEEN_RPC_CALLS_IN_MS as u128 - elapsed.as_millis();
+                if time_to_sleep_ms > 0 {
+                    tokio::time::sleep(std::time::Duration::from_millis(time_to_sleep_ms as u64))
+                        .await;
+                }
+            }
+
+            let amount = self.contract.getQuote(metric.into()).call().await?.price;
+            amounts.push(amount);
+            maybe_last_call = Some(std::time::Instant::now());
+        }
+
+        Ok(amounts)
     }
 
     /// Pay for quotes.

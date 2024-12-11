@@ -124,11 +124,11 @@ async fn test_proxy_reachable() {
     let payment_vault = PaymentVaultHandler::new(*network.data_payments_address(), provider);
 
     let amount = payment_vault
-        .get_quote(QuotingMetrics::default())
+        .get_quote(vec![QuotingMetrics::default()])
         .await
         .unwrap();
 
-    assert_eq!(amount, Amount::from(1));
+    assert_eq!(amount, vec![Amount::from(1)]);
 }
 
 #[tokio::test]

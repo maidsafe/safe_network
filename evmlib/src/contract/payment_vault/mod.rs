@@ -14,8 +14,8 @@ pub const MAX_TRANSFERS_PER_TRANSACTION: usize = 256;
 /// Helper function to return a quote for the given quoting metrics.
 pub async fn get_market_price(
     network: &Network,
-    quoting_metrics: QuotingMetrics,
-) -> Result<Amount, error::Error> {
+    quoting_metrics: Vec<QuotingMetrics>,
+) -> Result<Vec<Amount>, error::Error> {
     let provider = http_provider(network.rpc_url().clone());
     let payment_vault = PaymentVaultHandler::new(*network.data_payments_address(), provider);
     payment_vault.get_quote(quoting_metrics).await
