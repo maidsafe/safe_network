@@ -29,9 +29,11 @@ use crate::{
 use crate::{
     metrics::service::run_metrics_server, metrics::NetworkMetricsRecorder, MetricsRegistries,
 };
+use alloy::primitives::U256;
 use ant_bootstrap::BootstrapCacheStore;
 use ant_evm::PaymentQuote;
 use ant_protocol::{
+    convert_distance_to_u256,
     messages::{ChunkProof, Nonce, Request, Response},
     storage::{try_deserialize_record, RetryStrategy},
     version::{
@@ -48,7 +50,7 @@ use libp2p::mdns;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
-    kad::{self, KBucketDistance as Distance, QueryId, Quorum, Record, RecordKey, K_VALUE, U256},
+    kad::{self, QueryId, Quorum, Record, RecordKey, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, OutboundRequestId, ProtocolSupport},
     swarm::{
@@ -974,10 +976,9 @@ impl SwarmDriver {
                         // The network density (average distance among nodes) can be estimated as:
                         //     network_density = entire_U256_space / estimated_network_size
                         let density = U256::MAX / U256::from(estimated_network_size);
-                        let estimated_distance = density * U256::from(CLOSE_GROUP_SIZE);
-                        let density_distance = Distance(estimated_distance);
+                        let density_distance = density * U256::from(CLOSE_GROUP_SIZE);
 
-                        // Use distanct to close peer to avoid the situation that
+                        // Use distance to close peer to avoid the situation that
                         // the estimated density_distance is too narrow.
                         let closest_k_peers = self.get_closest_k_value_local_peers();
                         if closest_k_peers.len() <= CLOSE_GROUP_SIZE + 2 {
@@ -987,9 +988,12 @@ impl SwarmDriver {
                         // Note: self is included
                         let self_addr = NetworkAddress::from_peer(self.self_peer_id);
                         let close_peers_distance = self_addr.distance(&NetworkAddress::from_peer(closest_k_peers[CLOSE_GROUP_SIZE + 1]));
+                        let close_peers_u256 = convert_distance_to_u256(&close_peers_distance);
 
-                        let distance = std::cmp::max(density_distance, close_peers_distance);
+                        let distance = std::cmp::max(density_distance, close_peers_u256);
 
+                        // The sampling approach has severe impact to the node side performance
+                        // Hence suggested to be only used by client side.
                         // let distance = if let Some(distance) = self.network_density_samples.get_median() {
                         //     distance
                         // } else {
@@ -1003,10 +1007,9 @@ impl SwarmDriver {
                         //     // Note: self is included
                         //     let self_addr = NetworkAddress::from_peer(self.self_peer_id);
                         //     self_addr.distance(&NetworkAddress::from_peer(closest_k_peers[CLOSE_GROUP_SIZE]))
-
                         // };
 
-                        info!("Set responsible range to {distance:?}({:?})", distance.ilog2());
+                        info!("Set responsible range to {distance:?}({:?})", distance.log2());
 
                         // set any new distance to farthest record in the store
                         self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);

@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{AttoTokens, EvmError};
+use alloy::primitives::U256;
 use evmlib::common::TxHash;
 use evmlib::{
     common::{Address as RewardsAddress, QuoteHash},
@@ -14,6 +15,7 @@ use evmlib::{
 };
 use libp2p::{identity::PublicKey, PeerId};
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 #[cfg(not(target_arch = "wasm32"))]
 pub use std::time::SystemTime;
 #[cfg(target_arch = "wasm32")]
@@ -43,9 +45,7 @@ impl ProofOfPayment {
 }
 
 /// Quoting metrics that got used to generate a quote, or to track peer's status.
-#[derive(
-    Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize, custom_debug::Debug,
-)]
+#[derive(Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct QuotingMetrics {
     /// the records stored
     pub close_records_stored: usize,
@@ -60,6 +60,15 @@ pub struct QuotingMetrics {
     pub network_density: Option<[u8; 32]>,
     /// estimated network size
     pub network_size: Option<u64>,
+}
+
+impl Debug for QuotingMetrics {
+    fn fmt(&self, formatter: &mut Formatter) -> FmtResult {
+        let density_u256 = self.network_density.map(U256::from_be_bytes);
+
+        write!(formatter, "QuotingMetrics {{ close_records_stored: {}, max_records: {}, received_payment_count: {}, live_time: {}, network_density: {density_u256:?}, network_size: {:?} }}",
+            self.close_records_stored, self.max_records, self.received_payment_count, self.live_time, self.network_size)
+    }
 }
 
 impl QuotingMetrics {

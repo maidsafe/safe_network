@@ -12,12 +12,14 @@ use super::{
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetricsRecorder;
 use crate::RunningNode;
+use alloy::primitives::U256;
 use ant_bootstrap::BootstrapCacheStore;
 use ant_evm::{AttoTokens, RewardsAddress};
 #[cfg(feature = "open-metrics")]
 use ant_networking::MetricsRegistries;
 use ant_networking::{Instant, Network, NetworkBuilder, NetworkEvent, NodeIssue, SwarmDriver};
 use ant_protocol::{
+    convert_distance_to_u256,
     error::Error as ProtocolError,
     messages::{ChunkProof, CmdResponse, Nonce, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -25,11 +27,7 @@ use ant_protocol::{
 };
 use bytes::Bytes;
 use itertools::Itertools;
-use libp2p::{
-    identity::Keypair,
-    kad::{KBucketDistance as Distance, U256},
-    Multiaddr, PeerId,
-};
+use libp2p::{identity::Keypair, Multiaddr, PeerId};
 use num_traits::cast::ToPrimitive;
 use rand::{
     rngs::{OsRng, StdRng},
@@ -754,12 +752,12 @@ impl Node {
     ) -> Vec<(NetworkAddress, Vec<Multiaddr>)> {
         match (num_of_peers, range) {
             (_, Some(value)) => {
-                let distance = Distance(U256::from(value));
+                let distance = U256::from_be_bytes(value);
                 peer_addrs
                     .iter()
                     .filter_map(|(peer_id, multi_addrs)| {
                         let addr = NetworkAddress::from_peer(*peer_id);
-                        if target.distance(&addr) <= distance {
+                        if convert_distance_to_u256(&target.distance(&addr)) <= distance {
                             Some((addr, multi_addrs.clone()))
                         } else {
                             None
@@ -1160,12 +1158,12 @@ mod tests {
         );
 
         // Range shall be preferred, i.e. the result peers shall all within the range
-        let distance = Distance(U256::from(range_value));
+        let distance = U256::from_be_bytes(range_value);
         let expected_result: Vec<(NetworkAddress, Vec<Multiaddr>)> = local_peers
             .into_iter()
             .filter_map(|(peer_id, multi_addrs)| {
                 let addr = NetworkAddress::from_peer(peer_id);
-                if target.distance(&addr) <= distance {
+                if convert_distance_to_u256(&target.distance(&addr)) <= distance {
                     Some((addr, multi_addrs.clone()))
                 } else {
                     None
