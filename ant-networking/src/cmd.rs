@@ -13,8 +13,10 @@ use crate::{
     log_markers::Marker,
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
 };
+use alloy::primitives::U256;
 use ant_evm::{AttoTokens, PaymentQuote, QuotingMetrics};
 use ant_protocol::{
+    convert_distance_to_u256,
     messages::{Cmd, Request, Response},
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
@@ -1138,11 +1140,12 @@ impl SwarmDriver {
 }
 
 /// Returns the nodes that within the defined distance.
-fn get_peers_in_range(peers: &[PeerId], address: &NetworkAddress, range: Distance) -> Vec<PeerId> {
+fn get_peers_in_range(peers: &[PeerId], address: &NetworkAddress, range: U256) -> Vec<PeerId> {
     peers
         .iter()
         .filter_map(|peer_id| {
-            let distance = address.distance(&NetworkAddress::from_peer(*peer_id));
+            let distance =
+                convert_distance_to_u256(&address.distance(&NetworkAddress::from_peer(*peer_id)));
             if distance <= range {
                 Some(*peer_id)
             } else {
