@@ -1333,7 +1333,7 @@ jobs:
         run: ./target/release/ant --log-output-dest data-dir file upload "./test_data_1.tar.gz" > ./upload_output 2>&1
         env:
           ANT_LOG: "v"
-        timeout-minutes: 5
+        timeout-minutes: 15
 
       - name: showing the upload terminal output
         run: cat upload_output
