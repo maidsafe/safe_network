@@ -63,8 +63,6 @@ impl Client {
             .collect();
         let raw_quotes_per_addr = futures::future::try_join_all(futures).await?;
 
-        debug!("Fetched store quotes: {raw_quotes_per_addr:?}");
-
         // choose the quotes to pay for each address
         let mut quotes_to_pay_per_addr = HashMap::new();
         for (content_addr, raw_quotes) in raw_quotes_per_addr {
