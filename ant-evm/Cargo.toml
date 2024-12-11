@@ -15,7 +15,6 @@ external-signer = ["evmlib/external-signer"]
 test-utils = []
 
 [dependencies]
-alloy = { version = "0.5.3", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
 custom_debug = "~0.6.1"
 evmlib = { path = "../evmlib", version = "0.1.4" }
 hex = "~0.4.3"

@@ -6,8 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::common::{Address, QuoteHash, TxHash, U256};
-use crate::transaction::verify_data_payment;
+use crate::common::Address;
 use alloy::primitives::address;
 use alloy::transports::http::reqwest;
 use serde::{Deserialize, Serialize};
@@ -21,11 +20,10 @@ extern crate tracing;
 pub mod common;
 pub mod contract;
 pub mod cryptography;
-pub(crate) mod event;
 #[cfg(feature = "external-signer")]
 pub mod external_signer;
+pub mod quoting_metrics;
 pub mod testnet;
-pub mod transaction;
 pub mod utils;
 pub mod wallet;
 
@@ -49,10 +47,10 @@ const ARBITRUM_SEPOLIA_PAYMENT_TOKEN_ADDRESS: Address =
 
 // Should be updated when the smart contract changes!
 const ARBITRUM_ONE_DATA_PAYMENTS_ADDRESS: Address =
-    address!("887930F30EDEb1B255Cd2273C3F4400919df2EFe");
+    address!("607483B50C5F06c25cDC316b6d1E071084EeC9f5");
 
 const ARBITRUM_SEPOLIA_DATA_PAYMENTS_ADDRESS: Address =
-    address!("Dd56b03Dae2Ab8594D80269EC4518D13F1A110BD");
+    address!("993C7739f50899A997fEF20860554b8a28113634");
 
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -132,24 +130,5 @@ impl Network {
             Network::ArbitrumSepolia => &ARBITRUM_SEPOLIA_DATA_PAYMENTS_ADDRESS,
             Network::Custom(custom) => &custom.data_payments_address,
         }
-    }
-
-    pub async fn verify_data_payment(
-        &self,
-        tx_hash: TxHash,
-        quote_hash: QuoteHash,
-        reward_addr: Address,
-        amount: U256,
-        quote_expiration_timestamp_in_secs: u64,
-    ) -> Result<(), transaction::Error> {
-        verify_data_payment(
-            self,
-            tx_hash,
-            quote_hash,
-            reward_addr,
-            amount,
-            quote_expiration_timestamp_in_secs,
-        )
-        .await
     }
 }

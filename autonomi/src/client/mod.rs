@@ -11,6 +11,7 @@
 
 pub mod address;
 pub mod payment;
+pub mod quote;
 
 pub mod data;
 #[cfg(feature = "external-signer")]
@@ -28,11 +29,13 @@ pub mod vault;
 pub mod wasm;
 
 // private module with utility functions
+mod rate_limiter;
 mod utils;
 
 use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore};
 pub use ant_evm::Amount;
 
+use ant_evm::EvmNetwork;
 use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use ant_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use libp2p::{identity::Keypair, Multiaddr};
@@ -63,6 +66,7 @@ const CLIENT_EVENT_CHANNEL_SIZE: usize = 100;
 pub struct Client {
     pub(crate) network: Network,
     pub(crate) client_event_sender: Arc<Option<mpsc::Sender<ClientEvent>>>,
+    pub(crate) evm_network: EvmNetwork,
 }
 
 /// Error returned by [`Client::connect`].
@@ -117,6 +121,7 @@ impl Client {
         Ok(Self {
             network,
             client_event_sender: Arc::new(None),
+            evm_network: Default::default(),
         })
     }
 
@@ -128,6 +133,10 @@ impl Client {
         debug!("All events to the clients are enabled");
 
         client_event_receiver
+    }
+
+    pub fn set_evm_network(&mut self, evm_network: EvmNetwork) {
+        self.evm_network = evm_network;
     }
 }
 

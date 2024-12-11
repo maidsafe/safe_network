@@ -12,7 +12,9 @@ extern crate tracing;
 pub use evmlib::common::Address as RewardsAddress;
 pub use evmlib::common::Address as EvmAddress;
 pub use evmlib::common::QuotePayment;
+pub use evmlib::common::U256;
 pub use evmlib::common::{QuoteHash, TxHash};
+pub use evmlib::contract::payment_vault;
 pub use evmlib::cryptography;
 #[cfg(feature = "external-signer")]
 pub use evmlib::external_signer;
@@ -28,7 +30,8 @@ mod amount;
 mod data_payments;
 mod error;
 
-pub use data_payments::{PaymentQuote, ProofOfPayment, QuotingMetrics, QUOTE_EXPIRATION_SECS};
+pub use data_payments::{EncodedPeerId, PaymentQuote, ProofOfPayment, QUOTE_EXPIRATION_SECS};
+pub use evmlib::quoting_metrics::QuotingMetrics;
 
 /// Types used in the public API
 pub use amount::{Amount, AttoTokens};
