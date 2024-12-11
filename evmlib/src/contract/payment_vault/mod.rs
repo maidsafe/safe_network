@@ -38,7 +38,15 @@ pub async fn verify_data_payment(
         .map(interface::IPaymentVault::PaymentVerification::from)
         .collect();
 
-    let payment_verification_results = payment_vault.verify_payment(payment_verifications).await?;
+    let payment_verification_results = payment_vault
+        .verify_payment(payment_verifications.clone())
+        .await
+        .inspect_err(|err| {
+            tracing::debug!(
+                "Verify payment error: {err:?}, with input (len: {:?}): {payment_verifications:?}",
+                payment_verifications.len()
+            );
+        })?;
 
     for payment_verification_result in payment_verification_results {
         // TODO we currently fail on a single invalid payment, maybe we should deal with this in a different way
