@@ -50,7 +50,7 @@ const ARBITRUM_ONE_DATA_PAYMENTS_ADDRESS: Address =
     address!("607483B50C5F06c25cDC316b6d1E071084EeC9f5");
 
 const ARBITRUM_SEPOLIA_DATA_PAYMENTS_ADDRESS: Address =
-    address!("Dd56b03Dae2Ab8594D80269EC4518D13F1A110BD");
+    address!("993C7739f50899A997fEF20860554b8a28113634");
 
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
