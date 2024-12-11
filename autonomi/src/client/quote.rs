@@ -29,7 +29,7 @@ impl QuoteForAddress {
 }
 
 /// A quote for many addresses
-pub struct StoreQuote(pub(crate) HashMap<XorName, QuoteForAddress>);
+pub struct StoreQuote(pub HashMap<XorName, QuoteForAddress>);
 
 impl StoreQuote {
     pub fn price(&self) -> Amount {
