@@ -83,6 +83,11 @@ pub async fn add(
         config::get_service_data_dir_path(data_dir_path, service_user.clone())?;
     let service_log_dir_path =
         config::get_service_log_dir_path(ReleaseType::AntNode, log_dir_path, service_user.clone())?;
+    let bootstrap_cache_dir = if let Some(user) = &service_user {
+        Some(config::get_bootstrap_cache_owner_path(user)?)
+    } else {
+        None
+    };
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn AntReleaseRepoActions>::default_config();
@@ -105,6 +110,7 @@ pub async fn add(
     debug!("Parsing peers from PeersArgs");
 
     peers_args.addrs.extend(PeersArgs::read_addr_from_env());
+    peers_args.bootstrap_cache_dir = bootstrap_cache_dir;
 
     let options = AddNodeServiceOptions {
         auto_restart,
