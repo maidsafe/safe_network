@@ -1095,6 +1095,7 @@ dependencies = [
 name = "ant-service-management"
 version = "0.4.3"
 dependencies = [
+ "ant-bootstrap",
  "ant-evm",
  "ant-logging",
  "ant-protocol",
