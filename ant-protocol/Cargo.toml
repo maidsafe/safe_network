@@ -11,7 +11,7 @@ version = "0.17.15"
 
 [features]
 default = []
-rpc=["tonic", "prost"]
+rpc = ["tonic", "prost"]
 
 [dependencies]
 ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
@@ -26,19 +26,19 @@ dirs-next = "~2.0.0"
 exponential-backoff = "2.0.0"
 hex = "~0.4.3"
 lazy_static = "1.4.0"
-libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "master", features = ["identify", "kad"] }
+libp2p = { version = "0.54.1", features = ["identify", "kad"] }
 # # watch out updating this, protoc compiler needs to be installed on all build systems
 # # arm builds + musl are very problematic
 # prost and tonic are needed for the RPC server messages, not the underlying protocol
-prost = { version = "0.9" , optional=true }
+prost = { version = "0.9", optional = true }
 rmp-serde = "1.1.1"
-serde = { version = "1.0.133", features = [ "derive", "rc" ]}
+serde = { version = "1.0.133", features = ["derive", "rc"] }
 serde_json = "1.0"
 sha2 = "0.10.7"
 thiserror = "1.0.23"
-tiny-keccak = { version = "~2.0.2", features = [ "sha3" ] }
+tiny-keccak = { version = "~2.0.2", features = ["sha3"] }
 tracing = { version = "~0.1.26" }
-tonic = { version = "0.6.2", optional=true, default-features = false, features = ["prost", "tls", "codegen"]}
+tonic = { version = "0.6.2", optional = true, default-features = false, features = ["prost", "tls", "codegen"] }
 xor_name = "5.0.0"
 
 [build-dependencies]

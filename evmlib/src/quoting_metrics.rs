@@ -6,10 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::common::U256;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 /// Quoting metrics used to generate a quote, or to track peer's status.
-#[derive(Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize, Debug)]
+#[derive(Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct QuotingMetrics {
     /// the records stored
     pub close_records_stored: usize,
@@ -43,5 +45,14 @@ impl QuotingMetrics {
 impl Default for QuotingMetrics {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Debug for QuotingMetrics {
+    fn fmt(&self, formatter: &mut Formatter) -> FmtResult {
+        let density_u256 = self.network_density.map(U256::from_be_bytes);
+
+        write!(formatter, "QuotingMetrics {{ close_records_stored: {}, max_records: {}, received_payment_count: {}, live_time: {}, network_density: {density_u256:?}, network_size: {:?} }}",
+               self.close_records_stored, self.max_records, self.received_payment_count, self.live_time, self.network_size)
     }
 }
