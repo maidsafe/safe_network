@@ -181,15 +181,21 @@ impl BootstrapCacheStore {
     /// Create a empty CacheStore from the given peers argument.
     /// This also modifies the cfg if provided based on the PeersArgs.
     /// And also performs some actions based on the PeersArgs.
+    ///
+    /// `PeersArgs::bootstrap_cache_dir` will take precedence over the path provided inside `config`.
     pub fn new_from_peers_args(
         peers_arg: &PeersArgs,
-        cfg: Option<BootstrapCacheConfig>,
+        config: Option<BootstrapCacheConfig>,
     ) -> Result<Self> {
-        let config = if let Some(cfg) = cfg {
+        let mut config = if let Some(cfg) = config {
             cfg
         } else {
             BootstrapCacheConfig::default_config()?
         };
+        if let Some(bootstrap_cache_path) = peers_arg.get_bootstrap_cache_path()? {
+            config.cache_file_path = bootstrap_cache_path;
+        }
+
         let mut store = Self::new(config)?;
 
         // If it is the first node, clear the cache.
