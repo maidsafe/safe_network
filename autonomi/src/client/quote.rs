@@ -70,6 +70,12 @@ impl Client {
         let mut rate_limiter = RateLimiter::new();
 
         for (content_addr, raw_quotes) in raw_quotes_per_addr {
+            // FIXME: find better way to deal with paid content addrs and feedback to the user
+            // assume that content addr is already paid for and uploaded
+            if raw_quotes.is_empty() {
+                continue;
+            }
+
             // ask smart contract for the market price
             let quoting_metrics: Vec<QuotingMetrics> = raw_quotes
                 .clone()
