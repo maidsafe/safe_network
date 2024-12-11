@@ -10,6 +10,7 @@ repository = "https://github.com/maidsafe/autonomi"
 version = "0.4.3"
 
 [dependencies]
+ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
 ant-evm = { path = "../ant-evm", version = "0.1.4" }
 ant-logging = { path = "../ant-logging", version = "0.2.40" }
 ant-protocol = { path = "../ant-protocol", version = "0.17.15", features = ["rpc"] }

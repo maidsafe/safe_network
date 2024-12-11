@@ -177,7 +177,7 @@ async fn handle_event_receiver(
                         sender
                             .send(Err(ConnectError::TimedOutWithIncompatibleProtocol(
                                 protocols,
-                                IDENTIFY_PROTOCOL_STR.to_string(),
+                                IDENTIFY_PROTOCOL_STR.read().expect("Failed to obtain read lock for IDENTIFY_PROTOCOL_STR. A call to set_network_id performed. This should not happen").clone(),
                             )))
                             .expect("receiver should not close");
                     } else {

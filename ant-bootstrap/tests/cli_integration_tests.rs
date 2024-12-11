@@ -31,13 +31,14 @@ async fn test_first_flag() -> Result<(), Box<dyn std::error::Error>> {
     let args = PeersArgs {
         first: true,
         addrs: vec![],
-        network_contacts_url: None,
+        network_contacts_url: vec![],
         local: false,
         disable_mainnet_contacts: false,
         ignore_cache: false,
+        bootstrap_cache_dir: None,
     };
 
-    let addrs = args.get_addrs(Some(config)).await?;
+    let addrs = args.get_addrs(Some(config), None).await?;
 
     assert!(addrs.is_empty(), "First node should have no addrs");
 
@@ -56,13 +57,14 @@ async fn test_peer_argument() -> Result<(), Box<dyn std::error::Error>> {
     let args = PeersArgs {
         first: false,
         addrs: vec![peer_addr.clone()],
-        network_contacts_url: None,
+        network_contacts_url: vec![],
         local: false,
         disable_mainnet_contacts: true,
         ignore_cache: false,
+        bootstrap_cache_dir: None,
     };
 
-    let addrs = args.get_addrs(None).await?;
+    let addrs = args.get_addrs(None, None).await?;
 
     assert_eq!(addrs.len(), 1, "Should have one addr");
     assert_eq!(addrs[0], peer_addr, "Should have the correct address");
@@ -90,13 +92,14 @@ async fn test_network_contacts_fallback() -> Result<(), Box<dyn std::error::Erro
     let args = PeersArgs {
         first: false,
         addrs: vec![],
-        network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
+        network_contacts_url: vec![format!("{}/peers", mock_server.uri()).parse()?],
         local: false,
-        disable_mainnet_contacts: false,
-        ignore_cache: false,
+        disable_mainnet_contacts: true,
+        ignore_cache: true,
+        bootstrap_cache_dir: None,
     };
 
-    let addrs = args.get_addrs(Some(config)).await?;
+    let addrs = args.get_addrs(Some(config), None).await?;
     assert_eq!(
         addrs.len(),
         2,
@@ -120,13 +123,14 @@ async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
     let args = PeersArgs {
         first: false,
         addrs: vec![],
-        network_contacts_url: None,
+        network_contacts_url: vec![],
         local: true,
         disable_mainnet_contacts: false,
         ignore_cache: false,
+        bootstrap_cache_dir: None,
     };
 
-    let addrs = args.get_addrs(Some(config)).await?;
+    let addrs = args.get_addrs(Some(config), None).await?;
 
     assert!(addrs.is_empty(), "Local mode should have no peers");
 
@@ -155,13 +159,14 @@ async fn test_test_network_peers() -> Result<(), Box<dyn std::error::Error>> {
     let args = PeersArgs {
         first: false,
         addrs: vec![peer_addr.clone()],
-        network_contacts_url: None,
+        network_contacts_url: vec![],
         local: false,
         disable_mainnet_contacts: true,
         ignore_cache: false,
+        bootstrap_cache_dir: None,
     };
 
-    let addrs = args.get_addrs(Some(config)).await?;
+    let addrs = args.get_addrs(Some(config), None).await?;
 
     assert_eq!(addrs.len(), 1, "Should have exactly one test network peer");
     assert_eq!(

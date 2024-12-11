@@ -159,6 +159,22 @@ pub fn get_service_data_dir_path(
     Ok(path)
 }
 
+/// Get the bootstrap cache owner path
+#[cfg(unix)]
+pub fn get_bootstrap_cache_owner_path(owner: &str) -> Result<PathBuf> {
+    let path = PathBuf::from("/var/antctl/bootstrap_cache");
+
+    create_owned_dir(path.clone(), owner)?;
+    Ok(path)
+}
+
+#[cfg(windows)]
+pub fn get_bootstrap_cache_owner_path(_owner: &str) -> Result<PathBuf> {
+    let path = PathBuf::from("C:\\ProgramData\\antctl\\bootstrap_cache");
+    std::fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
 /// Get the logging directory for the service.
 ///
 /// It's a little counter-intuitive, but the owner will be `None` in the case of a user-mode

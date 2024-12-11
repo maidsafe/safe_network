@@ -124,11 +124,13 @@ impl SwarmDriver {
                     } => {
                         debug!(conn_id=%connection_id, %peer_id, ?info, "identify: received info");
 
-                        if info.protocol_version != IDENTIFY_PROTOCOL_STR.to_string() {
-                            warn!(?info.protocol_version, "identify: {peer_id:?} does not have the same protocol. Our IDENTIFY_PROTOCOL_STR: {:?}", IDENTIFY_PROTOCOL_STR.as_str());
+                        let our_identify_protocol = IDENTIFY_PROTOCOL_STR.read().expect("IDENTIFY_PROTOCOL_STR has been locked to write. A call to set_network_id performed. This should not happen.").to_string();
+
+                        if info.protocol_version != our_identify_protocol {
+                            warn!(?info.protocol_version, "identify: {peer_id:?} does not have the same protocol. Our IDENTIFY_PROTOCOL_STR: {our_identify_protocol:?}");
 
                             self.send_event(NetworkEvent::PeerWithUnsupportedProtocol {
-                                our_protocol: IDENTIFY_PROTOCOL_STR.to_string(),
+                                our_protocol: our_identify_protocol,
                                 their_protocol: info.protocol_version,
                             });
                             // Block the peer from any further communication.
@@ -143,8 +145,9 @@ impl SwarmDriver {
                             return Ok(());
                         }
 
+                        let our_agent_version = IDENTIFY_NODE_VERSION_STR.read().expect("IDENTIFY_NODE_VERSION_STR has been locked to write. A call to set_network_id performed. This should not happen.").to_string();
                         // if client, return.
-                        if info.agent_version != IDENTIFY_NODE_VERSION_STR.to_string() {
+                        if info.agent_version != our_agent_version {
                             return Ok(());
                         }
 
