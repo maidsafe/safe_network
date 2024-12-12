@@ -99,7 +99,7 @@ impl Client {
     }
 
     pub async fn init_with_config(config: ClientConfig) -> Result<Self, ant_bootstrap::Error> {
-        let (network, _event_receiver) = build_client_and_run_swarm(config.local);
+        let (network, event_receiver) = build_client_and_run_swarm(config.local);
 
         let peers_args = PeersArgs {
             disable_mainnet_contacts: config.local,
@@ -129,11 +129,24 @@ impl Client {
         if peers_with_p2p.len() < peers_len {
             tracing::warn!("Some bootstrap addresses have no peer ID, skipping them");
         }
-        let _ = network.add_peer_addresses(peers_with_p2p).await;
+
+        let network_clone = network.clone();
+        let _handle = ant_networking::target_arch::spawn(async move {
+            if let Err(err) = network_clone.add_peer_addresses(peers_with_p2p).await {
+                error!("Failed to add addresses with err: {err:?}");
+            }
+        });
+
+        let (sender, receiver) = futures::channel::oneshot::channel();
+        ant_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
+
+        let _ = receiver.await.expect("sender should not close");
+        debug!("Client is connected to the network");
 
         Ok(Self {
             network,
             client_event_sender: Arc::new(None),
+            evm_network: Default::default(),
         })
     }
 
