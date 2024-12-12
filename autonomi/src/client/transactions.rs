@@ -106,7 +106,7 @@ impl Client {
             put_quorum: Quorum::All,
             retry_strategy: None,
             use_put_record_to: Some(payees),
-            verification: Some((VerificationKind::Network, get_cfg)),
+            verification: Some((VerificationKind::Crdt, get_cfg)),
         };
 
         // put the record to the network
