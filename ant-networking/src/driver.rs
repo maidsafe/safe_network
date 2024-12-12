@@ -36,7 +36,7 @@ use ant_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
     storage::{try_deserialize_record, RetryStrategy},
     version::{
-        get_key_version_str, IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR,
+        get_network_id, IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR,
         IDENTIFY_PROTOCOL_STR, REQ_RESPONSE_VERSION_STR,
     },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
@@ -267,16 +267,16 @@ pub(super) struct NodeBehaviour {
 #[derive(Debug)]
 pub struct NetworkBuilder {
     bootstrap_cache: Option<BootstrapCacheStore>,
+    concurrency_limit: Option<usize>,
     is_behind_home_network: bool,
     keypair: Keypair,
-    local: bool,
     listen_addr: Option<SocketAddr>,
-    request_timeout: Option<Duration>,
-    concurrency_limit: Option<usize>,
+    local: bool,
     #[cfg(feature = "open-metrics")]
     metrics_registries: Option<MetricsRegistries>,
     #[cfg(feature = "open-metrics")]
     metrics_server_port: Option<u16>,
+    request_timeout: Option<Duration>,
     #[cfg(feature = "upnp")]
     upnp: bool,
 }
@@ -285,16 +285,16 @@ impl NetworkBuilder {
     pub fn new(keypair: Keypair, local: bool) -> Self {
         Self {
             bootstrap_cache: None,
+            concurrency_limit: None,
             is_behind_home_network: false,
             keypair,
-            local,
             listen_addr: None,
-            request_timeout: None,
-            concurrency_limit: None,
+            local,
             #[cfg(feature = "open-metrics")]
             metrics_registries: None,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: None,
+            request_timeout: None,
             #[cfg(feature = "upnp")]
             upnp: false,
         }
@@ -394,7 +394,7 @@ impl NetworkBuilder {
             check_and_wipe_storage_dir_if_necessary(
                 root_dir.clone(),
                 storage_dir_path.clone(),
-                get_key_version_str(),
+                get_network_id(),
             )?;
 
             // Configures the disk_store to store records under the provided path and increase the max record size
@@ -431,7 +431,6 @@ impl NetworkBuilder {
             Some(store_cfg),
             false,
             ProtocolSupport::Full,
-            IDENTIFY_NODE_VERSION_STR.to_string(),
             #[cfg(feature = "upnp")]
             upnp,
         )?;
@@ -471,7 +470,6 @@ impl NetworkBuilder {
             None,
             true,
             ProtocolSupport::Outbound,
-            IDENTIFY_CLIENT_VERSION_STR.to_string(),
             #[cfg(feature = "upnp")]
             false,
         )?;
@@ -486,9 +484,13 @@ impl NetworkBuilder {
         record_store_cfg: Option<NodeRecordStoreConfig>,
         is_client: bool,
         req_res_protocol: ProtocolSupport,
-        identify_version: String,
         #[cfg(feature = "upnp")] upnp: bool,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+        let identify_protocol_str = IDENTIFY_PROTOCOL_STR
+            .read()
+            .expect("Failed to obtain read lock for IDENTIFY_PROTOCOL_STR")
+            .clone();
+
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         #[cfg(not(target_arch = "wasm32"))]
@@ -552,7 +554,7 @@ impl NetworkBuilder {
                 "The protocol version string that is used to connect to the correct network",
                 Info::new(vec![(
                     "identify_protocol_str".to_string(),
-                    IDENTIFY_PROTOCOL_STR.to_string(),
+                    identify_protocol_str.clone(),
                 )]),
             );
 
@@ -566,14 +568,16 @@ impl NetworkBuilder {
         let request_response = {
             let cfg = RequestResponseConfig::default()
                 .with_request_timeout(self.request_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S));
+            let req_res_version_str = REQ_RESPONSE_VERSION_STR
+                .read()
+                .expect("Failed to obtain read lock for REQ_RESPONSE_VERSION_STR")
+                .clone();
 
-            info!(
-                "Building request response with {:?}",
-                REQ_RESPONSE_VERSION_STR.as_str()
-            );
+            info!("Building request response with {req_res_version_str:?}",);
             request_response::cbor::Behaviour::new(
                 [(
-                    StreamProtocol::new(&REQ_RESPONSE_VERSION_STR),
+                    StreamProtocol::try_from_owned(req_res_version_str)
+                        .expect("StreamProtocol should start with a /"),
                     req_res_protocol,
                 )],
                 cfg,
@@ -629,12 +633,22 @@ impl NetworkBuilder {
         #[cfg(feature = "local")]
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
+        let agent_version = if is_client {
+            IDENTIFY_CLIENT_VERSION_STR
+                .read()
+                .expect("Failed to obtain read lock for IDENTIFY_CLIENT_VERSION_STR")
+                .clone()
+        } else {
+            IDENTIFY_NODE_VERSION_STR
+                .read()
+                .expect("Failed to obtain read lock for IDENTIFY_NODE_VERSION_STR")
+                .clone()
+        };
         // Identify Behaviour
-        let identify_protocol_str = IDENTIFY_PROTOCOL_STR.to_string();
-        info!("Building Identify with identify_protocol_str: {identify_protocol_str:?} and identify_version: {identify_version:?}");
+        info!("Building Identify with identify_protocol_str: {identify_protocol_str:?} and identify_protocol_str: {identify_protocol_str:?}");
         let identify = {
             let cfg = libp2p::identify::Config::new(identify_protocol_str, self.keypair.public())
-                .with_agent_version(identify_version)
+                .with_agent_version(agent_version)
                 // Enlength the identify interval from default 5 mins to 1 hour.
                 .with_interval(RESEND_IDENTIFY_INVERVAL);
             libp2p::identify::Behaviour::new(cfg)
