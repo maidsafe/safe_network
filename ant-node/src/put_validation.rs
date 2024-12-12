@@ -162,29 +162,11 @@ impl Node {
                     .await
             }
             RecordKind::Transaction => {
-                let record_key = record.key.clone();
-                let value_to_hash = record.value.clone();
-                let transactions = try_deserialize_record::<Vec<Transaction>>(&record)?;
-                let result = self
-                    .validate_merge_and_store_transactions(transactions, &record_key)
-                    .await;
-                if result.is_ok() {
-                    Marker::ValidSpendPutFromClient(&PrettyPrintRecordKey::from(&record_key)).log();
-                    let content_hash = XorName::from_content(&value_to_hash);
-                    self.replicate_valid_fresh_record(
-                        record_key,
-                        RecordType::NonChunk(content_hash),
-                    );
-
-                    // Notify replication_fetcher to mark the attempt as completed.
-                    // Send the notification earlier to avoid it got skipped due to:
-                    // the record becomes stored during the fetch because of other interleaved process.
-                    self.network().notify_fetch_completed(
-                        record.key.clone(),
-                        RecordType::NonChunk(content_hash),
-                    );
-                }
-                result
+                // Transactions should always be paid for
+                error!("Transaction should not be validated at this point");
+                Err(Error::InvalidPutWithoutPayment(
+                    PrettyPrintRecordKey::from(&record.key).into_owned(),
+                ))
             }
             RecordKind::TransactionWithPayment => {
                 let (payment, transaction) =
@@ -224,6 +206,12 @@ impl Node {
                     .await;
                 if res.is_ok() {
                     let content_hash = XorName::from_content(&record.value);
+                    Marker::ValidTransactionPutFromClient(&PrettyPrintRecordKey::from(&record.key))
+                        .log();
+                    self.replicate_valid_fresh_record(
+                        record.key.clone(),
+                        RecordType::NonChunk(content_hash),
+                    );
 
                     // Notify replication_fetcher to mark the attempt as completed.
                     // Send the notification earlier to avoid it got skipped due to:

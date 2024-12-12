@@ -51,7 +51,7 @@ pub enum Marker<'a> {
     /// Valid paid to us and royalty paid register stored
     ValidPaidRegisterPutFromClient(&'a PrettyPrintRecordKey<'a>),
     /// Valid transaction stored
-    ValidSpendPutFromClient(&'a PrettyPrintRecordKey<'a>),
+    ValidTransactionPutFromClient(&'a PrettyPrintRecordKey<'a>),
     /// Valid scratchpad stored
     ValidScratchpadRecordPutFromClient(&'a PrettyPrintRecordKey<'a>),
 
