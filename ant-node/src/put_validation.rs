@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::collections::BTreeSet;
+
 use crate::{node::Node, Error, Marker, Result};
 use ant_evm::payment_vault::verify_data_payment;
 use ant_evm::{AttoTokens, ProofOfPayment};
@@ -589,23 +591,24 @@ impl Node {
         }
 
         // verify the transactions
-        let mut validated_transactions: Vec<Transaction> = transactions_for_key
+        let mut validated_transactions: BTreeSet<Transaction> = transactions_for_key
             .into_iter()
             .filter(|t| t.verify())
             .collect();
 
         // skip if none are valid
-        let addr = match validated_transactions.as_slice() {
-            [] => {
+        let addr = match validated_transactions.first() {
+            None => {
                 warn!("Found no validated transactions to store at {pretty_key:?}");
                 return Ok(());
             }
-            [t, ..] => t.address(),
+            Some(t) => t.address(),
         };
 
-        // add local transactions to the validated transactions
+        // add local transactions to the validated transactions, turn to Vec
         let local_txs = self.get_local_transactions(addr).await?;
-        validated_transactions.extend(local_txs);
+        validated_transactions.extend(local_txs.into_iter());
+        let validated_transactions: Vec<Transaction> = validated_transactions.into_iter().collect();
 
         // store the record into the local storage
         let record = Record {
