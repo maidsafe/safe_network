@@ -77,9 +77,9 @@ impl ProofOfPayment {
     pub fn quotes_by_peer(&self, peer_id: &PeerId) -> Vec<&PaymentQuote> {
         self.peer_quotes
             .iter()
-            .filter_map(|(id, quote)| {
-                if let Ok(id) = id.to_peer_id() {
-                    if id == *peer_id {
+            .filter_map(|(_id, quote)| {
+                if let Ok(quote_peer_id) = quote.peer_id() {
+                    if *peer_id == quote_peer_id {
                         return Some(quote);
                     }
                 }
