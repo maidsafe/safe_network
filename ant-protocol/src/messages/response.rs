@@ -9,7 +9,7 @@
 use crate::{error::Result, NetworkAddress};
 
 use super::ChunkProof;
-use ant_evm::{PaymentQuote, RewardsAddress};
+use ant_evm::PaymentQuote;
 use bytes::Bytes;
 use core::fmt;
 use libp2p::Multiaddr;
@@ -19,16 +19,14 @@ use std::fmt::Debug;
 /// The response to a query, containing the query result.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueryResponse {
-    // ===== GetStoreCost =====
+    // ===== GetStoreQuote =====
     //
-    /// Response to [`GetStoreCost`]
+    /// Response to [`GetStoreQuote`]
     ///
-    /// [`GetStoreCost`]: crate::messages::Query::GetStoreCost
-    GetStoreCost {
+    /// [`GetStoreQuote`]: crate::messages::Query::GetStoreQuote
+    GetStoreQuote {
         /// The store cost quote for storing the next record.
         quote: Result<PaymentQuote>,
-        /// The rewards address to pay this node's store cost to.
-        payment_address: RewardsAddress,
         /// Node's Peer Address
         peer_address: NetworkAddress,
         /// Storage proofs based on requested target address and difficulty
@@ -80,15 +78,15 @@ pub enum QueryResponse {
 impl Debug for QueryResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            QueryResponse::GetStoreCost {
+            QueryResponse::GetStoreQuote {
                 quote,
-                payment_address,
                 peer_address,
                 storage_proofs,
             } => {
+                let payment_address = quote.as_ref().map(|q| q.rewards_address).ok();
                 write!(
                     f,
-                    "GetStoreCost(quote: {quote:?}, from {peer_address:?} w/ payment_address: {payment_address:?}, and {} storage proofs)",
+                    "GetStoreQuote(quote: {quote:?}, from {peer_address:?} w/ payment_address: {payment_address:?}, and {} storage proofs)",
                     storage_proofs.len()
                 )
             }
@@ -151,11 +149,6 @@ pub enum CmdResponse {
     //
     /// Response to replication cmd
     Replicate(Result<()>),
-    //
-    // ===== QuoteVerification =====
-    //
-    /// Response to quote verification cmd
-    QuoteVerification(Result<()>),
     //
     // ===== PeerConsideredAsBad =====
     //

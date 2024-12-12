@@ -165,7 +165,7 @@ fn local_evm_network_from_csv() -> Result<Network, Error> {
 }
 
 #[allow(clippy::type_complexity)]
-pub(crate) fn http_provider(
+pub fn http_provider(
     rpc_url: reqwest::Url,
 ) -> FillProvider<
     JoinFill<

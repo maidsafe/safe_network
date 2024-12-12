@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ant_evm::{Amount, QuotingMetrics};
+use ant_evm::QuotingMetrics;
 use libp2p::PeerId;
 // this gets us to_string easily enough
 use strum::Display;
@@ -19,12 +19,8 @@ use strum::Display;
 pub enum Marker<'a> {
     /// Close records held (Used in VDash)
     CloseRecordsLen(usize),
-    /// Store cost
-    StoreCost {
-        /// Cost
-        cost: Amount,
-        quoting_metrics: &'a QuotingMetrics,
-    },
+    /// Quoting metrics
+    QuotingMetrics { quoting_metrics: &'a QuotingMetrics },
     /// The peer has been considered as bad
     PeerConsideredAsBad { bad_peer: &'a PeerId },
     /// We have been flagged as a bad node by a peer.
