@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::address::TransactionAddress;
+use bls::SecretKey;
 use serde::{Deserialize, Serialize};
 
 // re-exports
@@ -27,7 +28,26 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Create a new transaction, signing it with the provided secret key.
     pub fn new(
+        owner: PublicKey,
+        parents: Vec<PublicKey>,
+        content: TransactionContent,
+        outputs: Vec<(PublicKey, TransactionContent)>,
+        signing_key: &SecretKey,
+    ) -> Self {
+        let signature = signing_key.sign(Self::bytes_to_sign(&owner, &parents, &content, &outputs));
+        Self {
+            owner,
+            parents,
+            content,
+            outputs,
+            signature,
+        }
+    }
+
+    /// Create a new transaction, with the signature already calculated.
+    pub fn new_with_signature(
         owner: PublicKey,
         parents: Vec<PublicKey>,
         content: TransactionContent,
@@ -43,33 +63,42 @@ impl Transaction {
         }
     }
 
-    pub fn address(&self) -> TransactionAddress {
-        TransactionAddress::from_owner(self.owner)
-    }
-
-    pub fn bytes_for_signature(&self) -> Vec<u8> {
+    /// Get the bytes that the signature is calculated from.
+    pub fn bytes_to_sign(
+        owner: &PublicKey,
+        parents: &[PublicKey],
+        content: &[u8],
+        outputs: &[(PublicKey, TransactionContent)],
+    ) -> Vec<u8> {
         let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.owner.to_bytes());
+        bytes.extend_from_slice(&owner.to_bytes());
         bytes.extend_from_slice("parent".as_bytes());
         bytes.extend_from_slice(
-            &self
-                .parents
+            &parents
                 .iter()
                 .map(|p| p.to_bytes())
                 .collect::<Vec<_>>()
                 .concat(),
         );
         bytes.extend_from_slice("content".as_bytes());
-        bytes.extend_from_slice(&self.content);
+        bytes.extend_from_slice(content);
         bytes.extend_from_slice("outputs".as_bytes());
         bytes.extend_from_slice(
-            &self
-                .outputs
+            &outputs
                 .iter()
                 .flat_map(|(p, c)| [&p.to_bytes(), c.as_slice()].concat())
                 .collect::<Vec<_>>(),
         );
         bytes
+    }
+
+    pub fn address(&self) -> TransactionAddress {
+        TransactionAddress::from_owner(self.owner)
+    }
+
+    /// Get the bytes that the signature is calculated from.
+    pub fn bytes_for_signature(&self) -> Vec<u8> {
+        Self::bytes_to_sign(&self.owner, &self.parents, &self.content, &self.outputs)
     }
 
     pub fn verify(&self) -> bool {

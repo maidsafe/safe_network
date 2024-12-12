@@ -1065,50 +1065,6 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// If `client` is false, then include `self` among the `closest_peers`
-    pub async fn get_close_group_closest_peers(
-        &self,
-        key: &NetworkAddress,
-        client: bool,
-    ) -> Result<Vec<PeerId>> {
-        debug!("Getting the closest peers to {key:?}");
-        let (sender, receiver) = oneshot::channel();
-        self.send_network_swarm_cmd(NetworkSwarmCmd::GetClosestPeersToAddressFromNetwork {
-            key: key.clone(),
-            sender,
-        });
-        let k_bucket_peers = receiver.await?;
-
-        // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
-        let result_len = k_bucket_peers.len();
-        let mut closest_peers = k_bucket_peers;
-        // ensure we're not including self here
-        if client {
-            // remove our peer id from the calculations here:
-            closest_peers.retain(|&x| x != self.peer_id());
-            if result_len != closest_peers.len() {
-                info!("Remove self client from the closest_peers");
-            }
-        }
-        if tracing::level_enabled!(tracing::Level::DEBUG) {
-            let close_peers_pretty_print: Vec<_> = closest_peers
-                .iter()
-                .map(|peer_id| {
-                    format!(
-                        "{peer_id:?}({:?})",
-                        PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
-                    )
-                })
-                .collect();
-
-            debug!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
-        }
-
-        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?;
-        Ok(closest_peers.into_iter().cloned().collect())
-    }
-
-    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
-    /// If `client` is false, then include `self` among the `closest_peers`
     ///
     /// If less than CLOSE_GROUP_SIZE peers are found, it will return all the peers.
     pub async fn get_all_close_peers_in_range_or_close_group(
@@ -1155,7 +1111,7 @@ impl Network {
             );
         }
 
-        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?;
+        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE + 1)?;
         Ok(closest_peers.into_iter().cloned().collect())
     }
 
