@@ -14,14 +14,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::archive::{PrivateArchive, PrivateArchiveAccess};
 use crate::client::data::{CostError, DataMapChunk, GetError, PutError};
+use crate::client::files::get_relative_file_path_from_abs_file_and_folder_path;
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::Client;
 use ant_evm::EvmWallet;
 use bytes::Bytes;
 use std::{path::PathBuf, sync::LazyLock};
-
-use super::archive::{PrivateArchive, PrivateArchiveAccess};
 
 /// Number of files to upload in parallel.
 ///
@@ -124,7 +124,7 @@ impl Client {
 
         // start upload of file in parallel
         let mut upload_tasks = Vec::new();
-        for entry in walkdir::WalkDir::new(dir_path) {
+        for entry in walkdir::WalkDir::new(dir_path.clone()) {
             let entry = entry?;
             if !entry.file_type().is_file() {
                 continue;
@@ -148,8 +148,10 @@ impl Client {
         );
         let mut archive = PrivateArchive::new();
         for (path, metadata, maybe_file) in uploads.into_iter() {
+            let rel_path = get_relative_file_path_from_abs_file_and_folder_path(&path, &dir_path);
+
             match maybe_file {
-                Ok(file) => archive.add_file(path, file, metadata),
+                Ok(file) => archive.add_file(rel_path, file, metadata),
                 Err(err) => {
                     error!("Failed to upload file: {path:?}: {err:?}");
                     return Err(err);
