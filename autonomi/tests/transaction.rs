@@ -23,6 +23,11 @@ async fn transaction_put() -> Result<()> {
     let content = [0u8; 32];
     let transaction = Transaction::new(key.public_key(), vec![], content, vec![], &key);
 
+    // estimate the cost of the transaction
+    let cost = client.transaction_cost(key.clone()).await?;
+    println!("transaction cost: {cost}");
+
+    // put the transaction
     client.transaction_put(transaction.clone(), &wallet).await?;
     println!("transaction put 1");
 
