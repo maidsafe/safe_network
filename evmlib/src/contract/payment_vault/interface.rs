@@ -3,8 +3,6 @@ use crate::quoting_metrics::QuotingMetrics;
 use alloy::primitives::FixedBytes;
 use alloy::sol;
 
-pub const REQUIRED_PAYMENT_VERIFICATION_LENGTH: usize = 5;
-
 sol!(
     #[allow(missing_docs)]
     #[derive(Debug)]
@@ -17,7 +15,8 @@ impl From<(QuoteHash, QuotingMetrics, Address)> for IPaymentVault::PaymentVerifi
     fn from(value: (QuoteHash, QuotingMetrics, Address)) -> Self {
         Self {
             metrics: value.1.into(),
-            dataPayment: (value.0, value.2, Amount::ZERO).into(),
+            rewardsAddress: value.2,
+            quoteHash: value.0,
         }
     }
 }

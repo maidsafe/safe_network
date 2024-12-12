@@ -162,26 +162,14 @@
             "type": "tuple"
           },
           {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "rewardsAddress",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "quoteHash",
-                "type": "bytes32"
-              }
-            ],
-            "internalType": "struct IPaymentVault.DataPayment",
-            "name": "dataPayment",
-            "type": "tuple"
+            "internalType": "address",
+            "name": "rewardsAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "quoteHash",
+            "type": "bytes32"
           }
         ],
         "internalType": "struct IPaymentVault.PaymentVerification[]",

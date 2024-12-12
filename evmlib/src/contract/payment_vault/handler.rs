@@ -1,9 +1,7 @@
 use crate::common::{Address, Amount, Calldata, TxHash};
 use crate::contract::payment_vault::error::Error;
+use crate::contract::payment_vault::interface::IPaymentVault;
 use crate::contract::payment_vault::interface::IPaymentVault::IPaymentVaultInstance;
-use crate::contract::payment_vault::interface::{
-    IPaymentVault, REQUIRED_PAYMENT_VERIFICATION_LENGTH,
-};
 use alloy::network::{Network, TransactionBuilder};
 use alloy::providers::Provider;
 use alloy::transports::Transport;
@@ -98,10 +96,6 @@ where
             .into_iter()
             .map(|v| v.into())
             .collect();
-
-        if payment_verifications.len() != REQUIRED_PAYMENT_VERIFICATION_LENGTH {
-            return Err(Error::PaymentVerificationLengthInvalid);
-        }
 
         let results = self
             .contract

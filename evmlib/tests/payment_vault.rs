@@ -15,7 +15,6 @@ use evmlib::common::{Amount, U256};
 use evmlib::contract::network_token::NetworkToken;
 use evmlib::contract::payment_vault::handler::PaymentVaultHandler;
 use evmlib::contract::payment_vault::interface::IPaymentVault::DataPayment;
-use evmlib::contract::payment_vault::interface::REQUIRED_PAYMENT_VERIFICATION_LENGTH;
 use evmlib::contract::payment_vault::{interface, MAX_TRANSFERS_PER_TRANSACTION};
 use evmlib::quoting_metrics::QuotingMetrics;
 use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
@@ -137,7 +136,7 @@ async fn test_verify_payment() {
 
     let mut quote_payments = vec![];
 
-    for _ in 0..REQUIRED_PAYMENT_VERIFICATION_LENGTH {
+    for _ in 0..5 {
         let quote_payment = random_quote_payment();
         quote_payments.push(quote_payment);
     }
