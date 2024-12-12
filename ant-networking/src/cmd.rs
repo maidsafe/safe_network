@@ -13,8 +13,7 @@ use crate::{
     log_markers::Marker,
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
 };
-use alloy::primitives::U256;
-use ant_evm::{AttoTokens, PaymentQuote, QuotingMetrics};
+use ant_evm::{PaymentQuote, QuotingMetrics, U256};
 use ant_protocol::{
     convert_distance_to_u256,
     messages::{Cmd, Request, Response},
@@ -100,10 +99,11 @@ pub enum LocalSwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<Option<Record>>,
     },
-    /// GetLocalStoreCost for this node, also with the bad_node list close to the target
-    GetLocalStoreCost {
+    /// GetLocalQuotingMetrics for this node
+    /// Returns the quoting metrics and whether the record at `key` is already stored locally
+    GetLocalQuotingMetrics {
         key: RecordKey,
-        sender: oneshot::Sender<(AttoTokens, QuotingMetrics, Vec<NetworkAddress>)>,
+        sender: oneshot::Sender<(QuotingMetrics, bool)>,
     },
     /// Notify the node received a payment.
     PaymentReceived,
@@ -243,8 +243,8 @@ impl Debug for LocalSwarmCmd {
                     "LocalSwarmCmd::GetCloseGroupLocalPeers {{ key: {key:?} }}"
                 )
             }
-            LocalSwarmCmd::GetLocalStoreCost { .. } => {
-                write!(f, "LocalSwarmCmd::GetLocalStoreCost")
+            LocalSwarmCmd::GetLocalQuotingMetrics { .. } => {
+                write!(f, "LocalSwarmCmd::GetLocalQuotingMetrics")
             }
             LocalSwarmCmd::PaymentReceived => {
                 write!(f, "LocalSwarmCmd::PaymentReceived")
@@ -575,8 +575,8 @@ impl SwarmDriver {
                 cmd_string = "TriggerIntervalReplication";
                 self.try_interval_replication()?;
             }
-            LocalSwarmCmd::GetLocalStoreCost { key, sender } => {
-                cmd_string = "GetLocalStoreCost";
+            LocalSwarmCmd::GetLocalQuotingMetrics { key, sender } => {
+                cmd_string = "GetLocalQuotingMetrics";
                 let (
                     _index,
                     _total_peers,
@@ -586,15 +586,14 @@ impl SwarmDriver {
                 ) = self.kbuckets_status();
                 let estimated_network_size =
                     Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
-                let (cost, quoting_metrics) = self
+                let (quoting_metrics, is_already_stored) = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .store_cost(&key, Some(estimated_network_size as u64));
+                    .quoting_metrics(&key, Some(estimated_network_size as u64));
 
-                self.record_metrics(Marker::StoreCost {
-                    cost: cost.as_atto(),
+                self.record_metrics(Marker::QuotingMetrics {
                     quoting_metrics: &quoting_metrics,
                 });
 
@@ -632,7 +631,7 @@ impl SwarmDriver {
                         .retain(|peer_addr| key_address.distance(peer_addr) < boundary_distance);
                 }
 
-                let _res = sender.send((cost, quoting_metrics, bad_nodes));
+                let _res = sender.send((quoting_metrics, is_already_stored));
             }
             LocalSwarmCmd::PaymentReceived => {
                 cmd_string = "PaymentReceived";

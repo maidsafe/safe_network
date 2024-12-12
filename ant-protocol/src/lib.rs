@@ -36,17 +36,17 @@ use self::storage::{ChunkAddress, RegisterAddress, TransactionAddress};
 /// Re-export of Bytes used throughout the protocol
 pub use bytes::Bytes;
 
-use alloy::primitives::U256;
+use ant_evm::U256;
 use libp2p::{
     kad::{KBucketDistance as Distance, KBucketKey as Key, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::str::FromStr;
 use std::{
     borrow::Cow,
     fmt::{self, Debug, Display, Formatter, Write},
-    str::FromStr,
 };
 use xor_name::XorName;
 

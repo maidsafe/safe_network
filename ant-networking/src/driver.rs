@@ -29,9 +29,8 @@ use crate::{
 use crate::{
     metrics::service::run_metrics_server, metrics::NetworkMetricsRecorder, MetricsRegistries,
 };
-use alloy::primitives::U256;
 use ant_bootstrap::BootstrapCacheStore;
-use ant_evm::PaymentQuote;
+use ant_evm::{PaymentQuote, U256};
 use ant_protocol::{
     convert_distance_to_u256,
     messages::{ChunkProof, Nonce, Request, Response},

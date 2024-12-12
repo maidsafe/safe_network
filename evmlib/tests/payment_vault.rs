@@ -11,11 +11,15 @@ use alloy::providers::fillers::{
 use alloy::providers::{Identity, ProviderBuilder, ReqwestProvider, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{Client, Http};
-use evmlib::common::U256;
-use evmlib::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
+use evmlib::common::{Amount, U256};
 use evmlib::contract::network_token::NetworkToken;
+use evmlib::contract::payment_vault::handler::PaymentVaultHandler;
+use evmlib::contract::payment_vault::{interface, MAX_TRANSFERS_PER_TRANSACTION};
+use evmlib::quoting_metrics::QuotingMetrics;
 use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
+use evmlib::utils::http_provider;
 use evmlib::wallet::wallet_address;
+use evmlib::Network;
 
 async fn setup() -> (
     AnvilInstance,
@@ -38,7 +42,7 @@ async fn setup() -> (
         >,
         Ethereum,
     >,
-    DataPaymentsHandler<
+    PaymentVaultHandler<
         Http<Client>,
         FillProvider<
             JoinFill<
@@ -112,8 +116,65 @@ async fn test_deploy() {
 }
 
 #[tokio::test]
+async fn test_proxy_reachable() {
+    let network = Network::ArbitrumOne;
+    let provider = http_provider(network.rpc_url().clone());
+    let payment_vault = PaymentVaultHandler::new(*network.data_payments_address(), provider);
+
+    let amount = payment_vault
+        .get_quote(vec![QuotingMetrics::default()])
+        .await
+        .unwrap();
+
+    assert_eq!(amount, vec![Amount::from(1)]);
+}
+
+#[tokio::test]
+async fn test_verify_payment() {
+    let (_anvil, network_token, mut payment_vault) = setup().await;
+
+    let mut quote_payments = vec![];
+
+    for _ in 0..5 {
+        let quote_payment = random_quote_payment();
+        quote_payments.push(quote_payment);
+    }
+
+    let _ = network_token
+        .approve(*payment_vault.contract.address(), U256::MAX)
+        .await
+        .unwrap();
+
+    // Contract provider has a different account coupled to it,
+    // so we set it to the same as the network token contract
+    payment_vault.set_provider(network_token.contract.provider().clone());
+
+    let result = payment_vault.pay_for_quotes(quote_payments.clone()).await;
+
+    assert!(result.is_ok(), "Failed with error: {:?}", result.err());
+
+    let payment_verifications: Vec<_> = quote_payments
+        .into_iter()
+        .map(|v| interface::IPaymentVault::PaymentVerification {
+            metrics: QuotingMetrics::default().into(),
+            rewardsAddress: v.1,
+            quoteHash: v.0,
+        })
+        .collect();
+
+    let results = payment_vault
+        .verify_payment(payment_verifications)
+        .await
+        .expect("Verify payment failed");
+
+    for result in results {
+        assert!(result.isValid);
+    }
+}
+
+#[tokio::test]
 async fn test_pay_for_quotes() {
-    let (_anvil, network_token, mut data_payments) = setup().await;
+    let (_anvil, network_token, mut payment_vault) = setup().await;
 
     let mut quote_payments = vec![];
 
@@ -123,15 +184,15 @@ async fn test_pay_for_quotes() {
     }
 
     let _ = network_token
-        .approve(*data_payments.contract.address(), U256::MAX)
+        .approve(*payment_vault.contract.address(), U256::MAX)
         .await
         .unwrap();
 
     // Contract provider has a different account coupled to it,
     // so we set it to the same as the network token contract
-    data_payments.set_provider(network_token.contract.provider().clone());
+    payment_vault.set_provider(network_token.contract.provider().clone());
 
-    let result = data_payments.pay_for_quotes(quote_payments).await;
+    let result = payment_vault.pay_for_quotes(quote_payments).await;
 
     assert!(result.is_ok(), "Failed with error: {:?}", result.err());
 }

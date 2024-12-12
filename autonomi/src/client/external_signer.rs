@@ -1,40 +1,39 @@
 use crate::client::data::PutError;
-use crate::client::utils::extract_quote_payments;
 use crate::self_encryption::encrypt;
 use crate::Client;
-use ant_evm::{PaymentQuote, QuotePayment};
+use ant_evm::QuotePayment;
 use ant_protocol::storage::Chunk;
 use bytes::Bytes;
 use std::collections::HashMap;
 use xor_name::XorName;
 
-use crate::utils::cost_map_to_quotes;
 #[allow(unused_imports)]
 pub use ant_evm::external_signer::*;
+
+use super::quote::QuoteForAddress;
 
 impl Client {
     /// Get quotes for data.
     /// Returns a cost map, data payments to be executed and a list of free (already paid for) chunks.
     pub async fn get_quotes_for_content_addresses(
         &self,
-        content_addrs: impl Iterator<Item = XorName>,
+        content_addrs: impl Iterator<Item = XorName> + Clone,
     ) -> Result<
         (
-            HashMap<XorName, PaymentQuote>,
+            HashMap<XorName, QuoteForAddress>,
             Vec<QuotePayment>,
             Vec<XorName>,
         ),
         PutError,
     > {
-        let cost_map = self.get_store_quotes(content_addrs).await?;
-        let (quote_payments, free_chunks) = extract_quote_payments(&cost_map);
-        let quotes = cost_map_to_quotes(cost_map);
+        let quote = self.get_store_quotes(content_addrs.clone()).await?;
+        let payments = quote.payments();
+        let free_chunks = content_addrs
+            .filter(|addr| !quote.0.contains_key(addr))
+            .collect();
+        let quotes_per_addr: HashMap<_, _> = quote.0.into_iter().collect();
 
-        debug!(
-            "Got the quotes , quote_payments and freechunks from the network {:?}",
-            (quotes.clone(), quote_payments.clone(), free_chunks.clone())
-        );
-        Ok((quotes, quote_payments, free_chunks))
+        Ok((quotes_per_addr, payments, free_chunks))
     }
 }
 

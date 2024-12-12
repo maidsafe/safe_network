@@ -6,16 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{AttoTokens, EvmError};
-use alloy::primitives::U256;
-use evmlib::common::TxHash;
+use crate::EvmError;
 use evmlib::{
     common::{Address as RewardsAddress, QuoteHash},
+    quoting_metrics::QuotingMetrics,
     utils::dummy_address,
 };
 use libp2p::{identity::PublicKey, PeerId};
 use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Formatter, Result as FmtResult};
 #[cfg(not(target_arch = "wasm32"))]
 pub use std::time::SystemTime;
 #[cfg(target_arch = "wasm32")]
@@ -28,66 +26,89 @@ pub const QUOTE_EXPIRATION_SECS: u64 = 3600;
 /// The margin allowed for live_time
 const LIVE_TIME_MARGIN: u64 = 10;
 
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct EncodedPeerId(Vec<u8>);
+
+impl EncodedPeerId {
+    pub fn to_peer_id(&self) -> Result<PeerId, libp2p::identity::ParseError> {
+        PeerId::from_bytes(&self.0)
+    }
+}
+
+impl From<PeerId> for EncodedPeerId {
+    fn from(peer_id: PeerId) -> Self {
+        let bytes = peer_id.to_bytes();
+        EncodedPeerId(bytes)
+    }
+}
+
 /// The proof of payment for a data payment
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct ProofOfPayment {
-    /// The Quote we're paying for
-    pub quote: PaymentQuote,
-    /// The transaction hash
-    pub tx_hash: TxHash,
+    pub peer_quotes: Vec<(EncodedPeerId, PaymentQuote)>,
 }
 
 impl ProofOfPayment {
-    pub fn to_peer_id_payee(&self) -> Option<PeerId> {
-        let pub_key = PublicKey::try_decode_protobuf(&self.quote.pub_key).ok()?;
-        Some(PeerId::from_public_key(&pub_key))
+    /// returns a short digest of the proof of payment to use for verification
+    pub fn digest(&self) -> Vec<(QuoteHash, QuotingMetrics, RewardsAddress)> {
+        self.peer_quotes
+            .clone()
+            .into_iter()
+            .map(|(_, quote)| (quote.hash(), quote.quoting_metrics, quote.rewards_address))
+            .collect()
     }
-}
 
-/// Quoting metrics that got used to generate a quote, or to track peer's status.
-#[derive(Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct QuotingMetrics {
-    /// the records stored
-    pub close_records_stored: usize,
-    /// the max_records configured
-    pub max_records: usize,
-    /// number of times that got paid
-    pub received_payment_count: usize,
-    /// the duration that node keeps connected to the network, measured in hours
-    pub live_time: u64,
-    /// network density from this node's perspective, which is the responsible_range as well
-    /// This could be calculated via sampling, or equation calculation.
-    pub network_density: Option<[u8; 32]>,
-    /// estimated network size
-    pub network_size: Option<u64>,
-}
-
-impl Debug for QuotingMetrics {
-    fn fmt(&self, formatter: &mut Formatter) -> FmtResult {
-        let density_u256 = self.network_density.map(U256::from_be_bytes);
-
-        write!(formatter, "QuotingMetrics {{ close_records_stored: {}, max_records: {}, received_payment_count: {}, live_time: {}, network_density: {density_u256:?}, network_size: {:?} }}",
-            self.close_records_stored, self.max_records, self.received_payment_count, self.live_time, self.network_size)
+    /// returns the list of payees
+    pub fn payees(&self) -> Vec<PeerId> {
+        self.peer_quotes
+            .iter()
+            .filter_map(|(peer_id, _)| peer_id.to_peer_id().ok())
+            .collect()
     }
-}
 
-impl QuotingMetrics {
-    /// construct an empty QuotingMetrics
-    pub fn new() -> Self {
-        Self {
-            close_records_stored: 0,
-            max_records: 0,
-            received_payment_count: 0,
-            live_time: 0,
-            network_density: None,
-            network_size: None,
+    /// has the quote expired
+    pub fn has_expired(&self) -> bool {
+        self.peer_quotes
+            .iter()
+            .any(|(_, quote)| quote.has_expired())
+    }
+
+    /// Returns all quotes by given peer id
+    pub fn quotes_by_peer(&self, peer_id: &PeerId) -> Vec<&PaymentQuote> {
+        self.peer_quotes
+            .iter()
+            .filter_map(|(_id, quote)| {
+                if let Ok(quote_peer_id) = quote.peer_id() {
+                    if *peer_id == quote_peer_id {
+                        return Some(quote);
+                    }
+                }
+                None
+            })
+            .collect()
+    }
+
+    /// verifies the proof of payment is valid for the given peer id
+    pub fn verify_for(&self, peer_id: PeerId) -> bool {
+        // make sure I am in the list of payees
+        if !self.payees().contains(&peer_id) {
+            return false;
         }
-    }
-}
 
-impl Default for QuotingMetrics {
-    fn default() -> Self {
-        Self::new()
+        // verify all signatures
+        for (encoded_peer_id, quote) in self.peer_quotes.iter() {
+            let peer_id = match encoded_peer_id.to_peer_id() {
+                Ok(peer_id) => peer_id,
+                Err(e) => {
+                    warn!("Invalid encoded peer id: {e}");
+                    return false;
+                }
+            };
+            if !quote.check_is_signed_by_claimed_peer(peer_id) {
+                return false;
+            }
+        }
+        true
     }
 }
 
@@ -98,17 +119,10 @@ impl Default for QuotingMetrics {
 pub struct PaymentQuote {
     /// the content paid for
     pub content: XorName,
-    /// how much the node demands for storing the content
-    /// TODO: to be removed once swtich to `client querying smart_contract`
-    pub cost: AttoTokens,
     /// the local node time when the quote was created
     pub timestamp: SystemTime,
     /// quoting metrics being used to generate this quote
     pub quoting_metrics: QuotingMetrics,
-    /// list of bad_nodes that client shall not pick as a payee
-    /// in `serialised` format to avoid cyclic dependent on ant_protocol
-    #[debug(skip)]
-    pub bad_nodes: Vec<u8>,
     /// the node's wallet address
     pub rewards_address: RewardsAddress,
     /// the node's libp2p identity public key in bytes (PeerId)
@@ -124,10 +138,8 @@ impl PaymentQuote {
     pub fn zero() -> Self {
         Self {
             content: Default::default(),
-            cost: AttoTokens::zero(),
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
-            bad_nodes: vec![],
             rewards_address: dummy_address(),
             pub_key: vec![],
             signature: vec![],
@@ -144,14 +156,11 @@ impl PaymentQuote {
     /// returns the bytes to be signed from the given parameters
     pub fn bytes_for_signing(
         xorname: XorName,
-        cost: AttoTokens,
         timestamp: SystemTime,
         quoting_metrics: &QuotingMetrics,
-        serialised_bad_nodes: &[u8],
         rewards_address: &RewardsAddress,
     ) -> Vec<u8> {
         let mut bytes = xorname.to_vec();
-        bytes.extend_from_slice(&cost.to_bytes());
         bytes.extend_from_slice(
             &timestamp
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -161,7 +170,6 @@ impl PaymentQuote {
         );
         let serialised_quoting_metrics = rmp_serde::to_vec(quoting_metrics).unwrap_or_default();
         bytes.extend_from_slice(&serialised_quoting_metrics);
-        bytes.extend_from_slice(serialised_bad_nodes);
         bytes.extend_from_slice(rewards_address.as_slice());
         bytes
     }
@@ -170,10 +178,8 @@ impl PaymentQuote {
     pub fn bytes_for_sig(&self) -> Vec<u8> {
         Self::bytes_for_signing(
             self.content,
-            self.cost,
             self.timestamp,
             &self.quoting_metrics,
-            &self.bad_nodes,
             &self.rewards_address,
         )
     }
@@ -214,7 +220,7 @@ impl PaymentQuote {
         true
     }
 
-    /// Returns true) if the quote has not yet expired
+    /// Returns true if the quote has expired
     pub fn has_expired(&self) -> bool {
         let now = SystemTime::now();
 
@@ -226,13 +232,11 @@ impl PaymentQuote {
     }
 
     /// test utility to create a dummy quote
-    pub fn test_dummy(xorname: XorName, cost: AttoTokens) -> Self {
+    pub fn test_dummy(xorname: XorName) -> Self {
         Self {
             content: xorname,
-            cost,
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
-            bad_nodes: vec![],
             pub_key: vec![],
             signature: vec![],
             rewards_address: dummy_address(),
@@ -313,6 +317,14 @@ mod tests {
 
     use libp2p::identity::Keypair;
     use std::{thread::sleep, time::Duration};
+
+    #[test]
+    fn test_encode_decode_peer_id() {
+        let id = PeerId::random();
+        let encoded = EncodedPeerId::from(id);
+        let decoded = encoded.to_peer_id().expect("decode to work");
+        assert_eq!(id, decoded);
+    }
 
     #[test]
     fn test_is_newer_than() {

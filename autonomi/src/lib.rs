@@ -64,14 +64,11 @@ extern crate tracing;
 
 pub mod client;
 mod self_encryption;
-mod utils;
 
 pub use ant_evm::get_evm_network_from_env;
 pub use ant_evm::EvmNetwork as Network;
 pub use ant_evm::EvmWallet as Wallet;
 pub use ant_evm::RewardsAddress;
-#[cfg(feature = "external-signer")]
-pub use utils::receipt_from_quotes_and_payments;
 
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
