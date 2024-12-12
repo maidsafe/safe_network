@@ -239,7 +239,7 @@ impl Client {
         name: String,
         owner: RegisterSecretKey,
     ) -> Result<AttoTokens, RegisterError> {
-        info!("Getting cost for register with name: {name}");
+        trace!("Getting cost for register with name: {name}");
         // get register address
         let pk = owner.public_key();
         let name = XorName::from_content_parts(&[name.as_bytes()]);
@@ -321,15 +321,6 @@ impl Client {
         };
 
         let payees = proof.payees();
-
-        if payees.is_empty() {
-            error!(
-                "Failed to get payees from payment proof: {:?}",
-                RegisterError::PayeesMissing
-            );
-            return Err(RegisterError::PayeesMissing);
-        }
-
         let signed_register = register.signed_reg.clone();
 
         let record = Record {
