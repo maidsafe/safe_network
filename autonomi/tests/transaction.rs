@@ -6,8 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-#![cfg(feature = "transactions")]
-
 use ant_logging::LogBuilder;
 use ant_protocol::storage::Transaction;
 use autonomi::Client;

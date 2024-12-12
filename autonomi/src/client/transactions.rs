@@ -11,9 +11,11 @@ use crate::client::Client;
 use crate::client::ClientEvent;
 use crate::client::UploadSummary;
 
+use ant_evm::Amount;
+use ant_evm::AttoTokens;
 pub use ant_protocol::storage::Transaction;
 use ant_protocol::storage::TransactionAddress;
-pub use bls::SecretKey as TransactionSecretKey;
+pub use bls::SecretKey;
 
 use ant_evm::{EvmWallet, EvmWalletError};
 use ant_networking::{GetRecordCfg, NetworkError, PutRecordCfg, VerificationKind};
@@ -41,6 +43,8 @@ pub enum TransactionError {
     Wallet(#[from] EvmWalletError),
     #[error("Received invalid quote from node, this node is possibly malfunctioning, try another node by trying another transaction name")]
     InvalidQuote,
+    #[error("Transaction already exists at this address: {0:?}")]
+    TransactionAlreadyExists(TransactionAddress),
 }
 
 impl Client {
@@ -61,28 +65,28 @@ impl Client {
     ) -> Result<(), TransactionError> {
         let address = transaction.address();
 
+        // pay for the transaction
         let xor_name = address.xorname();
         debug!("Paying for transaction at address: {address:?}");
-        let (payment_proofs, _skipped) = self
+        let payment_proofs = self
             .pay(std::iter::once(*xor_name), wallet)
             .await
             .inspect_err(|err| {
                 error!("Failed to pay for transaction at address: {address:?} : {err}")
             })?;
-        let proof = if let Some(proof) = payment_proofs.get(xor_name) {
-            proof
-        } else {
-            // transaction was skipped, meaning it was already paid for
-            error!("Transaction at address: {address:?} was already paid for");
-            return Err(TransactionError::Network(
-                NetworkError::TransactionAlreadyExists,
-            ));
-        };
-        let payee = proof
-            .to_peer_id_payee()
-            .ok_or(TransactionError::InvalidQuote)
-            .inspect_err(|err| error!("Failed to get payee from payment proof: {err}"))?;
 
+        // make sure the transaction was paid for
+        let (proof, price) = match payment_proofs.get(xor_name) {
+            Some((proof, price)) => (proof, price),
+            None => {
+                // transaction was skipped, meaning it was already paid for
+                error!("Transaction at address: {address:?} was already paid for");
+                return Err(TransactionError::TransactionAlreadyExists(address));
+            }
+        };
+
+        // prepare the record for network storage
+        let payees = proof.payees();
         let record = Record {
             key: NetworkAddress::from_transaction_address(address).to_record_key(),
             value: try_serialize_record(&(proof, &transaction), RecordKind::TransactionWithPayment)
@@ -91,7 +95,6 @@ impl Client {
             publisher: None,
             expires: None,
         };
-
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
             retry_strategy: Some(RetryStrategy::default()),
@@ -102,10 +105,11 @@ impl Client {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             retry_strategy: None,
-            use_put_record_to: Some(vec![payee]),
+            use_put_record_to: Some(payees),
             verification: Some((VerificationKind::Network, get_cfg)),
         };
 
+        // put the record to the network
         debug!("Storing transaction at address {address:?} to the network");
         self.network
             .put_record(record, &put_cfg)
@@ -114,10 +118,11 @@ impl Client {
                 error!("Failed to put record - transaction {address:?} to the network: {err}")
             })?;
 
+        // send client event
         if let Some(channel) = self.client_event_sender.as_ref() {
             let summary = UploadSummary {
                 record_count: 1,
-                tokens_spent: proof.quote.cost.as_atto(),
+                tokens_spent: price.as_atto(),
             };
             if let Err(err) = channel.send(ClientEvent::UploadComplete(summary)).await {
                 error!("Failed to send client event: {err}");
@@ -127,29 +132,22 @@ impl Client {
         Ok(())
     }
 
-    // /// Get the cost to create a transaction
-    // pub async fn transaction_cost(
-    //     &self,
-    //     name: String,
-    //     owner: TransactionSecretKey,
-    // ) -> Result<AttoTokens, TransactionError> {
-    //     info!("Getting cost for transaction with name: {name}");
-    //     // get transaction address
-    //     let pk = owner.public_key();
-    //     let name = XorName::from_content_parts(&[name.as_bytes()]);
-    //     let transaction = Transaction::new(None, name, owner, permissions)?;
-    //     let reg_xor = transaction.address().xorname();
+    /// Get the cost to create a transaction
+    pub async fn transaction_cost(&self, key: SecretKey) -> Result<AttoTokens, TransactionError> {
+        let pk = key.public_key();
+        trace!("Getting cost for transaction of {pk:?}");
 
-    //     // get cost to store transaction
-    //     // NB TODO: transaction should be priced differently from other data
-    //     let cost_map = self.get_store_quotes(std::iter::once(reg_xor)).await?;
-    //     let total_cost = AttoTokens::from_atto(
-    //         cost_map
-    //             .values()
-    //             .map(|quote| quote.2.cost.as_atto())
-    //             .sum::<Amount>(),
-    //     );
-    //     debug!("Calculated the cost to create transaction with name: {name} is {total_cost}");
-    //     Ok(total_cost)
-    // }
+        let address = TransactionAddress::from_owner(pk);
+        let xor = *address.xorname();
+        let store_quote = self.get_store_quotes(std::iter::once(xor)).await?;
+        let total_cost = AttoTokens::from_atto(
+            store_quote
+                .0
+                .values()
+                .map(|quote| quote.price())
+                .sum::<Amount>(),
+        );
+        debug!("Calculated the cost to create transaction of {pk:?} is {total_cost}");
+        Ok(total_cost)
+    }
 }

@@ -14,16 +14,15 @@ pub mod payment;
 pub mod quote;
 
 pub mod data;
+pub mod files;
+pub mod transactions;
+
 #[cfg(feature = "external-signer")]
 #[cfg_attr(docsrs, doc(cfg(feature = "external-signer")))]
 pub mod external_signer;
-pub mod files;
 #[cfg(feature = "registers")]
 #[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
 pub mod registers;
-#[cfg(feature = "transactions")]
-#[cfg_attr(docsrs, doc(cfg(feature = "transactions")))]
-pub mod transactions;
 #[cfg(feature = "vault")]
 #[cfg_attr(docsrs, doc(cfg(feature = "vault")))]
 pub mod vault;
