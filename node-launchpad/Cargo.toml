@@ -23,7 +23,7 @@ ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
 ant-evm = { path = "../ant-evm", version = "0.1.4" }
 ant-node-manager = { version = "0.11.3", path = "../ant-node-manager" }
 ant-protocol = { path = "../ant-protocol", version = "0.17.15" }
-ant-releases = { git = "https://github.com/jacderida/ant-releases.git", branch = "chore-rename_binaries" }
+ant-releases = { version = "0.4.0" }
 ant-service-management = { version = "0.4.3", path = "../ant-service-management" }
 arboard = "3.4.1"
 atty = "0.2.14"
