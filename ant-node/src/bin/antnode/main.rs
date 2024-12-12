@@ -22,7 +22,7 @@ use ant_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use ant_protocol::{
     node::get_antnode_root_dir,
     node_rpc::{NodeCtrl, StopResult},
-    version::IDENTIFY_PROTOCOL_STR,
+    version,
 };
 use clap::{command, Parser};
 use color_eyre::{eyre::eyre, Result};
@@ -128,6 +128,12 @@ struct Opt {
     #[clap(long, verbatim_doc_comment)]
     max_archived_log_files: Option<usize>,
 
+    /// Specify the network ID to use. This will allow you to run the node on a different network.
+    ///
+    /// By default, the network ID is set to 1, which represents the mainnet.
+    #[clap(long, verbatim_doc_comment)]
+    network_id: Option<u8>,
+
     /// Specify the rewards address.
     /// The rewards address is the address that will receive the rewards for the node.
     /// It should be a valid EVM address.
@@ -217,13 +223,20 @@ fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
 
+    if let Some(network_id) = opt.network_id {
+        version::set_network_id(network_id);
+    }
+
+    let identify_protocol_str = version::IDENTIFY_PROTOCOL_STR
+        .read()
+        .expect("Failed to obtain read lock for IDENTIFY_PROTOCOL_STR");
     if opt.version {
         println!(
             "{}",
             ant_build_info::version_string(
                 "Autonomi Node",
                 env!("CARGO_PKG_VERSION"),
-                Some(&IDENTIFY_PROTOCOL_STR)
+                Some(&identify_protocol_str)
             )
         );
         return Ok(());
@@ -240,7 +253,7 @@ fn main() -> Result<()> {
     }
 
     if opt.protocol_version {
-        println!("Network version: {}", *IDENTIFY_PROTOCOL_STR);
+        println!("Network version: {identify_protocol_str}");
         return Ok(());
     }
 
@@ -279,7 +292,7 @@ fn main() -> Result<()> {
     );
     info!("\n{}\n{}", msg, "=".repeat(msg.len()));
 
-    ant_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR);
+    ant_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &identify_protocol_str);
     debug!(
         "antnode built with git version: {}",
         ant_build_info::git_info()
@@ -295,7 +308,7 @@ fn main() -> Result<()> {
     // another process with these args.
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
-    let initial_peres = rt.block_on(opt.peers.get_addrs(None))?;
+    let initial_peres = rt.block_on(opt.peers.get_addrs(None, Some(100)))?;
     debug!("Node's owner set to: {:?}", opt.owner);
     let restart_options = rt.block_on(async move {
         let mut node_builder = NodeBuilder::new(

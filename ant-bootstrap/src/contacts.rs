@@ -95,7 +95,6 @@ impl ContactsFetcher {
             self.endpoints
         );
         let mut bootstrap_addresses = Vec::new();
-        let mut last_error = None;
 
         let mut fetches = stream::iter(self.endpoints.clone())
             .map(|endpoint| async move {
@@ -131,37 +130,16 @@ impl ContactsFetcher {
                 }
                 Err(e) => {
                     warn!("Failed to fetch bootstrap addrs from {}: {}", endpoint, e);
-                    last_error = Some(e);
                 }
             }
         }
 
-        if bootstrap_addresses.is_empty() {
-            last_error.map_or_else(
-                || {
-                    warn!("No bootstrap addrs found from any endpoint and no errors reported");
-                    Err(Error::NoBootstrapAddressesFound(
-                        "No valid peers found from any endpoint".to_string(),
-                    ))
-                },
-                |e| {
-                    warn!(
-                        "No bootstrap addrs found from any endpoint. Last error: {}",
-                        e
-                    );
-                    Err(Error::NoBootstrapAddressesFound(format!(
-                        "No valid bootstrap addrs found from any endpoint: {e}",
-                    )))
-                },
-            )
-        } else {
-            info!(
-                "Successfully discovered {} total addresses. First few: {:?}",
-                bootstrap_addresses.len(),
-                bootstrap_addresses.iter().take(3).collect::<Vec<_>>()
-            );
-            Ok(bootstrap_addresses)
-        }
+        info!(
+            "Successfully discovered {} total addresses. First few: {:?}",
+            bootstrap_addresses.len(),
+            bootstrap_addresses.iter().take(3).collect::<Vec<_>>()
+        );
+        Ok(bootstrap_addresses)
     }
 
     /// Fetch the list of multiaddrs from a single endpoint
@@ -244,20 +222,13 @@ impl ContactsFetcher {
                     })
                     .collect::<Vec<_>>();
 
-                if bootstrap_addresses.is_empty() {
-                    warn!("No valid peers found in JSON response");
-                    Err(Error::NoBootstrapAddressesFound(
-                        "No valid peers found in JSON response".to_string(),
-                    ))
-                } else {
-                    info!(
-                        "Successfully parsed {} valid peers from JSON",
-                        bootstrap_addresses.len()
-                    );
-                    Ok(bootstrap_addresses)
-                }
+                info!(
+                    "Successfully parsed {} valid peers from JSON",
+                    bootstrap_addresses.len()
+                );
+                Ok(bootstrap_addresses)
             }
-            Err(e) => {
+            Err(_err) => {
                 info!("Attempting to parse response as plain text");
                 // Try parsing as plain text with one multiaddr per line
                 // example of contacts file exists in resources/network-contacts-examples
@@ -266,20 +237,11 @@ impl ContactsFetcher {
                     .filter_map(|str| craft_valid_multiaddr_from_str(str, ignore_peer_id))
                     .collect::<Vec<_>>();
 
-                if bootstrap_addresses.is_empty() {
-                    warn!(
-                        "No valid bootstrap addrs found in plain text response. Previous Json error: {e:?}"
-                    );
-                    Err(Error::NoBootstrapAddressesFound(
-                        "No valid bootstrap addrs found in plain text response".to_string(),
-                    ))
-                } else {
-                    info!(
-                        "Successfully parsed {} valid bootstrap addrs from plain text",
-                        bootstrap_addresses.len()
-                    );
-                    Ok(bootstrap_addresses)
-                }
+                info!(
+                    "Successfully parsed {} valid bootstrap addrs from plain text",
+                    bootstrap_addresses.len()
+                );
+                Ok(bootstrap_addresses)
             }
         }
     }
@@ -385,24 +347,6 @@ mod tests {
                 .parse()
                 .unwrap();
         assert_eq!(addrs[0].addr, valid_addr);
-    }
-
-    #[tokio::test]
-    async fn test_empty_response() {
-        let mock_server = MockServer::start().await;
-
-        Mock::given(method("GET"))
-            .and(path("/"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(""))
-            .mount(&mock_server)
-            .await;
-
-        let mut fetcher = ContactsFetcher::new().unwrap();
-        fetcher.endpoints = vec![mock_server.uri().parse().unwrap()];
-
-        let result = fetcher.fetch_bootstrap_addresses().await;
-
-        assert!(matches!(result, Err(Error::NoBootstrapAddressesFound(_))));
     }
 
     #[tokio::test]
