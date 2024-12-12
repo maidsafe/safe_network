@@ -14,7 +14,6 @@ use alloy::transports::http::{Client, Http};
 use evmlib::common::{Amount, U256};
 use evmlib::contract::network_token::NetworkToken;
 use evmlib::contract::payment_vault::handler::PaymentVaultHandler;
-use evmlib::contract::payment_vault::interface::IPaymentVault::DataPayment;
 use evmlib::contract::payment_vault::{interface, MAX_TRANSFERS_PER_TRANSACTION};
 use evmlib::quoting_metrics::QuotingMetrics;
 use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
@@ -158,11 +157,8 @@ async fn test_verify_payment() {
         .into_iter()
         .map(|v| interface::IPaymentVault::PaymentVerification {
             metrics: QuotingMetrics::default().into(),
-            dataPayment: DataPayment {
-                rewardsAddress: v.1,
-                amount: v.2,
-                quoteHash: v.0,
-            },
+            rewardsAddress: v.1,
+            quoteHash: v.0,
         })
         .collect();
 
