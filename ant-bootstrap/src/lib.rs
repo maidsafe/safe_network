@@ -27,6 +27,7 @@ pub mod contacts;
 pub mod error;
 mod initial_peers;
 
+use ant_protocol::version::{get_network_id, get_truncate_version_str};
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
@@ -251,4 +252,8 @@ pub fn multiaddr_get_peer_id(addr: &Multiaddr) -> Option<PeerId> {
         Some(Protocol::P2p(id)) => Some(id),
         _ => None,
     }
+}
+
+pub fn get_network_version() -> String {
+    format!("{}_{}", get_network_id(), get_truncate_version_str())
 }

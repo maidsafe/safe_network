@@ -13,6 +13,16 @@ use reqwest::Client;
 use std::time::Duration;
 use url::Url;
 
+const MAINNET_CONTACTS: &[&str] = &[
+    "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts",
+    "http://159.89.251.80/bootstrap_cache.json",
+    "http://159.65.210.89/bootstrap_cache.json",
+    "http://159.223.246.45/bootstrap_cache.json",
+    "http://139.59.201.153/bootstrap_cache.json",
+    "http://139.59.200.27/bootstrap_cache.json",
+    "http://139.59.198.251/bootstrap_cache.json",
+];
+
 /// The client fetch timeout
 #[cfg(not(target_arch = "wasm32"))]
 const FETCH_TIMEOUT_SECS: u64 = 30;
@@ -23,6 +33,8 @@ const MAX_RETRIES_ON_FETCH_FAILURE: usize = 3;
 
 /// Discovers initial peers from a list of endpoints
 pub struct ContactsFetcher {
+    /// The number of addrs to fetch
+    max_addrs: usize,
     /// The list of endpoints
     endpoints: Vec<Url>,
     /// Reqwest Client
@@ -48,23 +60,25 @@ impl ContactsFetcher {
         let request_client = Client::builder().build()?;
 
         Ok(Self {
+            max_addrs: usize::MAX,
             endpoints,
             request_client,
             ignore_peer_id: false,
         })
     }
 
+    /// Set the number of addrs to fetch
+    pub fn set_max_addrs(&mut self, max_addrs: usize) {
+        self.max_addrs = max_addrs;
+    }
+
     /// Create a new struct with the mainnet endpoints
     pub fn with_mainnet_endpoints() -> Result<Self> {
         let mut fetcher = Self::new()?;
-        let mainnet_contact = vec![
-            "https://sn-testnet.s3.eu-west-2.amazonaws.com/bootstrap_cache.json"
-                .parse()
-                .expect("Failed to parse URL"),
-            "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts"
-                .parse()
-                .expect("Failed to parse URL"),
-        ];
+        let mainnet_contact = MAINNET_CONTACTS
+            .iter()
+            .map(|url| url.parse().expect("Failed to parse static URL"))
+            .collect();
         fetcher.endpoints = mainnet_contact;
         Ok(fetcher)
     }
@@ -127,6 +141,14 @@ impl ContactsFetcher {
                             .collect::<Vec<_>>()
                     );
                     bootstrap_addresses.append(&mut endpoing_bootstrap_addresses);
+                    if bootstrap_addresses.len() >= self.max_addrs {
+                        info!(
+                            "Fetched enough bootstrap addresses. Stopping. needed: {} Total fetched: {}",
+                            self.max_addrs,
+                            bootstrap_addresses.len()
+                        );
+                        break;
+                    }
                 }
                 Err(e) => {
                     warn!("Failed to fetch bootstrap addrs from {}: {}", endpoint, e);
@@ -214,6 +236,14 @@ impl ContactsFetcher {
                     "Successfully parsed JSON response with {} peers",
                     json_endpoints.peers.len()
                 );
+                let our_network_version = crate::get_network_version();
+
+                if json_endpoints.network_version != our_network_version {
+                    warn!(
+                        "Network version mismatch. Expected: {our_network_version}, got: {}. Skipping.", json_endpoints.network_version
+                    );
+                    return Ok(vec![]);
+                }
                 let bootstrap_addresses = json_endpoints
                     .peers
                     .into_iter()
