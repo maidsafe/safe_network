@@ -40,7 +40,7 @@ pub use self::{
     },
     error::{GetRecordError, NetworkError},
     event::{MsgResponder, NetworkEvent},
-    record_store::{calculate_cost_for_records, NodeRecordStore},
+    record_store::NodeRecordStore,
     transactions::get_transactions_from_record,
 };
 #[cfg(feature = "open-metrics")]
@@ -48,10 +48,10 @@ pub use metrics::service::MetricsRegistries;
 pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 use self::{cmd::NetworkSwarmCmd, error::Result};
-use ant_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
+use ant_evm::{PaymentQuote, QuotingMetrics};
 use ant_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
+    messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
     storage::{RecordType, RetryStrategy, Scratchpad},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
@@ -82,9 +82,6 @@ use {
     ant_registers::SignedRegister,
     std::collections::HashSet,
 };
-
-/// The type of quote for a selected payee.
-pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -378,11 +375,11 @@ impl Network {
     ///
     /// Ignore the quote from any peers from `ignore_peers`.
     /// This is useful if we want to repay a different PeerId on failure.
-    pub async fn get_store_costs_from_network(
+    pub async fn get_store_quote_from_network(
         &self,
         record_address: NetworkAddress,
         ignore_peers: Vec<PeerId>,
-    ) -> Result<PayeeQuote> {
+    ) -> Result<Vec<(PeerId, PaymentQuote)>> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
         let mut close_nodes = self
@@ -392,12 +389,12 @@ impl Network {
         close_nodes.retain(|peer_id| !ignore_peers.contains(peer_id));
 
         if close_nodes.is_empty() {
-            error!("Cann't get store_cost of {record_address:?}, as all close_nodes are ignored");
+            error!("Can't get store_cost of {record_address:?}, as all close_nodes are ignored");
             return Err(NetworkError::NoStoreCostResponses);
         }
 
         // Client shall decide whether to carry out storage verification or not.
-        let request = Request::Query(Query::GetStoreCost {
+        let request = Request::Query(Query::GetStoreQuote {
             key: record_address.clone(),
             nonce: None,
             difficulty: 0,
@@ -406,64 +403,58 @@ impl Network {
             .send_and_get_responses(&close_nodes, &request, true)
             .await;
 
-        // loop over responses, generating an average fee and storing all responses along side
-        let mut all_costs = vec![];
+        // consider data to be already paid for if 1/2 of the close nodes already have it
+        let mut peer_already_have_it = 0;
+        let enough_peers_already_have_it = close_nodes.len() / 2;
+
+        // loop over responses
         let mut all_quotes = vec![];
-        for response in responses.into_values().flatten() {
-            info!(
-                "StoreCostReq for {record_address:?} received response: {:?}",
-                response
-            );
+        let mut quotes_to_pay = vec![];
+        for (peer, response) in responses {
+            info!("StoreCostReq for {record_address:?} received response: {response:?}");
             match response {
-                Response::Query(QueryResponse::GetStoreCost {
+                Ok(Response::Query(QueryResponse::GetStoreQuote {
                     quote: Ok(quote),
-                    payment_address,
                     peer_address,
                     storage_proofs,
-                }) => {
+                })) => {
                     if !storage_proofs.is_empty() {
-                        debug!("Storage proofing during GetStoreCost to be implemented.");
+                        debug!("Storage proofing during GetStoreQuote to be implemented.");
                     }
                     // Check the quote itself is valid.
-                    if quote.cost
-                        != AttoTokens::from_u64(calculate_cost_for_records(
-                            quote.quoting_metrics.close_records_stored,
-                        ))
-                    {
+                    if !quote.check_is_signed_by_claimed_peer(peer) {
                         warn!("Received invalid quote from {peer_address:?}, {quote:?}");
                         continue;
                     }
 
-                    all_costs.push((peer_address.clone(), payment_address, quote.clone()));
-                    all_quotes.push((peer_address, quote));
+                    all_quotes.push((peer_address.clone(), quote.clone()));
+                    quotes_to_pay.push((peer, quote));
                 }
-                Response::Query(QueryResponse::GetStoreCost {
+                Ok(Response::Query(QueryResponse::GetStoreQuote {
                     quote: Err(ProtocolError::RecordExists(_)),
-                    payment_address,
                     peer_address,
                     storage_proofs,
-                }) => {
+                })) => {
                     if !storage_proofs.is_empty() {
-                        debug!("Storage proofing during GetStoreCost to be implemented.");
+                        debug!("Storage proofing during GetStoreQuote to be implemented.");
                     }
-                    all_costs.push((peer_address, payment_address, PaymentQuote::zero()));
+                    peer_already_have_it += 1;
+                    info!("Address {record_address:?} was already paid for according to {peer_address:?} ({peer_already_have_it}/{enough_peers_already_have_it})");
+                    if peer_already_have_it >= enough_peers_already_have_it {
+                        info!("Address {record_address:?} was already paid for according to {peer_already_have_it} peers, ending quote request");
+                        return Ok(vec![]);
+                    }
+                }
+                Err(err) => {
+                    error!("Got an error while requesting quote from peer {peer:?}: {err}");
                 }
                 _ => {
-                    error!("Non store cost response received,  was {:?}", response);
+                    error!("Got an unexpected response while requesting quote from peer {peer:?}: {response:?}");
                 }
             }
         }
 
-        for peer_id in close_nodes.iter() {
-            let request = Request::Cmd(Cmd::QuoteVerification {
-                target: NetworkAddress::from_peer(*peer_id),
-                quotes: all_quotes.clone(),
-            });
-
-            self.send_req_ignore_reply(request, *peer_id);
-        }
-
-        get_fees_from_store_cost_responses(all_costs)
+        Ok(quotes_to_pay)
     }
 
     /// Get register from network.
@@ -776,13 +767,13 @@ impl Network {
         Ok(None)
     }
 
-    /// Get the cost of storing the next record from the network
-    pub async fn get_local_storecost(
+    /// Get the quoting metrics for storing the next record from the network
+    pub async fn get_local_quoting_metrics(
         &self,
         key: RecordKey,
-    ) -> Result<(AttoTokens, QuotingMetrics, Vec<NetworkAddress>)> {
+    ) -> Result<(QuotingMetrics, bool)> {
         let (sender, receiver) = oneshot::channel();
-        self.send_local_swarm_cmd(LocalSwarmCmd::GetLocalStoreCost { key, sender });
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetLocalQuotingMetrics { key, sender });
 
         receiver
             .await
@@ -1074,50 +1065,6 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// If `client` is false, then include `self` among the `closest_peers`
-    pub async fn get_close_group_closest_peers(
-        &self,
-        key: &NetworkAddress,
-        client: bool,
-    ) -> Result<Vec<PeerId>> {
-        debug!("Getting the closest peers to {key:?}");
-        let (sender, receiver) = oneshot::channel();
-        self.send_network_swarm_cmd(NetworkSwarmCmd::GetClosestPeersToAddressFromNetwork {
-            key: key.clone(),
-            sender,
-        });
-        let k_bucket_peers = receiver.await?;
-
-        // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
-        let result_len = k_bucket_peers.len();
-        let mut closest_peers = k_bucket_peers;
-        // ensure we're not including self here
-        if client {
-            // remove our peer id from the calculations here:
-            closest_peers.retain(|&x| x != self.peer_id());
-            if result_len != closest_peers.len() {
-                info!("Remove self client from the closest_peers");
-            }
-        }
-        if tracing::level_enabled!(tracing::Level::DEBUG) {
-            let close_peers_pretty_print: Vec<_> = closest_peers
-                .iter()
-                .map(|peer_id| {
-                    format!(
-                        "{peer_id:?}({:?})",
-                        PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
-                    )
-                })
-                .collect();
-
-            debug!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
-        }
-
-        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?;
-        Ok(closest_peers.into_iter().cloned().collect())
-    }
-
-    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
-    /// If `client` is false, then include `self` among the `closest_peers`
     ///
     /// If less than CLOSE_GROUP_SIZE peers are found, it will return all the peers.
     pub async fn get_all_close_peers_in_range_or_close_group(
@@ -1164,7 +1111,7 @@ impl Network {
             );
         }
 
-        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?;
+        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE + 1)?;
         Ok(closest_peers.into_iter().cloned().collect())
     }
 
@@ -1207,42 +1154,6 @@ impl Network {
         debug!("Received all responses for {req:?}");
         responses
     }
-}
-
-/// Given `all_costs` it will return the closest / lowest cost
-/// Closest requiring it to be within CLOSE_GROUP nodes
-fn get_fees_from_store_cost_responses(
-    all_costs: Vec<(NetworkAddress, RewardsAddress, PaymentQuote)>,
-) -> Result<PayeeQuote> {
-    // Find the minimum cost using a linear scan with random tie break
-    let mut rng = rand::thread_rng();
-    let payee = all_costs
-        .into_iter()
-        .min_by(
-            |(_address_a, _main_key_a, cost_a), (_address_b, _main_key_b, cost_b)| {
-                let cmp = cost_a.cost.cmp(&cost_b.cost);
-                if cmp == std::cmp::Ordering::Equal {
-                    if rng.gen() {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    }
-                } else {
-                    cmp
-                }
-            },
-        )
-        .ok_or(NetworkError::NoStoreCostResponses)?;
-
-    info!("Final fees calculated as: {payee:?}");
-    // we dont need to have the address outside of here for now
-    let payee_id = if let Some(peer_id) = payee.0.as_peer_id() {
-        peer_id
-    } else {
-        error!("Can't get PeerId from payee {:?}", payee.0);
-        return Err(NetworkError::NoStoreCostResponses);
-    };
-    Ok((payee_id, payee.1, payee.2))
 }
 
 /// Get the value of the provided Quorum
@@ -1369,69 +1280,7 @@ pub(crate) fn send_network_swarm_cmd(
 
 #[cfg(test)]
 mod tests {
-    use eyre::bail;
-
     use super::*;
-    use ant_evm::PaymentQuote;
-
-    #[test]
-    fn test_get_fee_from_store_cost_responses() -> Result<()> {
-        // for a vec of different costs of CLOSE_GROUP size
-        // ensure we return the CLOSE_GROUP / 2 indexed price
-        let mut costs = vec![];
-        for i in 1..CLOSE_GROUP_SIZE {
-            let addr = ant_evm::utils::dummy_address();
-            costs.push((
-                NetworkAddress::from_peer(PeerId::random()),
-                addr,
-                PaymentQuote::test_dummy(Default::default(), AttoTokens::from_u64(i as u64)),
-            ));
-        }
-        let expected_price = costs[0].2.cost.as_atto();
-        let (_peer_id, _key, price) = get_fees_from_store_cost_responses(costs)?;
-
-        assert_eq!(
-            price.cost.as_atto(),
-            expected_price,
-            "price should be {expected_price}"
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_get_some_fee_from_store_cost_responses_even_if_one_errs_and_sufficient(
-    ) -> eyre::Result<()> {
-        // for a vec of different costs of CLOSE_GROUP size
-        let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
-        let mut costs = vec![];
-        for i in 1..responses_count {
-            // push random addr and Nano
-            let addr = ant_evm::utils::dummy_address();
-            costs.push((
-                NetworkAddress::from_peer(PeerId::random()),
-                addr,
-                PaymentQuote::test_dummy(Default::default(), AttoTokens::from_u64(i)),
-            ));
-            println!("price added {i}");
-        }
-
-        // this should be the lowest price
-        let expected_price = costs[0].2.cost.as_atto();
-
-        let (_peer_id, _key, price) = match get_fees_from_store_cost_responses(costs) {
-            Err(_) => bail!("Should not have errored as we have enough responses"),
-            Ok(cost) => cost,
-        };
-
-        assert_eq!(
-            price.cost.as_atto(),
-            expected_price,
-            "price should be {expected_price}"
-        );
-
-        Ok(())
-    }
 
     #[test]
     fn test_network_sign_verify() -> eyre::Result<()> {

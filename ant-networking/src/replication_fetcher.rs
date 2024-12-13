@@ -9,7 +9,7 @@
 
 use crate::target_arch::spawn;
 use crate::{event::NetworkEvent, target_arch::Instant};
-use alloy::primitives::U256;
+use ant_evm::U256;
 use ant_protocol::{
     convert_distance_to_u256, storage::RecordType, NetworkAddress, PrettyPrintRecordKey,
 };

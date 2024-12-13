@@ -6,8 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::collections::BTreeSet;
+
 use crate::{node::Node, Error, Marker, Result};
-use ant_evm::{ProofOfPayment, QUOTE_EXPIRATION_SECS};
+use ant_evm::payment_vault::verify_data_payment;
+use ant_evm::{AttoTokens, ProofOfPayment};
 use ant_networking::NetworkError;
 use ant_protocol::storage::Transaction;
 use ant_protocol::{
@@ -19,7 +22,6 @@ use ant_protocol::{
 };
 use ant_registers::SignedRegister;
 use libp2p::kad::{Record, RecordKey};
-use std::time::{Duration, UNIX_EPOCH};
 use xor_name::XorName;
 
 impl Node {
@@ -162,29 +164,11 @@ impl Node {
                     .await
             }
             RecordKind::Transaction => {
-                let record_key = record.key.clone();
-                let value_to_hash = record.value.clone();
-                let transactions = try_deserialize_record::<Vec<Transaction>>(&record)?;
-                let result = self
-                    .validate_merge_and_store_transactions(transactions, &record_key)
-                    .await;
-                if result.is_ok() {
-                    Marker::ValidSpendPutFromClient(&PrettyPrintRecordKey::from(&record_key)).log();
-                    let content_hash = XorName::from_content(&value_to_hash);
-                    self.replicate_valid_fresh_record(
-                        record_key,
-                        RecordType::NonChunk(content_hash),
-                    );
-
-                    // Notify replication_fetcher to mark the attempt as completed.
-                    // Send the notification earlier to avoid it got skipped due to:
-                    // the record becomes stored during the fetch because of other interleaved process.
-                    self.network().notify_fetch_completed(
-                        record.key.clone(),
-                        RecordType::NonChunk(content_hash),
-                    );
-                }
-                result
+                // Transactions should always be paid for
+                error!("Transaction should not be validated at this point");
+                Err(Error::InvalidPutWithoutPayment(
+                    PrettyPrintRecordKey::from(&record.key).into_owned(),
+                ))
             }
             RecordKind::TransactionWithPayment => {
                 let (payment, transaction) =
@@ -224,6 +208,12 @@ impl Node {
                     .await;
                 if res.is_ok() {
                     let content_hash = XorName::from_content(&record.value);
+                    Marker::ValidTransactionPutFromClient(&PrettyPrintRecordKey::from(&record.key))
+                        .log();
+                    self.replicate_valid_fresh_record(
+                        record.key.clone(),
+                        RecordType::NonChunk(content_hash),
+                    );
 
                     // Notify replication_fetcher to mark the attempt as completed.
                     // Send the notification earlier to avoid it got skipped due to:
@@ -601,23 +591,24 @@ impl Node {
         }
 
         // verify the transactions
-        let mut validated_transactions: Vec<Transaction> = transactions_for_key
+        let mut validated_transactions: BTreeSet<Transaction> = transactions_for_key
             .into_iter()
             .filter(|t| t.verify())
             .collect();
 
         // skip if none are valid
-        let addr = match validated_transactions.as_slice() {
-            [] => {
+        let addr = match validated_transactions.first() {
+            None => {
                 warn!("Found no validated transactions to store at {pretty_key:?}");
                 return Ok(());
             }
-            [t, ..] => t.address(),
+            Some(t) => t.address(),
         };
 
-        // add local transactions to the validated transactions
+        // add local transactions to the validated transactions, turn to Vec
         let local_txs = self.get_local_transactions(addr).await?;
-        validated_transactions.extend(local_txs);
+        validated_transactions.extend(local_txs.into_iter());
+        let validated_transactions: Vec<Transaction> = validated_transactions.into_iter().collect();
 
         // store the record into the local storage
         let record = Record {
@@ -652,41 +643,46 @@ impl Node {
         debug!("Validating record payment for {pretty_key}");
 
         // check if the quote is valid
-        let storecost = payment.quote.cost;
         let self_peer_id = self.network().peer_id();
-        if !payment.quote.check_is_signed_by_claimed_peer(self_peer_id) {
-            warn!("Payment quote signature is not valid for record {pretty_key}");
+        if !payment.verify_for(self_peer_id) {
+            warn!("Payment is not valid for record {pretty_key}");
             return Err(Error::InvalidRequest(format!(
-                "Payment quote signature is not valid for record {pretty_key}"
+                "Payment is not valid for record {pretty_key}"
             )));
         }
-        debug!("Payment quote signature is valid for record {pretty_key}");
-
-        // verify quote timestamp
-        let quote_timestamp = payment.quote.timestamp;
-        let quote_expiration_time = quote_timestamp + Duration::from_secs(QUOTE_EXPIRATION_SECS);
-        let quote_expiration_time_in_secs = quote_expiration_time
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| {
-                Error::InvalidRequest(format!(
-                    "Payment quote timestamp is invalid for record {pretty_key}: {e}"
-                ))
-            })?
-            .as_secs();
-
-        // check if payment is valid on chain
-        debug!("Verifying payment for record {pretty_key}");
-        self.evm_network()
-            .verify_data_payment(
-                payment.tx_hash,
-                payment.quote.hash(),
-                *self.reward_address(),
-                storecost.as_atto(),
-                quote_expiration_time_in_secs,
-            )
-            .await
-            .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
         debug!("Payment is valid for record {pretty_key}");
+
+        // verify quote expiration
+        if payment.has_expired() {
+            warn!("Payment quote has expired for record {pretty_key}");
+            return Err(Error::InvalidRequest(format!(
+                "Payment quote has expired for record {pretty_key}"
+            )));
+        }
+
+        // verify the claimed payees are all known to us within the certain range.
+        let closest_k_peers = self.network().get_closest_k_value_local_peers().await?;
+        let mut payees = payment.payees();
+        payees.retain(|peer_id| !closest_k_peers.contains(peer_id));
+        if !payees.is_empty() {
+            return Err(Error::InvalidRequest(format!(
+                "Payment quote has out-of-range payees {payees:?}"
+            )));
+        }
+
+        let owned_payment_quotes = payment
+            .quotes_by_peer(&self_peer_id)
+            .iter()
+            .map(|quote| quote.hash())
+            .collect();
+        // check if payment is valid on chain
+        let payments_to_verify = payment.digest();
+        debug!("Verifying payment for record {pretty_key}");
+        let reward_amount =
+            verify_data_payment(self.evm_network(), owned_payment_quotes, payments_to_verify)
+                .await
+                .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
+        debug!("Payment of {reward_amount:?} is valid for record {pretty_key}");
 
         // Notify `record_store` that the node received a payment.
         self.network().notify_payment_received();
@@ -696,22 +692,27 @@ impl Node {
             // FIXME: We would reach the MAX if the storecost is scaled up.
             let current_value = metrics_recorder.current_reward_wallet_balance.get();
             let new_value =
-                current_value.saturating_add(storecost.as_atto().try_into().unwrap_or(i64::MAX));
+                current_value.saturating_add(reward_amount.try_into().unwrap_or(i64::MAX));
             let _ = metrics_recorder
                 .current_reward_wallet_balance
                 .set(new_value);
         }
         self.events_channel()
-            .broadcast(crate::NodeEvent::RewardReceived(storecost, address.clone()));
+            .broadcast(crate::NodeEvent::RewardReceived(
+                AttoTokens::from(reward_amount),
+                address.clone(),
+            ));
 
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+        info!("Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}");
 
         // loud mode: print a celebratory message to console
         #[cfg(feature = "loud")]
         {
             println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟   RECEIVED REWARD   🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
-            println!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+            println!(
+                "Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}"
+            );
             println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
         }
 

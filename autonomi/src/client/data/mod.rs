@@ -84,6 +84,8 @@ pub enum PutError {
     VaultBadOwner,
     #[error("Payment unexpectedly invalid for {0:?}")]
     PaymentUnexpectedlyInvalid(NetworkAddress),
+    #[error("The payment proof contains no payees.")]
+    PayeesMissing,
 }
 
 /// Errors that can occur during the pay operation.
@@ -121,8 +123,12 @@ pub enum CostError {
     CouldNotGetStoreQuote(XorName),
     #[error("Could not get store costs: {0:?}")]
     CouldNotGetStoreCosts(NetworkError),
+    #[error("Not enough node quotes for {0:?}, got: {1:?} and need at least {2:?}")]
+    NotEnoughNodeQuotes(XorName, usize, usize),
     #[error("Failed to serialize {0}")]
     Serialization(String),
+    #[error("Market price error: {0:?}")]
+    MarketPriceError(#[from] ant_evm::payment_vault::error::Error),
 }
 
 /// Private data on the network can be accessed with this
@@ -209,7 +215,7 @@ impl Client {
         if let Some(channel) = self.client_event_sender.as_ref() {
             let tokens_spent = receipt
                 .values()
-                .map(|proof| proof.quote.cost.as_atto())
+                .map(|(_, cost)| cost.as_atto())
                 .sum::<Amount>();
 
             let summary = UploadSummary {

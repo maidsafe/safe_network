@@ -26,7 +26,6 @@ otlp = ["ant-logging/otlp"]
 upnp = ["ant-networking/upnp"]
 
 [dependencies]
-alloy = { version = "0.5.3", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
 ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
 ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
 ant-evm = { path = "../ant-evm", version = "0.1.4" }
@@ -84,7 +83,7 @@ walkdir = "~2.5.0"
 xor_name = "5.0.0"
 
 [dev-dependencies]
-ant-protocol = { path = "../ant-protocol", version = "0.17.15", features = ["rpc"]}
+ant-protocol = { path = "../ant-protocol", version = "0.17.15", features = ["rpc"] }
 assert_fs = "1.0.0"
 evmlib = { path = "../evmlib", version = "0.1.4" }
 autonomi = { path = "../autonomi", version = "0.2.4", features = ["registers"] }

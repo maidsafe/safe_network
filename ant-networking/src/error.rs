@@ -178,7 +178,7 @@ pub enum NetworkError {
     OutgoingResponseDropped(Response),
 
     #[error("Error setting up behaviour: {0}")]
-    BahviourErr(String),
+    BehaviourErr(String),
 
     #[error("Register already exists at this address")]
     RegisterAlreadyExists,

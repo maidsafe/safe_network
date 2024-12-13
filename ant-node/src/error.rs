@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use ant_evm::AttoTokens;
 use ant_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use thiserror::Error;
 
@@ -54,6 +55,25 @@ pub enum Error {
     InvalidQuoteSignature,
     #[error("The payment quote expired for {0:?}")]
     QuoteExpired(NetworkAddress),
+    /// Payment proof received has no inputs
+    #[error(
+        "Payment proof received with record:{0:?}. No payment for our node in its transaction"
+    )]
+    NoPaymentToOurNode(PrettyPrintRecordKey<'static>),
+    /// Missing network royalties payment
+    #[error("Missing network royalties payment in proof received with record: {0:?}.")]
+    NoNetworkRoyaltiesPayment(PrettyPrintRecordKey<'static>),
+    #[error("The amount paid is less than the storecost, paid {paid}, expected {expected}")]
+    PaymentInsufficientAmount {
+        paid: AttoTokens,
+        expected: AttoTokens,
+    },
+    #[error("A payment we received contains cash notes already confirmed to be spent")]
+    ReusedPayment,
+
+    // ---------- Initialize Errors
+    #[error("Failed to generate a reward key")]
+    FailedToGenerateRewardKey,
 
     // ---------- Miscellaneous Errors
     #[error("Failed to obtain node's current port")]

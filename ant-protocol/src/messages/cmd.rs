@@ -8,7 +8,6 @@
 #![allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
 
 use crate::{storage::RecordType, NetworkAddress};
-pub use ant_evm::PaymentQuote;
 use serde::{Deserialize, Serialize};
 
 /// Ant protocol cmds
@@ -27,11 +26,6 @@ pub enum Cmd {
         holder: NetworkAddress,
         /// Keys of copy that shall be replicated.
         keys: Vec<(NetworkAddress, RecordType)>,
-    },
-    /// Write operation to notify nodes a list of PaymentQuote collected.
-    QuoteVerification {
-        target: NetworkAddress,
-        quotes: Vec<(NetworkAddress, PaymentQuote)>,
     },
     /// Notify the peer it is now being considered as BAD due to the included behaviour
     PeerConsideredAsBad {
@@ -52,11 +46,6 @@ impl std::fmt::Debug for Cmd {
                     .field("first_ten_keys", &first_ten_keys)
                     .finish()
             }
-            Cmd::QuoteVerification { target, quotes } => f
-                .debug_struct("Cmd::QuoteVerification")
-                .field("target", target)
-                .field("quotes_len", &quotes.len())
-                .finish(),
             Cmd::PeerConsideredAsBad {
                 detected_by,
                 bad_peer,
@@ -76,7 +65,6 @@ impl Cmd {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Cmd::Replicate { holder, .. } => holder.clone(),
-            Cmd::QuoteVerification { target, .. } => target.clone(),
             Cmd::PeerConsideredAsBad { bad_peer, .. } => bad_peer.clone(),
         }
     }
@@ -91,13 +79,6 @@ impl std::fmt::Display for Cmd {
                     "Cmd::Replicate({:?} has {} keys)",
                     holder.as_peer_id(),
                     keys.len()
-                )
-            }
-            Cmd::QuoteVerification { target, quotes } => {
-                write!(
-                    f,
-                    "Cmd::QuoteVerification(sent to {target:?} has {} quotes)",
-                    quotes.len()
                 )
             }
             Cmd::PeerConsideredAsBad {

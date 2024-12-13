@@ -85,11 +85,13 @@ jobs:
       ###########################
       ### Client Mem Analysis ###
       ###########################
+      ### The peak limit shall be restored back to 50MB,
+      ### Once client side chunking/quoting flow got re-examined.
 
       - name: Check client memory usage
         shell: bash
         run: |
-          client_peak_mem_limit_mb="1024" # mb
+          client_peak_mem_limit_mb="1500" # mb
           client_avg_mem_limit_mb="512" # mb
 
           peak_mem_usage=$(

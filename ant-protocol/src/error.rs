@@ -57,7 +57,7 @@ pub enum Error {
 
     // ---------- payment errors
     #[error("There was an error getting the storecost from kademlia store")]
-    GetStoreCostFailed,
+    GetStoreQuoteFailed,
     #[error("There was an error generating the payment quote")]
     QuoteGenerationFailed,
 
