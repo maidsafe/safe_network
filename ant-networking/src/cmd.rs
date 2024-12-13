@@ -507,12 +507,7 @@ impl SwarmDriver {
             NetworkSwarmCmd::AddPeerAddresses { addresses, sender } => {
                 cmd_string = "AddPeerAddresses";
                 for (peer, addr) in addresses {
-                    if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer) {
-                        let ilog2 = kbucket.range().0.ilog2();
-                        let peers = self.bootstrap_peers.entry(ilog2).or_default();
-                        peers.insert(peer);
-                    }
-                    let _ = self.dial(addr);
+                    let _update = self.swarm.behaviour_mut().kademlia.add_address(&peer, addr);
                 }
                 let _ = sender.send(());
             }
