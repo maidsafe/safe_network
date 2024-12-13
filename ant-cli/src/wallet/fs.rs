@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::keys::get_secret_key_from_env;
+use crate::keys::load_evm_wallet_from_env;
 use crate::wallet::encryption::{decrypt_private_key, encrypt_private_key};
 use crate::wallet::error::Error;
 use crate::wallet::input::{get_password_input, get_wallet_selection_input};
@@ -15,7 +15,7 @@ use autonomi::{get_evm_network_from_env, RewardsAddress, Wallet};
 use const_hex::traits::FromHex;
 use prettytable::{Cell, Row, Table};
 use std::ffi::OsString;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
@@ -115,6 +115,11 @@ pub(crate) fn load_wallet_from_address(wallet_address: &str) -> Result<Wallet, E
 }
 
 pub(crate) fn select_wallet() -> Result<Wallet, Error> {
+    // try if there is a wallet set in the ENV first
+    if let Ok(env_wallet) = load_evm_wallet_from_env() {
+        return Ok(env_wallet);
+    }
+
     let wallet_address = select_wallet_address()?;
     load_wallet_from_address(&wallet_address)
 }
@@ -134,19 +139,7 @@ pub(crate) fn select_wallet_address() -> Result<String, Error> {
     let wallet_files = get_wallet_files(&wallets_folder)?;
 
     let wallet_address = match wallet_files.len() {
-        0 => {
-            let secret_key =
-                get_secret_key_from_env().map_err(|_| Error::NoWalletsFoundAndNoSecretKeysInEnv)?;
-            let network = get_evm_network_from_env().expect("Could not load EVM network from environment");
-            let wallet = Wallet::new_from_private_key(network, &secret_key).expect("Could not initialize wallet");
-            let public_key = wallet.address().to_string();
-            let wallet_directory = get_client_wallet_dir_path()?;
-            let file_path = std::path::Path::new(&wallet_directory).join(&public_key);
-            let mut file = std::fs::File::create(&file_path).expect("Could not create file on disk");
-            file.write_all(secret_key.as_bytes()).expect("Could not write secret key to file");
-
-            Ok(public_key)
-        }
+        0 => Err(Error::NoWalletsFound),
         1 => Ok(filter_wallet_file_extension(&wallet_files[0])),
         _ => get_wallet_selection(wallet_files),
     }?;
