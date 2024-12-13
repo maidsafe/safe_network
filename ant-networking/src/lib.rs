@@ -1111,7 +1111,8 @@ impl Network {
             );
         }
 
-        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE + 1)?;
+        let expanded_close_group = CLOSE_GROUP_SIZE + CLOSE_GROUP_SIZE / 2;
+        let closest_peers = sort_peers_by_address(&closest_peers, key, expanded_close_group)?;
         Ok(closest_peers.into_iter().cloned().collect())
     }
 
