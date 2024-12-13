@@ -37,7 +37,7 @@ pub fn create(no_password: bool, password: Option<String>) -> Result<()> {
 }
 
 pub fn import(
-    wallet_private_key: String,
+    mut wallet_private_key: String,
     no_password: bool,
     password: Option<String>,
 ) -> Result<()> {
@@ -51,6 +51,11 @@ pub fn import(
         .expect("Infallible")
         .address()
         .to_string();
+
+    // Prepend with 0x if it isn't already
+    if !wallet_private_key.starts_with("0x") {
+        wallet_private_key = format!("0x{wallet_private_key}");
+    }
 
     // Save the private key file
     let file_path = store_private_key(&wallet_private_key, maybe_encryption_password)?;
