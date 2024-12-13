@@ -7,13 +7,13 @@ license = "GPL-3.0"
 name = "test-utils"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.4.12-rc.1"
+version = "0.4.12-rc.2"
 
 [dependencies]
 bytes = { version = "1.0.1", features = ["serde"] }
 color-eyre = "~0.6.2"
 dirs-next = "~2.0.0"
-evmlib = { path = "../evmlib", version = "0.1.5-rc.1" }
+evmlib = { path = "../evmlib", version = "0.1.5-rc.2" }
 libp2p = { version = "0.54.1", features = ["identify", "kad"] }
 rand = "0.8.5"
 serde = { version = "1.0.133", features = ["derive"] }
