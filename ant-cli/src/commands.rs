@@ -175,6 +175,9 @@ pub enum WalletCmd {
         password: Option<String>,
     },
 
+    /// Print the private key of a wallet.
+    Export,
+
     /// Check the balance of the wallet.
     Balance,
 }
@@ -224,7 +227,8 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
                 no_password,
                 password,
             } => wallet::import(private_key, no_password, password),
-            WalletCmd::Balance => Ok(wallet::balance().await?),
+            WalletCmd::Export => wallet::export(),
+            WalletCmd::Balance => wallet::balance().await,
         },
     }
 }

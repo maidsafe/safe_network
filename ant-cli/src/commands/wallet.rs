@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::wallet::fs::{select_wallet, store_private_key};
+use crate::wallet::fs::{select_wallet, select_wallet_private_key, store_private_key};
 use crate::wallet::input::request_password;
 use crate::wallet::DUMMY_NETWORK;
 use autonomi::Wallet;
@@ -57,6 +57,20 @@ pub fn import(
 
     println!("Wallet address: {wallet_address}");
     println!("Stored wallet in: {file_path:?}");
+
+    Ok(())
+}
+
+pub fn export() -> Result<()> {
+    let wallet_private_key = select_wallet_private_key()?;
+
+    let wallet_address = Wallet::new_from_private_key(DUMMY_NETWORK, &wallet_private_key)
+        .expect("Infallible")
+        .address()
+        .to_string();
+
+    println!("Wallet address: {wallet_address}");
+    println!("Wallet private key: {wallet_private_key}");
 
     Ok(())
 }
