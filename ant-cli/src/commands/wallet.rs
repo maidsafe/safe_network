@@ -30,6 +30,7 @@ pub fn create(no_password: bool, password: Option<String>) -> Result<()> {
     let file_path = store_private_key(&wallet_private_key, maybe_encryption_password)?;
 
     println!("Wallet address: {wallet_address}");
+    println!("Wallet private key: {wallet_private_key}");
     println!("Stored wallet in: {file_path:?}");
 
     Ok(())
