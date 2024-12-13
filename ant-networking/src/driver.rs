@@ -759,7 +759,6 @@ impl NetworkBuilder {
             quotes_history: Default::default(),
             replication_targets: Default::default(),
             last_replication: None,
-            last_connection_pruning_time: Instant::now(),
             network_density_samples: FifoRegister::new(100),
         };
 
@@ -867,8 +866,6 @@ pub struct SwarmDriver {
     /// when was the last replication event
     /// This allows us to throttle replication no matter how it is triggered
     pub(crate) last_replication: Option<Instant>,
-    /// when was the last outdated connection prunning undertaken.
-    pub(crate) last_connection_pruning_time: Instant,
     /// FIFO cache for the network density samples
     pub(crate) network_density_samples: FifoRegister,
 }

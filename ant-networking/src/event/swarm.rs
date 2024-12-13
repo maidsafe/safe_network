@@ -612,7 +612,6 @@ impl SwarmDriver {
                 debug!("SwarmEvent has been ignored: {other:?}")
             }
         }
-        self.remove_outdated_connections();
 
         self.log_handling(event_string.to_string(), start.elapsed());
 
@@ -650,71 +649,6 @@ impl SwarmDriver {
                 self.update_on_peer_removal(*removed_peer.node.key.preimage());
             }
         }
-    }
-
-    // Remove outdated connection to a peer if it is not in the RT.
-    // Optionally force remove all the connections for a provided peer.
-    fn remove_outdated_connections(&mut self) {
-        // To avoid this being called too frequenctly, only carry out prunning intervally.
-        if Instant::now() < self.last_connection_pruning_time + Duration::from_secs(30) {
-            return;
-        }
-        self.last_connection_pruning_time = Instant::now();
-
-        let mut removed_conns = 0;
-        self.live_connected_peers.retain(|connection_id, (peer_id, _addr, timeout_time)| {
-
-            // skip if timeout isn't reached yet
-            if Instant::now() < *timeout_time {
-                return true; // retain peer
-            }
-
-            // ignore if peer is present in our RT
-            if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(*peer_id) {
-                if kbucket
-                    .iter()
-                    .any(|peer_entry| *peer_id == *peer_entry.node.key.preimage())
-                {
-                    return true; // retain peer
-                }
-            }
-
-            // skip if the peer is a relay server that we're connected to
-            if let Some(relay_manager) = self.relay_manager.as_ref() {
-                if relay_manager.keep_alive_peer(peer_id) {
-                    return true; // retain peer
-                }
-            }
-
-            // skip if the peer is a node that is being relayed through us
-            if self.connected_relay_clients.contains(peer_id) {
-                return true; // retain peer
-            }
-
-            // actually remove connection
-            let result = self.swarm.close_connection(*connection_id);
-            debug!("Removed outdated connection {connection_id:?} to {peer_id:?} with result: {result:?}");
-
-            removed_conns += 1;
-
-            // do not retain this connection as it has been closed
-            false
-        });
-
-        if removed_conns == 0 {
-            return;
-        }
-
-        self.record_connection_metrics();
-
-        debug!(
-            "Current libp2p peers pool stats is {:?}",
-            self.swarm.network_info()
-        );
-        debug!(
-            "Removed {removed_conns} outdated live connections, still have {} left.",
-            self.live_connected_peers.len()
-        );
     }
 
     /// Record the metrics on update of connection state.

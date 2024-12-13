@@ -47,12 +47,6 @@ impl RelayManager {
         }
     }
 
-    /// Should we keep this peer alive? Closing a connection to that peer would remove that server from the listen addr.
-    pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId) -> bool {
-        self.connected_relays.contains_key(peer_id)
-            || self.waiting_for_reservation.contains_key(peer_id)
-    }
-
     /// Add a potential candidate to the list if it satisfies all the identify checks and also supports the relay server
     /// protocol.
     pub(crate) fn add_potential_candidates(
