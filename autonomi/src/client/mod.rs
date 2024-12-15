@@ -120,6 +120,12 @@ impl Client {
         receiver.await.expect("sender should not close")?;
         debug!("Client is connected to the network");
 
+        // With the switch to the new bootstrap cache scheme,
+        // Seems the too many `initial dial`s could result in failure,
+        // if startup quoting/upload tasks got started up immediatly.
+        // Hence, put in a forced duration to allow `initial network discovery` to be completed.
+        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+
         Ok(Self {
             network,
             client_event_sender: Arc::new(None),
