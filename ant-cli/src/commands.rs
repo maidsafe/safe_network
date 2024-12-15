@@ -187,7 +187,7 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
     let cmd = opt.command;
 
     match cmd {
-        SubCmd::File { command } => match command {
+        Some(SubCmd::File { command }) => match command {
             FileCmd::Cost { file } => file::cost(&file, peers.await?).await,
             FileCmd::Upload { file, public } => file::upload(&file, public, peers.await?).await,
             FileCmd::Download { addr, dest_file } => {
@@ -195,7 +195,7 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
             }
             FileCmd::List => file::list(),
         },
-        SubCmd::Register { command } => match command {
+        Some(SubCmd::Register { command }) => match command {
             RegisterCmd::GenerateKey { overwrite } => register::generate_key(overwrite),
             RegisterCmd::Cost { name } => register::cost(&name, peers.await?).await,
             RegisterCmd::Create {
@@ -211,13 +211,13 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
             RegisterCmd::Get { address, name } => register::get(address, name, peers.await?).await,
             RegisterCmd::List => register::list(),
         },
-        SubCmd::Vault { command } => match command {
+        Some(SubCmd::Vault { command }) => match command {
             VaultCmd::Cost => vault::cost(peers.await?).await,
             VaultCmd::Create => vault::create(peers.await?).await,
             VaultCmd::Load => vault::load(peers.await?).await,
             VaultCmd::Sync { force } => vault::sync(peers.await?, force).await,
         },
-        SubCmd::Wallet { command } => match command {
+        Some(SubCmd::Wallet { command }) => match command {
             WalletCmd::Create {
                 no_password,
                 password,
@@ -230,5 +230,6 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
             WalletCmd::Export => wallet::export(),
             WalletCmd::Balance => wallet::balance().await,
         },
+        None => Ok(()),
     }
 }
