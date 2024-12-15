@@ -135,7 +135,7 @@ const PERIODIC_KAD_BOOTSTRAP_INTERVAL_MAX_S: u64 = 21600;
 
 // Init during compilation, instead of runtime error that should never happen
 // Option<T>::expect will be stabilised as const in the future (https://github.com/rust-lang/rust/issues/67441)
-const REPLICATION_FACTOR: NonZeroUsize = match NonZeroUsize::new(CLOSE_GROUP_SIZE) {
+const REPLICATION_FACTOR: NonZeroUsize = match NonZeroUsize::new(CLOSE_GROUP_SIZE + 2) {
     Some(v) => v,
     None => panic!("CLOSE_GROUP_SIZE should not be zero"),
 };
