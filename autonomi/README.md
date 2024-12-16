@@ -134,3 +134,11 @@ Chunk payments address: 0x8464135c8F25Da09e49BC8782676a84730C318bC
 Deployer wallet private key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 Genesis wallet balance: (tokens: 20000000000000000000000000, gas: 9998998011366954730202)
 ```
+
+# WASM
+
+For documentation on WASM, see [./README_WASM.md].
+
+# Python
+
+For documentation on the Python bindings, see [./README_PYTHON.md].

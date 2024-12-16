@@ -118,7 +118,7 @@ impl Client {
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, UploadError> {
         let archive = self.dir_upload_public(dir_path, wallet).await?;
-        let archive_addr = self.archive_put_public(archive, wallet).await?;
+        let archive_addr = self.archive_put_public(&archive, wallet).await?;
         Ok(archive_addr)
     }
 

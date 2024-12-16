@@ -36,7 +36,6 @@ mod utils;
 
 use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore, PeersArgs};
 pub use ant_evm::Amount;
-
 use ant_evm::EvmNetwork;
 use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use ant_protocol::version::IDENTIFY_PROTOCOL_STR;
@@ -74,9 +73,11 @@ pub struct Client {
 }
 
 /// Configuration for [`Client::init_with_config`].
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ClientConfig {
     /// Whether we're expected to connect to a local network.
+    ///
+    /// If `local` feature is enabled, [`ClientConfig::default()`] will set this to `true`.
     pub local: bool,
 
     /// List of peers to connect to.
@@ -85,7 +86,19 @@ pub struct ClientConfig {
     pub peers: Option<Vec<Multiaddr>>,
 }
 
-/// Error returned by [`Client::connect`].
+impl Default for ClientConfig {
+    fn default() -> Self {
+        Self {
+            #[cfg(feature = "local")]
+            local: true,
+            #[cfg(not(feature = "local"))]
+            local: false,
+            peers: None,
+        }
+    }
+}
+
+/// Error returned by [`Client::init`].
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectError {
     /// Did not manage to populate the routing table with enough peers.

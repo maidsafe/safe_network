@@ -14,8 +14,12 @@ name = "autonomi"
 crate-type = ["cdylib", "rlib"]
 
 [[example]]
+name = "data_and_archive"
+required-features = ["full"]
+
+[[example]]
 name = "put_and_dir_upload"
-features = ["full"]
+required-features = ["full"]
 
 [features]
 default = ["vault"]

@@ -104,7 +104,7 @@ impl PublicArchive {
     }
 
     /// Serialize to bytes.
-    pub fn into_bytes(&self) -> Result<Bytes, rmp_serde::encode::Error> {
+    pub fn to_bytes(&self) -> Result<Bytes, rmp_serde::encode::Error> {
         let root_serialized = rmp_serde::to_vec(&self)?;
         let root_serialized = Bytes::from(root_serialized);
 
@@ -146,17 +146,17 @@ impl Client {
     /// # let wallet = todo!();
     /// let mut archive = PublicArchive::new();
     /// archive.add_file(PathBuf::from("file.txt"), DataAddr::random(&mut rand::thread_rng()), Metadata::new_with_size(0));
-    /// let address = client.archive_put_public(archive, &wallet).await?;
+    /// let address = client.archive_put_public(&archive, &wallet).await?;
     /// # Ok(())
     /// # }
     /// ```
     pub async fn archive_put_public(
         &self,
-        archive: PublicArchive,
+        archive: &PublicArchive,
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, PutError> {
         let bytes = archive
-            .into_bytes()
+            .to_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
         let result = self.data_put_public(bytes, wallet.into()).await;
         debug!("Uploaded archive {archive:?} to the network and the address is {result:?}");
@@ -166,7 +166,7 @@ impl Client {
     /// Get the cost to upload an archive
     pub async fn archive_cost(&self, archive: PublicArchive) -> Result<AttoTokens, CostError> {
         let bytes = archive
-            .into_bytes()
+            .to_bytes()
             .map_err(|e| CostError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
         let result = self.data_cost(bytes).await;
         debug!("Calculated the cost to upload archive {archive:?} is {result:?}");
