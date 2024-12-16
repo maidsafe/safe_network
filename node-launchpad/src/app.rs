@@ -321,6 +321,7 @@ mod tests {
     use super::*;
     use ant_bootstrap::PeersArgs;
     use color_eyre::eyre::Result;
+    use serde_json::json;
     use std::io::Cursor;
     use std::io::Write;
     use tempfile::tempdir;
@@ -333,22 +334,17 @@ mod tests {
 
         let mountpoint = get_primary_mount_point();
 
-        // Create a valid configuration file with all fields
-        let valid_config = format!(
-            r#"
-        {{
+        let config = json!({
             "discord_username": "happy_user",
             "nodes_to_start": 5,
-            "storage_mountpoint": "{}",
+            "storage_mountpoint": mountpoint.display().to_string(),
             "storage_drive": "C:",
             "connection_mode": "Automatic",
             "port_from": 12000,
             "port_to": 13000
-        }}
-        "#,
-            mountpoint.display()
-        );
+        });
 
+        let valid_config = serde_json::to_string_pretty(&config)?;
         std::fs::write(&config_path, valid_config)?;
 
         // Create default PeersArgs
