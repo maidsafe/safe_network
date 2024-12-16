@@ -15,7 +15,7 @@ path = "src/main.rs"
 
 [features]
 default = ["metrics"]
-local = ["ant-bootstrap/local", "autonomi/local"]
+local = ["ant-bootstrap/local", "autonomi/local", "ant-logging/process-metrics"]
 metrics = ["ant-logging/process-metrics"]
 nightly = []
 
