@@ -24,7 +24,7 @@ pub use access::user_data;
 use clap::Parser;
 use color_eyre::Result;
 
-#[cfg(feature = "metrics")]
+#[cfg(feature = "local")]
 use ant_logging::metrics::init_metrics;
 use ant_logging::{LogBuilder, LogFormat, ReloadHandle, WorkerGuard};
 use opt::Opt;
@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
         ant_protocol::version::set_network_id(network_id);
     }
     let _log_guards = init_logging_and_metrics(&opt)?;
-    #[cfg(feature = "metrics")]
+    #[cfg(feature = "local")]
     tokio::spawn(init_metrics(std::process::id()));
 
     // Log the full command that was run and the git version

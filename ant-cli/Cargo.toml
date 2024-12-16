@@ -15,8 +15,8 @@ path = "src/main.rs"
 
 [features]
 default = ["metrics"]
-local = ["ant-bootstrap/local", "autonomi/local"]
-metrics = ["ant-logging/process-metrics"]
+local = ["ant-bootstrap/local", "autonomi/local", "ant-logging/process-metrics"]
+metrics = []
 
 [[bench]]
 name = "files"
