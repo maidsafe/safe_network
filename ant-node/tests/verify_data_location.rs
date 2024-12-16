@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+// TODO: Remove this once the registers are removed
+#![expect(deprecated)]
 #![allow(clippy::mutable_key_type)]
+
 mod common;
 
 use ant_logging::LogBuilder;
