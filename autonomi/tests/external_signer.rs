@@ -120,13 +120,13 @@ async fn external_signer_put() -> eyre::Result<()> {
         Metadata::new_with_size(data.len() as u64),
     );
 
-    let archive_serialized = private_archive.into_bytes()?;
+    let archive_serialized = private_archive.to_bytes()?;
 
     let receipt = pay_for_data(&client, &wallet, archive_serialized.clone()).await?;
 
     sleep(Duration::from_secs(5)).await;
 
-    let private_archive_access = client.archive_put(private_archive, receipt.into()).await?;
+    let private_archive_access = client.archive_put(&private_archive, receipt.into()).await?;
 
     let vault_key = VaultSecretKey::random();
 
