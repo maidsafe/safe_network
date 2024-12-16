@@ -7,16 +7,16 @@ license = "GPL-3.0"
 name = "ant-protocol"
 readme = "README.md"
 repository = "https://github.com/maidsafe/autonomi"
-version = "0.3.0-rc.3"
+version = "0.3.0-rc.4"
 
 [features]
 default = []
 rpc = ["tonic", "prost"]
 
 [dependencies]
-ant-build-info = { path = "../ant-build-info", version = "0.1.20-rc.3" }
-ant-evm = { path = "../ant-evm", version = "0.1.5-rc.3" }
-ant-registers = { path = "../ant-registers", version = "0.4.4-rc.3" }
+ant-build-info = { path = "../ant-build-info", version = "0.1.20-rc.4" }
+ant-evm = { path = "../ant-evm", version = "0.1.5-rc.4" }
+ant-registers = { path = "../ant-registers", version = "0.4.4-rc.4" }
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
 color-eyre = "0.6.2"

@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "ant-networking"
 readme = "README.md"
 repository = "https://github.com/maidsafe/autonomi"
-version = "0.3.0-rc.3"
+version = "0.3.0-rc.4"
 
 [features]
 default = []
@@ -20,11 +20,11 @@ upnp = ["libp2p/upnp"]
 
 [dependencies]
 aes-gcm-siv = "0.11.1"
-ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0-rc.3" }
-ant-build-info = { path = "../ant-build-info", version = "0.1.20-rc.3" }
-ant-evm = { path = "../ant-evm", version = "0.1.5-rc.3" }
-ant-protocol = { path = "../ant-protocol", version = "0.3.0-rc.3" }
-ant-registers = { path = "../ant-registers", version = "0.4.4-rc.3" }
+ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0-rc.4" }
+ant-build-info = { path = "../ant-build-info", version = "0.1.20-rc.4" }
+ant-evm = { path = "../ant-evm", version = "0.1.5-rc.4" }
+ant-protocol = { path = "../ant-protocol", version = "0.3.0-rc.4" }
+ant-registers = { path = "../ant-registers", version = "0.4.4-rc.4" }
 async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 custom_debug = "~0.6.1"
