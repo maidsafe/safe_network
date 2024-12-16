@@ -1,12 +1,16 @@
-use autonomi::{Bytes, Client, Wallet};
+use autonomi::{Bytes, Client};
+use test_utils::evm::get_funded_wallet;
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Default wallet of testnet.
-    let key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_env("RUST_LOG"))
+        .init();
 
-    let client = Client::init_local().await?;
-    let wallet = Wallet::new_from_private_key(Default::default(), key)?;
+    let client = Client::init().await?;
+    let wallet = get_funded_wallet();
 
     // Put and fetch data.
     let data_addr = client

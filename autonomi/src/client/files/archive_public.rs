@@ -146,7 +146,7 @@ impl Client {
     /// # let wallet = todo!();
     /// let mut archive = PublicArchive::new();
     /// archive.add_file(PathBuf::from("file.txt"), DataAddr::random(&mut rand::thread_rng()), Metadata::new_with_size(0));
-    /// let address = client.archive_put_public(archive, &wallet).await?;
+    /// let address = client.archive_put_public(&archive, &wallet).await?;
     /// # Ok(())
     /// # }
     /// ```
