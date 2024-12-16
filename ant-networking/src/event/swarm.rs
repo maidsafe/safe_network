@@ -627,9 +627,12 @@ impl SwarmDriver {
     fn remove_bootstrap_from_full(&mut self, peer_id: PeerId) {
         let mut shall_removed = None;
 
+        let mut bucket_index = Some(0);
+
         if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
             if kbucket.num_entries() >= K_VALUE.into() {
-                if let Some(peers) = self.bootstrap_peers.get(&kbucket.range().0.ilog2()) {
+                bucket_index = kbucket.range().0.ilog2();
+                if let Some(peers) = self.bootstrap_peers.get(&bucket_index) {
                     for peer_entry in kbucket.iter() {
                         if peers.contains(peer_entry.node.key.preimage()) {
                             shall_removed = Some(*peer_entry.node.key.preimage());
@@ -648,6 +651,13 @@ impl SwarmDriver {
                 .remove_peer(&to_be_removed_bootstrap);
             if let Some(removed_peer) = entry {
                 self.update_on_peer_removal(*removed_peer.node.key.preimage());
+            }
+
+            // With the switch to using bootstrap cache, workload is distributed already.
+            // to avoid peers keeps being replaced by each other,
+            // there shall be just one time of removal to be undertaken.
+            if let Some(peers) = self.bootstrap_peers.get_mut(&bucket_index) {
+                let _ = peers.remove(&to_be_removed_bootstrap);
             }
         }
     }

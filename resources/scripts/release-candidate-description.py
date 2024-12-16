@@ -72,7 +72,7 @@ def main(pr_numbers):
     crate_binary_map = {
         "ant-node": "antnode",
         "ant-node-manager": "antctl",
-        "autonomi-cli": "autonomi",
+        "ant-cli": "ant",
         "nat-detection": "nat-detection",
         "node-launchpad": "node-launchpad"
     }
