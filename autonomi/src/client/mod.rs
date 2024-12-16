@@ -251,6 +251,12 @@ impl Client {
         receiver.await.expect("sender should not close")?;
         debug!("Client is connected to the network");
 
+        // With the switch to the new bootstrap cache scheme,
+        // Seems the too many `initial dial`s could result in failure,
+        // when startup quoting/upload tasks got started up immediatly.
+        // Hence, put in a forced wait to allow `initial network discovery` to be completed.
+        ant_networking::target_arch::sleep(Duration::from_secs(5)).await;
+
         Ok(Self {
             network,
             client_event_sender: Arc::new(None),

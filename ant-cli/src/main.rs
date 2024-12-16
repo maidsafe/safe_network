@@ -24,7 +24,7 @@ pub use access::user_data;
 use clap::Parser;
 use color_eyre::Result;
 
-#[cfg(feature = "metrics")]
+#[cfg(feature = "local")]
 use ant_logging::metrics::init_metrics;
 use ant_logging::{LogBuilder, LogFormat, ReloadHandle, WorkerGuard};
 use ant_protocol::version;
@@ -73,7 +73,7 @@ async fn main() -> Result<()> {
     }
 
     let _log_guards = init_logging_and_metrics(&opt)?;
-    #[cfg(feature = "metrics")]
+    #[cfg(feature = "local")]
     tokio::spawn(init_metrics(std::process::id()));
 
     info!("\"{}\"", std::env::args().collect::<Vec<_>>().join(" "));

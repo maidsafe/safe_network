@@ -387,6 +387,10 @@ impl Network {
             .await?;
         // Filter out results from the ignored peers.
         close_nodes.retain(|peer_id| !ignore_peers.contains(peer_id));
+        info!(
+            "For record {record_address:?} quoting {} nodes. ignore_peers is {ignore_peers:?}",
+            close_nodes.len()
+        );
 
         if close_nodes.is_empty() {
             error!("Can't get store_cost of {record_address:?}, as all close_nodes are ignored");
