@@ -15,7 +15,7 @@ use bytes::Bytes;
 use std::collections::BTreeMap;
 use std::time::Duration;
 use test_utils::evm::get_funded_wallet;
-use test_utils::{gen_random_data, peers_from_env};
+use test_utils::gen_random_data;
 use tokio::time::sleep;
 use xor_name::XorName;
 
@@ -103,7 +103,7 @@ async fn external_signer_put() -> eyre::Result<()> {
     let _log_appender_guard =
         LogBuilder::init_single_threaded_tokio_test("external_signer_put", false);
 
-    let client = Client::connect(&peers_from_env()?).await?;
+    let client = Client::init_local().await?;
     let wallet = get_funded_wallet();
     let data = gen_random_data(1024 * 1024 * 10);
 

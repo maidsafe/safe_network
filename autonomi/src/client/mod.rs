@@ -34,12 +34,12 @@ pub mod wasm;
 mod rate_limiter;
 mod utils;
 
-use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore};
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore, PeersArgs};
 pub use ant_evm::Amount;
 
 use ant_evm::EvmNetwork;
 use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
-use ant_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
+use ant_protocol::version::IDENTIFY_PROTOCOL_STR;
 use libp2p::{identity::Keypair, Multiaddr};
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
@@ -49,18 +49,20 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 10;
 
 const CLIENT_EVENT_CHANNEL_SIZE: usize = 100;
 
-/// Represents a connection to the Autonomi network.
+// Amount of peers to confirm into our routing table before we consider the client ready.
+pub use ant_protocol::CLOSE_GROUP_SIZE;
+
+/// Represents a client for the Autonomi network.
 ///
 /// # Example
 ///
-/// To connect to the network, use [`Client::connect`].
+/// To start interacting with the network, use [`Client::init`].
 ///
 /// ```no_run
 /// # use autonomi::client::Client;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
-/// let client = Client::connect(&peers).await?;
+/// let client = Client::init().await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -71,18 +73,129 @@ pub struct Client {
     pub(crate) evm_network: EvmNetwork,
 }
 
+/// Configuration for [`Client::init_with_config`].
+#[derive(Debug, Clone, Default)]
+pub struct ClientConfig {
+    /// Whether we're expected to connect to a local network.
+    pub local: bool,
+
+    /// List of peers to connect to.
+    ///
+    /// If not provided, the client will use the default bootstrap peers.
+    pub peers: Option<Vec<Multiaddr>>,
+}
+
 /// Error returned by [`Client::connect`].
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectError {
-    /// Did not manage to connect to enough peers in time.
-    #[error("Could not connect to enough peers in time.")]
+    /// Did not manage to populate the routing table with enough peers.
+    #[error("Failed to populate our routing table with enough peers in time")]
     TimedOut,
+
     /// Same as [`ConnectError::TimedOut`] but with a list of incompatible protocols.
-    #[error("Could not connect to peers due to incompatible protocol: {0:?}")]
+    #[error("Failed to populate our routing table due to incompatible protocol: {0:?}")]
     TimedOutWithIncompatibleProtocol(HashSet<String>, String),
+
+    /// An error occurred while bootstrapping the client.
+    #[error("Failed to bootstrap the client")]
+    Bootstrap(#[from] ant_bootstrap::Error),
 }
 
 impl Client {
+    /// Initialize the client with default configuration.
+    ///
+    /// See [`Client::init_with_config`].
+    pub async fn init() -> Result<Self, ConnectError> {
+        Self::init_with_config(Default::default()).await
+    }
+
+    /// Initialize a client that is configured to be local.
+    ///
+    /// See [`Client::init_with_config`].
+    pub async fn init_local() -> Result<Self, ConnectError> {
+        Self::init_with_config(ClientConfig {
+            local: true,
+            ..Default::default()
+        })
+        .await
+    }
+
+    /// Initialize a client that bootstraps from a list of peers.
+    ///
+    /// If any of the provided peers is a global address, the client will not be local.
+    ///
+    /// ```no_run
+    /// # use autonomi::Client;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// // Will set `local` to true.
+    /// let client = Client::init_with_peers(vec!["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?]).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn init_with_peers(peers: Vec<Multiaddr>) -> Result<Self, ConnectError> {
+        // Any global address makes the client non-local
+        let local = !peers.iter().any(multiaddr_is_global);
+
+        Self::init_with_config(ClientConfig {
+            local,
+            peers: Some(peers),
+        })
+        .await
+    }
+
+    /// Initialize the client with the given configuration.
+    ///
+    /// This will block until [`CLOSE_GROUP_SIZE`] have been added to the routing table.
+    ///
+    /// See [`ClientConfig`].
+    ///
+    /// ```no_run
+    /// use autonomi::client::Client;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = Client::init_with_config(Default::default()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn init_with_config(config: ClientConfig) -> Result<Self, ConnectError> {
+        let (network, event_receiver) = build_client_and_run_swarm(config.local);
+
+        let peers_args = PeersArgs {
+            disable_mainnet_contacts: config.local,
+            addrs: config.peers.unwrap_or_default(),
+            ..Default::default()
+        };
+
+        let peers = match peers_args.get_addrs(None, None).await {
+            Ok(peers) => peers,
+            Err(e) => return Err(e.into()),
+        };
+
+        let network_clone = network.clone();
+        let peers = peers.to_vec();
+        let _handle = ant_networking::target_arch::spawn(async move {
+            for addr in peers {
+                if let Err(err) = network_clone.dial(addr.clone()).await {
+                    error!("Failed to dial addr={addr} with err: {err:?}");
+                    eprintln!("addr={addr} Failed to dial: {err:?}");
+                };
+            }
+        });
+
+        // Wait until we have added a few peers to our routing table.
+        let (sender, receiver) = futures::channel::oneshot::channel();
+        ant_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
+        receiver.await.expect("sender should not close")?;
+        debug!("Enough peers were added to our routing table, initialization complete");
+
+        Ok(Self {
+            network,
+            client_event_sender: Arc::new(None),
+            evm_network: Default::default(),
+        })
+    }
+
     /// Connect to the network.
     ///
     /// This will timeout after [`CONNECT_TIMEOUT_SECS`] secs.
@@ -92,10 +205,15 @@ impl Client {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
+    /// #[allow(deprecated)]
     /// let client = Client::connect(&peers).await?;
     /// # Ok(())
     /// # }
     /// ```
+    #[deprecated(
+        since = "0.2.4",
+        note = "Use [`Client::init`] or [`Client::init_with_config`] instead"
+    )]
     pub async fn connect(peers: &[Multiaddr]) -> Result<Self, ConnectError> {
         // Any global address makes the client non-local
         let local = !peers.iter().any(multiaddr_is_global);

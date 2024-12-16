@@ -15,7 +15,7 @@ use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::time::Duration;
-use test_utils::{evm::get_funded_wallet, peers_from_env};
+use test_utils::evm::get_funded_wallet;
 use tokio::time::sleep;
 use walkdir::WalkDir;
 
@@ -26,7 +26,7 @@ async fn dir_upload_download() -> Result<()> {
     let _log_appender_guard =
         LogBuilder::init_single_threaded_tokio_test("dir_upload_download", false);
 
-    let client = Client::connect(&peers_from_env()?).await?;
+    let client = Client::init_local().await?;
     let wallet = get_funded_wallet();
 
     let addr = client
@@ -81,7 +81,7 @@ fn compute_dir_sha256(dir: &str) -> Result<String> {
 async fn file_into_vault() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("file", false);
 
-    let client = Client::connect(&peers_from_env()?).await?;
+    let client = Client::init_local().await?;
     let wallet = get_funded_wallet();
     let client_sk = bls::SecretKey::random();
 
@@ -102,7 +102,7 @@ async fn file_into_vault() -> Result<()> {
         .await?;
 
     // now assert over the stored account packet
-    let new_client = Client::connect(&[]).await?;
+    let new_client = Client::init_local().await?;
 
     let (ap, got_version) = new_client.fetch_and_decrypt_vault(&client_sk).await?;
     assert_eq!(set_version, got_version);

@@ -13,6 +13,10 @@ repository = "https://github.com/maidsafe/autonomi"
 name = "autonomi"
 crate-type = ["cdylib", "rlib"]
 
+[[example]]
+name = "put_and_dir_upload"
+features = ["full"]
+
 [features]
 default = ["vault"]
 external-signer = ["ant-evm/external-signer"]
