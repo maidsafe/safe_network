@@ -125,8 +125,13 @@ impl Client {
     /// If any of the provided peers is a global address, the client will not be local.
     ///
     /// ```no_run
+    /// # use autonomi::Client;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// // Will set `local` to true.
     /// let client = Client::init_with_peers(vec!["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?]).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn init_with_peers(peers: Vec<Multiaddr>) -> Result<Self, ConnectError> {
         // Any global address makes the client non-local
@@ -200,6 +205,7 @@ impl Client {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
+    /// #[allow(deprecated)]
     /// let client = Client::connect(&peers).await?;
     /// # Ok(())
     /// # }

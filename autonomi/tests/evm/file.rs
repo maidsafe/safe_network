@@ -20,7 +20,7 @@ mod test {
         let _log_appender_guard =
             ant_logging::LogBuilder::init_single_threaded_tokio_test("file", false);
 
-        let mut client = Client::connect(&[]).await.unwrap();
+        let mut client = Client::init_local().await?;
         let mut wallet = get_funded_wallet();
 
         // let data = common::gen_random_data(1024 * 1024 * 1000);
