@@ -66,8 +66,10 @@ pub mod client;
 pub mod self_encryption;
 
 pub use ant_evm::get_evm_network_from_env;
+pub use ant_evm::Amount;
 pub use ant_evm::EvmNetwork as Network;
 pub use ant_evm::EvmWallet as Wallet;
+pub use ant_evm::QuoteHash;
 pub use ant_evm::RewardsAddress;
 pub use ant_protocol::storage::{Chunk, ChunkAddress};
 
