@@ -82,7 +82,10 @@ pub(crate) fn load_private_key(wallet_address: &str) -> Result<String, Error> {
     let encrypted_file_path =
         wallets_folder.join(format!("{wallet_address}{ENCRYPTED_PRIVATE_KEY_EXT}"));
 
-    let is_encrypted = encrypted_file_path.exists();
+    let is_plain = wallets_folder.join(&file_name).exists();
+
+    // Trick to favour the plain file in case they both exist
+    let is_encrypted = encrypted_file_path.exists() && !is_plain;
 
     if is_encrypted {
         file_name.push_str(ENCRYPTED_PRIVATE_KEY_EXT);

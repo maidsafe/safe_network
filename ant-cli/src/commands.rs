@@ -158,13 +158,25 @@ pub enum WalletCmd {
         /// Optional flag to not add a password.
         #[clap(long, action)]
         no_password: bool,
-        /// Optional hex-encoded private key.
-        #[clap(long)]
-        private_key: Option<String>,
         /// Optional password to encrypt the wallet with.
         #[clap(long, short)]
         password: Option<String>,
     },
+
+    /// Import an existing wallet.
+    Import {
+        /// Hex-encoded private key.
+        private_key: String,
+        /// Optional flag to not add a password.
+        #[clap(long, action)]
+        no_password: bool,
+        /// Optional password to encrypt the wallet with.
+        #[clap(long, short)]
+        password: Option<String>,
+    },
+
+    /// Print the private key of a wallet.
+    Export,
 
     /// Check the balance of the wallet.
     Balance,
@@ -208,10 +220,15 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
         SubCmd::Wallet { command } => match command {
             WalletCmd::Create {
                 no_password,
-                private_key,
                 password,
-            } => wallet::create(no_password, private_key, password),
-            WalletCmd::Balance => Ok(wallet::balance().await?),
+            } => wallet::create(no_password, password),
+            WalletCmd::Import {
+                private_key,
+                no_password,
+                password,
+            } => wallet::import(private_key, no_password, password),
+            WalletCmd::Export => wallet::export(),
+            WalletCmd::Balance => wallet::balance().await,
         },
     }
 }
