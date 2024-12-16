@@ -99,8 +99,8 @@ jobs:
           mkdir $ANT_DATA_PATH/client
           ls -l $ANT_DATA_PATH
           cp ./the-test-data.zip ./the-test-data_1.zip
-          ./target/release/ant --log-output-dest data-dir file_TYPE upload "" > ./second_upload 2>&1
-        enrelease-candidatev:
+          ./target/release/ant --log-output-dest=data-dir file upload "./the-test-data_1.zip" > ./second_upload 2>&1
+        env:
           ANT_LOG: "all"
         timeout-minutes: 25
 
@@ -114,11 +114,7 @@ jobs:
 
       - name: Start the restart node again
         run: |
-          ./target/release/antnode \
-            --root-dir-type PARESTART_TEST_NODE_DATA_PATH \
-            --log-output-dest $RESTART_TEST_NODE_DATA_PATH \
-            --local \
-            --rewards-address "0x03B770D9cD32077cC0bF330c13C114a87643B124" &
+          ./target/release/antnode --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --rewards-address "0x03B770D9cD32077cC0bF330c13C114a87643B124" &
           sleep 10
         env:
           ANT_LOG: "all"
@@ -150,9 +146,7 @@ jobs:
         if: always()
 
       - name: File Download
-        run: >
-          ./target/release/ant
-          --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
+        run: ./target/release/ant --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
         env:
           ANT_LOG: "v"
         timeout-minutes: 2
