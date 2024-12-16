@@ -31,9 +31,11 @@ impl PyClient {
                 pyo3::exceptions::PyValueError::new_err(format!("Invalid multiaddr: {e}"))
             })?;
 
-        let client = rt.block_on(RustClient::connect(&peers)).map_err(|e| {
-            pyo3::exceptions::PyValueError::new_err(format!("Failed to connect: {e}"))
-        })?;
+        let client = rt
+            .block_on(RustClient::init_with_peers(peers))
+            .map_err(|e| {
+                pyo3::exceptions::PyValueError::new_err(format!("Failed to connect: {e}"))
+            })?;
 
         Ok(Self { inner: client })
     }

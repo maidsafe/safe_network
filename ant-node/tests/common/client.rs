@@ -131,7 +131,7 @@ impl LocalNetwork {
 
         println!("Client bootstrap with peer {bootstrap_peers:?}");
         info!("Client bootstrap with peer {bootstrap_peers:?}");
-        Client::connect(&bootstrap_peers)
+        Client::init_with_peers(bootstrap_peers)
             .await
             .expect("Client shall be successfully created.")
     }

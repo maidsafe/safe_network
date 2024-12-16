@@ -39,7 +39,7 @@ pub use ant_evm::Amount;
 
 use ant_evm::EvmNetwork;
 use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
-use ant_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
+use ant_protocol::version::IDENTIFY_PROTOCOL_STR;
 use libp2p::{identity::Keypair, Multiaddr};
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
@@ -49,7 +49,10 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 10;
 
 const CLIENT_EVENT_CHANNEL_SIZE: usize = 100;
 
-/// Represents a connection to the Autonomi network.
+// Amount of peers to confirm into our routing table before we consider the client ready.
+pub use ant_protocol::CLOSE_GROUP_SIZE;
+
+/// Represents a client for the Autonomi network.
 ///
 /// # Example
 ///
@@ -82,25 +85,15 @@ pub struct ClientConfig {
     pub peers: Option<Vec<Multiaddr>>,
 }
 
-impl ClientConfig {
-    /// Get a configuration for a local client.
-    pub fn local() -> Self {
-        Self {
-            local: true,
-            ..Default::default()
-        }
-    }
-}
-
 /// Error returned by [`Client::connect`].
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectError {
-    /// Did not manage to connect to enough peers in time.
-    #[error("Could not connect to enough peers in time.")]
+    /// Did not manage to populate the routing table with enough peers.
+    #[error("Failed to populate our routing table with enough peers in time")]
     TimedOut,
 
     /// Same as [`ConnectError::TimedOut`] but with a list of incompatible protocols.
-    #[error("Could not connect to peers due to incompatible protocol: {0:?}")]
+    #[error("Failed to populate our routing table due to incompatible protocol: {0:?}")]
     TimedOutWithIncompatibleProtocol(HashSet<String>, String),
 
     /// An error occurred while bootstrapping the client.
@@ -116,9 +109,41 @@ impl Client {
         Self::init_with_config(Default::default()).await
     }
 
+    /// Initialize a client that is configured to be local.
+    ///
+    /// See [`Client::init_with_config`].
+    pub async fn init_local() -> Result<Self, ConnectError> {
+        Self::init_with_config(ClientConfig {
+            local: true,
+            ..Default::default()
+        })
+        .await
+    }
+
+    /// Initialize a client that bootstraps from a list of peers.
+    ///
+    /// If any of the provided peers is a global address, the client will not be local.
+    ///
+    /// ```no_run
+    /// // Will set `local` to true.
+    /// let client = Client::init_with_peers(vec!["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?]).await?;
+    /// ```
+    pub async fn init_with_peers(peers: Vec<Multiaddr>) -> Result<Self, ConnectError> {
+        // Any global address makes the client non-local
+        let local = !peers.iter().any(multiaddr_is_global);
+
+        Self::init_with_config(ClientConfig {
+            local,
+            peers: Some(peers),
+        })
+        .await
+    }
+
     /// Initialize the client with the given configuration.
     ///
     /// This will block until [`CLOSE_GROUP_SIZE`] have been added to the routing table.
+    ///
+    /// See [`ClientConfig`].
     ///
     /// ```no_run
     /// use autonomi::client::Client;
