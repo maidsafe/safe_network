@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#![allow(deprecated)]
+
 use crate::client::data::PayError;
 use crate::client::Client;
 use crate::client::ClientEvent;
@@ -53,6 +55,10 @@ pub enum RegisterError {
     PayeesMissing,
 }
 
+#[deprecated(
+    since = "0.2.4",
+    note = "Use transactions instead (see Client::transaction_put)"
+)]
 #[derive(Clone, Debug)]
 pub struct Register {
     signed_reg: SignedRegister,
@@ -122,6 +128,10 @@ impl Register {
     }
 }
 
+#[deprecated(
+    since = "0.2.4",
+    note = "Use transactions instead (see Client::transaction_put)"
+)]
 impl Client {
     /// Generate a new register key
     pub fn register_generate_key() -> RegisterSecretKey {

@@ -51,6 +51,10 @@ let wallet = Wallet::new_from_private_key(EvmNetwork::ArbitrumSepolia, key)?;
 let wallet = Wallet::new_from_private_key(EvmNetwork::new_custom("<rpc URL>", "<payment token address>", "<data payment address>"), key)?;
 ```
 
+# Registers
+
+Registers are deprecated and planned to be replaced by transactions and pointers. Currently, transactions can already be used. For example usage, see [the transaction test](tests/transaction.rs). Pointers are not yet implemented, but will follow soon.
+
 ## Running tests
 
 To run the tests, we can run a local network:
