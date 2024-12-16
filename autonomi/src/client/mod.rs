@@ -53,14 +53,13 @@ const CLIENT_EVENT_CHANNEL_SIZE: usize = 100;
 ///
 /// # Example
 ///
-/// To connect to the network, use [`Client::connect`].
+/// To start interacting with the network, use [`Client::init`].
 ///
 /// ```no_run
 /// # use autonomi::client::Client;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
-/// let client = Client::connect(&peers).await?;
+/// let client = Client::init().await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -76,10 +75,21 @@ pub struct Client {
 pub struct ClientConfig {
     /// Whether we're expected to connect to a local network.
     pub local: bool,
+
     /// List of peers to connect to.
     ///
     /// If not provided, the client will use the default bootstrap peers.
     pub peers: Option<Vec<Multiaddr>>,
+}
+
+impl ClientConfig {
+    /// Get a configuration for a local client.
+    pub fn local() -> Self {
+        Self {
+            local: true,
+            ..Default::default()
+        }
+    }
 }
 
 /// Error returned by [`Client::connect`].
@@ -88,6 +98,7 @@ pub enum ConnectError {
     /// Did not manage to connect to enough peers in time.
     #[error("Could not connect to enough peers in time.")]
     TimedOut,
+
     /// Same as [`ConnectError::TimedOut`] but with a list of incompatible protocols.
     #[error("Could not connect to peers due to incompatible protocol: {0:?}")]
     TimedOutWithIncompatibleProtocol(HashSet<String>, String),
@@ -98,10 +109,25 @@ pub enum ConnectError {
 }
 
 impl Client {
+    /// Initialize the client with default configuration.
+    ///
+    /// See [`Client::init_with_config`].
     pub async fn init() -> Result<Self, ConnectError> {
-        Self::init_with_config(ClientConfig::default()).await
+        Self::init_with_config(Default::default()).await
     }
 
+    /// Initialize the client with the given configuration.
+    ///
+    /// This will block until [`CLOSE_GROUP_SIZE`] have been added to the routing table.
+    ///
+    /// ```no_run
+    /// use autonomi::client::Client;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = Client::init_with_config(Default::default()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn init_with_config(config: ClientConfig) -> Result<Self, ConnectError> {
         let (network, event_receiver) = build_client_and_run_swarm(config.local);
 
@@ -131,7 +157,7 @@ impl Client {
         let (sender, receiver) = futures::channel::oneshot::channel();
         ant_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
         receiver.await.expect("sender should not close")?;
-        debug!("Client is connected to the network");
+        debug!("Enough peers were added to our routing table, initialization complete");
 
         Ok(Self {
             network,
@@ -153,6 +179,10 @@ impl Client {
     /// # Ok(())
     /// # }
     /// ```
+    #[deprecated(
+        since = "0.2.4",
+        note = "Use [`Client::init`] or [`Client::init_with_config`] instead"
+    )]
     pub async fn connect(peers: &[Multiaddr]) -> Result<Self, ConnectError> {
         // Any global address makes the client non-local
         let local = !peers.iter().any(multiaddr_is_global);
