@@ -47,7 +47,7 @@ mod test {
     async fn file_into_vault() -> eyre::Result<()> {
         common::enable_logging();
 
-        let mut client = Client::connect(&[])
+        let mut client = Client::init()
             .await?
             .with_vault_entropy(Bytes::from("at least 32 bytes of entropy here"))?;
 
@@ -66,7 +66,7 @@ mod test {
         );
 
         // now assert over the stored account packet
-        let new_client = Client::connect(&[])
+        let new_client = Client::init()
             .await?
             .with_vault_entropy(Bytes::from("at least 32 bytes of entropy here"))?;
 

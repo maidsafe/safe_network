@@ -167,7 +167,7 @@ impl Client {
     /// use autonomi::{Client, Bytes};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = Client::connect(&[]).await?;
+    /// # let client = Client::init().await?;
     /// # let data_map = todo!();
     /// let data_fetched = client.data_get(data_map).await?;
     /// # Ok(())
@@ -195,7 +195,7 @@ impl Client {
     /// use autonomi::{Client, Bytes};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = Client::connect(&[]).await?;
+    /// # let client = Client::init().await?;
     /// # let wallet = todo!();
     /// let data = Bytes::from("Hello, World");
     /// let data_map = client.data_put(data, wallet).await?;

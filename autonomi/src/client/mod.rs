@@ -98,7 +98,7 @@ impl Default for ClientConfig {
     }
 }
 
-/// Error returned by [`Client::connect`].
+/// Error returned by [`Client::init`].
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectError {
     /// Did not manage to populate the routing table with enough peers.
