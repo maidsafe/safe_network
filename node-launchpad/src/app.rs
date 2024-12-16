@@ -55,6 +55,7 @@ impl App {
         peers_args: PeersArgs,
         antnode_path: Option<PathBuf>,
         app_data_path: Option<PathBuf>,
+        network_id: Option<u8>,
     ) -> Result<Self> {
         // Configurations
         let app_data = AppData::load(app_data_path)?;
@@ -93,6 +94,7 @@ impl App {
             allocated_disk_space: app_data.nodes_to_start,
             rewards_address: app_data.discord_username.clone(),
             peers_args,
+            network_id,
             antnode_path,
             data_dir_path,
             connection_mode,
@@ -356,7 +358,7 @@ mod tests {
         let mut output = Cursor::new(Vec::new());
 
         // Create and run the App, capturing its output
-        let app_result = App::new(60.0, 60.0, peers_args, None, Some(config_path)).await;
+        let app_result = App::new(60.0, 60.0, peers_args, None, Some(config_path), None).await;
 
         match app_result {
             Ok(app) => {
@@ -417,7 +419,8 @@ mod tests {
         let mut output = Cursor::new(Vec::new());
 
         // Create and run the App, capturing its output
-        let app_result = App::new(60.0, 60.0, peers_args, None, Some(test_app_data_path)).await;
+        let app_result =
+            App::new(60.0, 60.0, peers_args, None, Some(test_app_data_path), None).await;
 
         match app_result {
             Ok(app) => {
@@ -472,8 +475,15 @@ mod tests {
         let mut output = Cursor::new(Vec::new());
 
         // Create and run the App, capturing its output
-        let app_result =
-            App::new(60.0, 60.0, peers_args, None, Some(non_existent_config_path)).await;
+        let app_result = App::new(
+            60.0,
+            60.0,
+            peers_args,
+            None,
+            Some(non_existent_config_path),
+            None,
+        )
+        .await;
 
         match app_result {
             Ok(app) => {
@@ -535,7 +545,7 @@ mod tests {
         let peers_args = PeersArgs::default();
 
         // Create and run the App, capturing its output
-        let app_result = App::new(60.0, 60.0, peers_args, None, Some(config_path)).await;
+        let app_result = App::new(60.0, 60.0, peers_args, None, Some(config_path), None).await;
 
         // Could be that the mountpoint doesn't exists
         // or that the user doesn't have permissions to access it
@@ -576,7 +586,8 @@ mod tests {
         let peers_args = PeersArgs::default();
 
         // Create and run the App
-        let app_result = App::new(60.0, 60.0, peers_args, None, Some(test_app_data_path)).await;
+        let app_result =
+            App::new(60.0, 60.0, peers_args, None, Some(test_app_data_path), None).await;
 
         match app_result {
             Ok(app) => {
