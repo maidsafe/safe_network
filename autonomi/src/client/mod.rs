@@ -34,7 +34,7 @@ pub mod wasm;
 mod rate_limiter;
 mod utils;
 
-use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore};
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore, PeersArgs};
 pub use ant_evm::Amount;
 
 use ant_evm::EvmNetwork;
@@ -71,6 +71,17 @@ pub struct Client {
     pub(crate) evm_network: EvmNetwork,
 }
 
+/// Configuration for [`Client::init_with_config`].
+#[derive(Debug, Clone, Default)]
+pub struct ClientConfig {
+    /// Whether we're expected to connect to a local network.
+    pub local: bool,
+    /// List of peers to connect to.
+    ///
+    /// If not provided, the client will use the default bootstrap peers.
+    pub peers: Option<Vec<Multiaddr>>,
+}
+
 /// Error returned by [`Client::connect`].
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectError {
@@ -80,9 +91,55 @@ pub enum ConnectError {
     /// Same as [`ConnectError::TimedOut`] but with a list of incompatible protocols.
     #[error("Could not connect to peers due to incompatible protocol: {0:?}")]
     TimedOutWithIncompatibleProtocol(HashSet<String>, String),
+
+    /// An error occurred while bootstrapping the client.
+    #[error("Failed to bootstrap the client")]
+    Bootstrap(#[from] ant_bootstrap::Error),
 }
 
 impl Client {
+    pub async fn init() -> Result<Self, ConnectError> {
+        Self::init_with_config(ClientConfig::default()).await
+    }
+
+    pub async fn init_with_config(config: ClientConfig) -> Result<Self, ConnectError> {
+        let (network, event_receiver) = build_client_and_run_swarm(config.local);
+
+        let peers_args = PeersArgs {
+            disable_mainnet_contacts: config.local,
+            addrs: config.peers.unwrap_or_default(),
+            ..Default::default()
+        };
+
+        let peers = match peers_args.get_addrs(None, None).await {
+            Ok(peers) => peers,
+            Err(e) => return Err(e.into()),
+        };
+
+        let network_clone = network.clone();
+        let peers = peers.to_vec();
+        let _handle = ant_networking::target_arch::spawn(async move {
+            for addr in peers {
+                if let Err(err) = network_clone.dial(addr.clone()).await {
+                    error!("Failed to dial addr={addr} with err: {err:?}");
+                    eprintln!("addr={addr} Failed to dial: {err:?}");
+                };
+            }
+        });
+
+        // Wait until we have added a few peers to our routing table.
+        let (sender, receiver) = futures::channel::oneshot::channel();
+        ant_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
+        receiver.await.expect("sender should not close")?;
+        debug!("Client is connected to the network");
+
+        Ok(Self {
+            network,
+            client_event_sender: Arc::new(None),
+            evm_network: Default::default(),
+        })
+    }
+
     /// Connect to the network.
     ///
     /// This will timeout after [`CONNECT_TIMEOUT_SECS`] secs.
