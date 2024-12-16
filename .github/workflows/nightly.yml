@@ -252,6 +252,10 @@ jobs:
         timeout-minutes: 25
         run: cargo test --release --package ant-bootstrap
 
+      - name: Run launchpad tests
+        timeout-minutes: 25
+        run: cargo test --release --package node-launchpad
+
       - name: Run node tests
         timeout-minutes: 25
         run: cargo test --release --package ant-node --lib

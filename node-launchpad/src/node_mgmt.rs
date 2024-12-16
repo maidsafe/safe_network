@@ -122,16 +122,17 @@ async fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action
 
 #[derive(Debug)]
 pub struct MaintainNodesArgs {
+    pub action_sender: UnboundedSender<Action>,
+    pub antnode_path: Option<PathBuf>,
+    pub connection_mode: ConnectionMode,
     pub count: u16,
+    pub data_dir_path: Option<PathBuf>,
+    pub network_id: Option<u8>,
     pub owner: String,
     pub peers_args: PeersArgs,
-    pub run_nat_detection: bool,
-    pub antnode_path: Option<PathBuf>,
-    pub data_dir_path: Option<PathBuf>,
-    pub action_sender: UnboundedSender<Action>,
-    pub connection_mode: ConnectionMode,
     pub port_range: Option<PortRange>,
     pub rewards_address: String,
+    pub run_nat_detection: bool,
 }
 
 /// Maintain the specified number of nodes
@@ -289,16 +290,17 @@ async fn load_node_registry(
 }
 
 struct NodeConfig {
-    auto_set_nat_flags: bool,
-    upnp: bool,
-    home_network: bool,
-    custom_ports: Option<PortRange>,
-    owner: Option<String>,
-    count: u16,
-    data_dir_path: Option<PathBuf>,
-    peers_args: PeersArgs,
     antnode_path: Option<PathBuf>,
+    auto_set_nat_flags: bool,
+    count: u16,
+    custom_ports: Option<PortRange>,
+    data_dir_path: Option<PathBuf>,
+    home_network: bool,
+    network_id: Option<u8>,
+    owner: Option<String>,
+    peers_args: PeersArgs,
     rewards_address: String,
+    upnp: bool,
 }
 
 /// Run the NAT detection process
@@ -344,9 +346,10 @@ async fn run_nat_detection(action_sender: &UnboundedSender<Action>) {
 
 fn prepare_node_config(args: &MaintainNodesArgs) -> NodeConfig {
     NodeConfig {
+        antnode_path: args.antnode_path.clone(),
         auto_set_nat_flags: args.connection_mode == ConnectionMode::Automatic,
-        upnp: args.connection_mode == ConnectionMode::UPnP,
-        home_network: args.connection_mode == ConnectionMode::HomeNetwork,
+        data_dir_path: args.data_dir_path.clone(),
+        count: args.count,
         custom_ports: if args.connection_mode == ConnectionMode::CustomPorts {
             args.port_range.clone()
         } else {
@@ -357,11 +360,11 @@ fn prepare_node_config(args: &MaintainNodesArgs) -> NodeConfig {
         } else {
             Some(args.owner.clone())
         },
-        count: args.count,
-        data_dir_path: args.data_dir_path.clone(),
+        home_network: args.connection_mode == ConnectionMode::HomeNetwork,
+        network_id: args.network_id,
         peers_args: args.peers_args.clone(),
-        antnode_path: args.antnode_path.clone(),
         rewards_address: args.rewards_address.clone(),
+        upnp: args.connection_mode == ConnectionMode::UPnP,
     }
 }
 
@@ -373,8 +376,8 @@ fn debug_log_config(config: &NodeConfig, args: &MaintainNodesArgs) {
         config.count
     );
     debug!(
-        " owner: {:?}, peers_args: {:?}, antnode_path: {:?}",
-        config.owner, config.peers_args, config.antnode_path
+        " owner: {:?}, peers_args: {:?}, antnode_path: {:?}, network_id: {:?}",
+        config.owner, config.peers_args, config.antnode_path, args.network_id
     );
     debug!(
         " data_dir_path: {:?}, connection_mode: {:?}",
@@ -423,7 +426,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         None,
         None,
         None,
-        None,
+        config.network_id,
         None,
         None, // We don't care about the port, as we are scaling down
         config.owner.clone(),
@@ -497,7 +500,7 @@ async fn add_nodes(
             None,
             None,
             None,
-            None,
+            config.network_id,
             None,
             port_range,
             config.owner.clone(),

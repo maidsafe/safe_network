@@ -138,6 +138,10 @@ jobs:
       - name: Run node tests
         timeout-minutes: 25
         run: cargo test --release --package ant-node --lib
+      
+      - name: Run launchpad tests
+        timeout-minutes: 25
+        run: cargo test --release --package node-launchpad
 
       # The `can_store_after_restart` can be executed with other package tests together and passing
       # on local machine. However keeps failing (when executed together) on CI machines.
