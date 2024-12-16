@@ -63,7 +63,7 @@
 extern crate tracing;
 
 pub mod client;
-mod self_encryption;
+pub mod self_encryption;
 
 pub use ant_evm::get_evm_network_from_env;
 pub use ant_evm::EvmNetwork as Network;
