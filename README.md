@@ -63,9 +63,6 @@ More options about EVM Network below.
 
 The Autonomi network uses `quic` as the default transport protocol.
 
-#### Building for wasm32
-
-WASM support for the autonomi API is currently under active development. More docs coming soon.
 
 ### For the Technical
 
