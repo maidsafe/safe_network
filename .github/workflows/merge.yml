@@ -578,7 +578,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/ant-local-testnet-action@feat-addrs-logs
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_e2e
@@ -1372,7 +1372,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/ant-local-testnet-action@feat-addrs-logs
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           platform: ubuntu-latest

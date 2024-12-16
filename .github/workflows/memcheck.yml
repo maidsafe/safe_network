@@ -100,7 +100,7 @@ jobs:
           ls -l $ANT_DATA_PATH
           cp ./the-test-data.zip ./the-test-data_1.zip
           ./target/release/ant --log-output-dest=data-dir file upload "./the-test-data_1.zip" > ./second_upload 2>&1
-        enrelease-candidatev:
+        env:
           ANT_LOG: "all"
         timeout-minutes: 25
 
@@ -160,7 +160,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/ant-local-testnet-action@feat-addrs-logs
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_memcheck
