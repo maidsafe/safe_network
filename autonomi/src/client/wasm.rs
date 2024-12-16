@@ -70,7 +70,7 @@ impl JsClient {
             .map(|peer| peer.parse())
             .collect::<Result<Vec<Multiaddr>, _>>()?;
 
-        let client = super::Client::connect(&peers).await?;
+        let client = super::Client::init_with_peers(peers).await?;
 
         Ok(JsClient(client))
     }
