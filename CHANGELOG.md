@@ -7,6 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-12-18
+
+### General
+
+#### Changed
+
+- For a branding alignment that moves Safe Network to Autonomi, all crates in the workspace prefixed
+  `sn-` were renamed with an `ant-` prefix. For example, `sn-node` was renamed `ant-node`.
+- To further support this alignment, several binaries were renamed:
+   + `autonomi` -> `ant`
+   + `safenode` -> `antnode`
+   + `safenode-manager` -> `antctl`
+   + `safenode_rpc_client` -> `antnode_rpc_client`
+- The location of data directories used by the binaries were changed from `~/.local/share/safe` to
+  `~/.local/share/autonomi`. The same is true of the equivalent locations on macOS and Windows.
+- The prefixes of metric names in the `safenode` binary (now `antnode`) were changed from `sn_` to
+  `ant_`.
+
+### Network
+
+#### Added
+
+- Provide Python bindings for `antnode`.
+- Generic `Transaction` data type
+- Upgraded quoting with smart-contract-based pricing. This makes pricing fairer, as more nodes
+  are rewarded and there are less incentives to cheat.
+- Upgraded data payments verification.
+- New storage proof verification which attempts to avoid outsourcing attack
+- RBS support, dynamic `responsible_range` based on `network_density` equation estimation.
+- Node support for client’s RBS `get_closest` query.
+- More quoting metrics for potential future quoting scheme.
+- Implement bootstrap cache for local, decentralized network contacts.
+- Increased the number of peers returned for the `get_closest` query result.
+
+#### Changed
+
+- The `SignedSpend` data type was replaced by `Transaction`.
+- Removed `group_consensus` on `BadNode` to support RBS in the future.
+- Removed node-side quoting history check as part of the new quoting scheme.
+- Rename `continuous_bootstrap` to `network_discovery`.
+- Convert `Distance` into `U256` via output string. This avoids the need to access the
+  `libp2p::Distance` private field because the change for it has not been published yet.
+- For node and protocol versioning we remove the use of various keys in favour of a simple 
+  integer between `0` and `255`. We reserve the value `1` for the main production network.
+- The `websockets` feature was removed from the node binary. We will no longer support the `ws`
+  protocol for connections.
+
+#### Fixed
+
+- Populate `records_by_bucket` during restart so that proper quoting can be retained after restart.
+- Scramble `libp2p` native bootstrap to avoid patterned spike of resource usage.
+- Replicate fresh `ScratchPad`
+- Accumulate and merge `ScratchPad` on record get. 
+- Remove an external address if it is unreliable.
+- Bootstrap nodes were being replaced too frequently in the routing table.
+
+### Client
+
+#### Added
+
+- Provide Python bindings.
+- Support for generic `Transaction` data type.
+- Upgraded quoting with smart contract.
+- Upgraded data payments with new quoting.
+- Retry failed PUTs. This will retry when chunks failed to upload.
+- WASM function to generate a vault key from a wallet signature.
+- Use bootstrap cache mechanism to initialize `Client` object. 
+- Exposed many types at top-level, for more ergonomic use of the API. Together with more examples on
+  function usage.
+- Deprecated registers for the client, planning on replacing them fully with transactions and
+  pointers.
+- Wait a short while for initial network discovery to settle before quoting or uploading tasks
+  begin.
+- Stress tests for the register features of the vault.
+- Improved logging for vault end-to-end test cases.
+- More debugging logging for the client API and `evmlib`.
+- Added support for adding a wallet from an environment variable if no wallet files are present.
+- Provide `wallet export` command to export a wallet’s private key
+
+#### Changed
+
+- Added and modified documentation in various places to improve developer experience.
+- Renamed various methods to 'default' to private uploading, while public will have `_public`
+  suffixed. Also has various changes to allow more granular uploading of archives and data maps.
+- Archives now store relative paths to files instead of absolute paths.
+- The `wallet create --private-key` command has been changed to `wallet import`.
+
+#### Fixed
+
+- Files now download to a specific destination path.
+- Retry when the number of quotes obtained are not enough.
+- Return the wallet from an environment variable rather than creating a file.
+- Error when decrypting a wallet that was imported without the `0x` prefix.
+- Issue when selecting a wallet that had multiple wallet files (unencrypted & encrypted).
+
+### Launchpad
+
+#### Added
+
+- Added `--network-id` and `--antnode-path` args for testing
+
 ## 2024-11-25
 
 ### Network
