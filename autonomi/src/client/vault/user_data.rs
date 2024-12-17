@@ -13,7 +13,6 @@ use crate::client::data::PutError;
 use crate::client::files::archive::PrivateArchiveAccess;
 use crate::client::files::archive_public::ArchiveAddr;
 use crate::client::payment::PaymentOption;
-use crate::client::registers::RegisterAddress;
 use crate::client::vault::VaultError;
 use crate::client::vault::{app_name_to_vault_content_type, VaultContentType, VaultSecretKey};
 use crate::client::Client;
@@ -32,10 +31,6 @@ pub static USER_DATA_VAULT_CONTENT_IDENTIFIER: LazyLock<VaultContentType> =
 /// Using User Data Vault is optional, one can decide to keep all their data locally instead.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct UserData {
-    /// The register secret key hex encoded
-    pub register_sk: Option<String>,
-    /// Owned register addresses, along with their names (can be empty)
-    pub registers: HashMap<RegisterAddress, String>,
     /// Owned file archive addresses, along with their names (can be empty)
     pub file_archives: HashMap<ArchiveAddr, String>,
     /// Owned private file archives, along with their names (can be empty)
