@@ -253,7 +253,10 @@ impl SwarmDriver {
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if self.local || has_dialed {
                             // A bad node cannot establish a connection with us. So we can add it to the RT directly.
-                            self.remove_bootstrap_from_full(peer_id);
+
+                            // With the new bootstrap cache, the workload is distributed,
+                            // hence no longer need to replace bootstrap nodes for workload share.
+                            // self.remove_bootstrap_from_full(peer_id);
 
                             // Avoid have `direct link format` addrs co-exists with `relay` addr
                             if has_relayed {
@@ -624,6 +627,7 @@ impl SwarmDriver {
     }
 
     // if target bucket is full, remove a bootstrap node if presents.
+    #[allow(dead_code)]
     fn remove_bootstrap_from_full(&mut self, peer_id: PeerId) {
         let mut shall_removed = None;
 
