@@ -151,6 +151,12 @@ impl DataMapChunk {
     }
 }
 
+impl From<Chunk> for DataMapChunk {
+    fn from(value: Chunk) -> Self {
+        Self(value)
+    }
+}
+
 fn hash_to_short_string(input: &str) -> String {
     let mut hasher = DefaultHasher::new();
     input.hash(&mut hasher);
