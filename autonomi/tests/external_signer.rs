@@ -2,20 +2,20 @@
 
 use alloy::network::TransactionBuilder;
 use alloy::providers::Provider;
-use autonomi::client::archive::Metadata;
-use autonomi::client::archive_private::PrivateArchive;
+use ant_evm::{QuoteHash, TxHash};
+use ant_logging::LogBuilder;
 use autonomi::client::external_signer::encrypt_data;
-use autonomi::client::payment::Receipt;
+use autonomi::client::files::archive::{Metadata, PrivateArchive};
+use autonomi::client::payment::{receipt_from_store_quotes, Receipt};
+use autonomi::client::quote::StoreQuote;
 use autonomi::client::vault::user_data::USER_DATA_VAULT_CONTENT_IDENTIFIER;
 use autonomi::client::vault::VaultSecretKey;
-use autonomi::{receipt_from_quotes_and_payments, Client, Wallet};
+use autonomi::{Client, Wallet};
 use bytes::Bytes;
-use sn_evm::{QuoteHash, TxHash};
-use sn_logging::LogBuilder;
 use std::collections::BTreeMap;
 use std::time::Duration;
 use test_utils::evm::get_funded_wallet;
-use test_utils::{gen_random_data, peers_from_env};
+use test_utils::gen_random_data;
 use tokio::time::sleep;
 use xor_name::XorName;
 
@@ -35,7 +35,7 @@ async fn pay_for_data(client: &Client, wallet: &Wallet, data: Bytes) -> eyre::Re
 async fn pay_for_content_addresses(
     client: &Client,
     wallet: &Wallet,
-    content_addrs: impl Iterator<Item = XorName>,
+    content_addrs: impl Iterator<Item = XorName> + Clone,
 ) -> eyre::Result<Receipt> {
     let (quotes, quote_payments, _free_chunks) = client
         .get_quotes_for_content_addresses(content_addrs)
@@ -94,7 +94,7 @@ async fn pay_for_content_addresses(
     }
 
     // Payment proofs
-    Ok(receipt_from_quotes_and_payments(&quotes, &payments))
+    Ok(receipt_from_store_quotes(StoreQuote(quotes)))
 }
 
 // Example of how put would be done using external signers.
@@ -103,7 +103,7 @@ async fn external_signer_put() -> eyre::Result<()> {
     let _log_appender_guard =
         LogBuilder::init_single_threaded_tokio_test("external_signer_put", false);
 
-    let client = Client::connect(&peers_from_env()?).await?;
+    let client = Client::init_local().await?;
     let wallet = get_funded_wallet();
     let data = gen_random_data(1024 * 1024 * 10);
 
@@ -111,22 +111,22 @@ async fn external_signer_put() -> eyre::Result<()> {
 
     sleep(Duration::from_secs(5)).await;
 
-    let private_data_access = client
-        .private_data_put(data.clone(), receipt.into())
-        .await?;
+    let private_data_access = client.data_put(data.clone(), receipt.into()).await?;
 
     let mut private_archive = PrivateArchive::new();
-    private_archive.add_file("test-file".into(), private_data_access, Metadata::default());
+    private_archive.add_file(
+        "test-file".into(),
+        private_data_access,
+        Metadata::new_with_size(data.len() as u64),
+    );
 
-    let archive_serialized = private_archive.into_bytes()?;
+    let archive_serialized = private_archive.to_bytes()?;
 
     let receipt = pay_for_data(&client, &wallet, archive_serialized.clone()).await?;
 
     sleep(Duration::from_secs(5)).await;
 
-    let private_archive_access = client
-        .private_archive_put(private_archive, receipt.into())
-        .await?;
+    let private_archive_access = client.archive_put(&private_archive, receipt.into()).await?;
 
     let vault_key = VaultSecretKey::random();
 
@@ -170,9 +170,7 @@ async fn external_signer_put() -> eyre::Result<()> {
         .expect("No private archive present in the UserData")
         .clone();
 
-    let fetched_private_archive = client
-        .private_archive_get(fetched_private_archive_access)
-        .await?;
+    let fetched_private_archive = client.archive_get(fetched_private_archive_access).await?;
 
     let (_, (fetched_private_file_access, _)) = fetched_private_archive
         .map()
@@ -180,9 +178,7 @@ async fn external_signer_put() -> eyre::Result<()> {
         .next()
         .expect("No file present in private archive");
 
-    let fetched_private_file = client
-        .private_data_get(fetched_private_file_access.clone())
-        .await?;
+    let fetched_private_file = client.data_get(fetched_private_file_access.clone()).await?;
 
     assert_eq!(
         fetched_private_file, data,

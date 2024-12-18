@@ -72,7 +72,7 @@ pub fn get_logging_path() -> Result<std::path::PathBuf> {
     Ok(log_path)
 }
 
-// TODO: use sn_logging
+// TODO: use ant_logging
 pub fn initialize_logging() -> Result<()> {
     let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let log_path = get_logging_path()?;
@@ -81,8 +81,12 @@ pub fn initialize_logging() -> Result<()> {
         .context(format!("Failed to create file {log_path:?}"))?;
     std::env::set_var(
         "RUST_LOG",
-        std::env::var("RUST_LOG")
-            .unwrap_or_else(|_| format!("{}=trace,sn_node_manager=trace,sn_service_management=trace,sn_peers_acquisition=trace", env!("CARGO_CRATE_NAME"))),
+        std::env::var("RUST_LOG").unwrap_or_else(|_| {
+            format!(
+                "{}=trace,ant_node_manager=trace,ant_service_management=trace,ant_bootstrap=debug",
+                env!("CARGO_CRATE_NAME")
+            )
+        }),
     );
     let file_subscriber = tracing_subscriber::fmt::layer()
         .with_file(true)

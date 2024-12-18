@@ -1,14 +1,14 @@
 use crate::action::{Action, StatusActions};
 use crate::connection_mode::ConnectionMode;
-use color_eyre::eyre::{eyre, Error};
-use color_eyre::Result;
-use sn_evm::{EvmNetwork, RewardsAddress};
-use sn_node_manager::{
+use ant_bootstrap::PeersArgs;
+use ant_evm::{EvmNetwork, RewardsAddress};
+use ant_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
-use sn_peers_acquisition::PeersArgs;
-use sn_releases::{self, ReleaseType, SafeReleaseRepoActions};
-use sn_service_management::NodeRegistry;
+use ant_releases::{self, AntReleaseRepoActions, ReleaseType};
+use ant_service_management::NodeRegistry;
+use color_eyre::eyre::{eyre, Error};
+use color_eyre::Result;
 use std::{path::PathBuf, str::FromStr};
 use tokio::runtime::Builder;
 use tokio::sync::mpsc::{self, UnboundedSender};
@@ -102,7 +102,7 @@ impl NodeManagement {
 /// Stop the specified services
 async fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     if let Err(err) =
-        sn_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
+        ant_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
     {
         error!("Error while stopping services {err:?}");
         send_action(
@@ -122,16 +122,17 @@ async fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action
 
 #[derive(Debug)]
 pub struct MaintainNodesArgs {
+    pub action_sender: UnboundedSender<Action>,
+    pub antnode_path: Option<PathBuf>,
+    pub connection_mode: ConnectionMode,
     pub count: u16,
+    pub data_dir_path: Option<PathBuf>,
+    pub network_id: Option<u8>,
     pub owner: String,
     pub peers_args: PeersArgs,
-    pub run_nat_detection: bool,
-    pub safenode_path: Option<PathBuf>,
-    pub data_dir_path: Option<PathBuf>,
-    pub action_sender: UnboundedSender<Action>,
-    pub connection_mode: ConnectionMode,
     pub port_range: Option<PortRange>,
     pub rewards_address: String,
+    pub run_nat_detection: bool,
 }
 
 /// Maintain the specified number of nodes
@@ -181,7 +182,7 @@ async fn maintain_n_running_nodes(args: MaintainNodesArgs) {
 
 /// Reset all the nodes
 async fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_reset: bool) {
-    if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
+    if let Err(err) = ant_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
         error!("Error while resetting services {err:?}");
         send_action(
             action_sender,
@@ -216,7 +217,7 @@ pub struct UpgradeNodesArgs {
 }
 
 async fn upgrade_nodes(args: UpgradeNodesArgs) {
-    if let Err(err) = sn_node_manager::cmd::node::upgrade(
+    if let Err(err) = ant_node_manager::cmd::node::upgrade(
         args.connection_timeout_s,
         args.do_not_start,
         args.custom_bin_path,
@@ -289,23 +290,24 @@ async fn load_node_registry(
 }
 
 struct NodeConfig {
+    antnode_path: Option<PathBuf>,
     auto_set_nat_flags: bool,
-    upnp: bool,
-    home_network: bool,
-    custom_ports: Option<PortRange>,
-    owner: Option<String>,
     count: u16,
+    custom_ports: Option<PortRange>,
     data_dir_path: Option<PathBuf>,
+    home_network: bool,
+    network_id: Option<u8>,
+    owner: Option<String>,
     peers_args: PeersArgs,
-    safenode_path: Option<PathBuf>,
     rewards_address: String,
+    upnp: bool,
 }
 
 /// Run the NAT detection process
 async fn run_nat_detection(action_sender: &UnboundedSender<Action>) {
     info!("Running nat detection....");
 
-    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+    let release_repo = <dyn AntReleaseRepoActions>::default_config();
     let version = match release_repo
         .get_latest_version(&ReleaseType::NatDetection)
         .await
@@ -321,7 +323,7 @@ async fn run_nat_detection(action_sender: &UnboundedSender<Action>) {
         }
     };
 
-    if let Err(err) = sn_node_manager::cmd::nat_detection::run_nat_detection(
+    if let Err(err) = ant_node_manager::cmd::nat_detection::run_nat_detection(
         None,
         true,
         None,
@@ -344,9 +346,10 @@ async fn run_nat_detection(action_sender: &UnboundedSender<Action>) {
 
 fn prepare_node_config(args: &MaintainNodesArgs) -> NodeConfig {
     NodeConfig {
+        antnode_path: args.antnode_path.clone(),
         auto_set_nat_flags: args.connection_mode == ConnectionMode::Automatic,
-        upnp: args.connection_mode == ConnectionMode::UPnP,
-        home_network: args.connection_mode == ConnectionMode::HomeNetwork,
+        data_dir_path: args.data_dir_path.clone(),
+        count: args.count,
         custom_ports: if args.connection_mode == ConnectionMode::CustomPorts {
             args.port_range.clone()
         } else {
@@ -357,11 +360,11 @@ fn prepare_node_config(args: &MaintainNodesArgs) -> NodeConfig {
         } else {
             Some(args.owner.clone())
         },
-        count: args.count,
-        data_dir_path: args.data_dir_path.clone(),
+        home_network: args.connection_mode == ConnectionMode::HomeNetwork,
+        network_id: args.network_id,
         peers_args: args.peers_args.clone(),
-        safenode_path: args.safenode_path.clone(),
         rewards_address: args.rewards_address.clone(),
+        upnp: args.connection_mode == ConnectionMode::UPnP,
     }
 }
 
@@ -373,8 +376,8 @@ fn debug_log_config(config: &NodeConfig, args: &MaintainNodesArgs) {
         config.count
     );
     debug!(
-        " owner: {:?}, peers_args: {:?}, safenode_path: {:?}",
-        config.owner, config.peers_args, config.safenode_path
+        " owner: {:?}, peers_args: {:?}, antnode_path: {:?}, network_id: {:?}",
+        config.owner, config.peers_args, config.antnode_path, args.network_id
     );
     debug!(
         " data_dir_path: {:?}, connection_mode: {:?}",
@@ -408,7 +411,7 @@ fn get_port_range(custom_ports: &Option<PortRange>) -> (u16, u16) {
 
 /// Scale down the nodes
 async fn scale_down_nodes(config: &NodeConfig, count: u16) {
-    match sn_node_manager::cmd::node::maintain_n_running_nodes(
+    match ant_node_manager::cmd::node::maintain_n_running_nodes(
         false,
         config.auto_set_nat_flags,
         120,
@@ -418,12 +421,12 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         None,
         Some(EvmNetwork::ArbitrumSepolia),
         config.home_network,
-        false,
         None,
         None,
         None,
         None,
         None,
+        config.network_id,
         None,
         None, // We don't care about the port, as we are scaling down
         config.owner.clone(),
@@ -431,7 +434,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         RewardsAddress::from_str(config.rewards_address.as_str()).unwrap(),
         None,
         None,
-        config.safenode_path.clone(),
+        config.antnode_path.clone(),
         None,
         config.upnp,
         None,
@@ -482,7 +485,7 @@ async fn add_nodes(
         }
 
         let port_range = Some(PortRange::Single(*current_port));
-        match sn_node_manager::cmd::node::maintain_n_running_nodes(
+        match ant_node_manager::cmd::node::maintain_n_running_nodes(
             false,
             config.auto_set_nat_flags,
             120,
@@ -492,12 +495,12 @@ async fn add_nodes(
             None,
             Some(EvmNetwork::ArbitrumSepolia),
             config.home_network,
-            false,
             None,
             None,
             None,
             None,
             None,
+            config.network_id,
             None,
             port_range,
             config.owner.clone(),
@@ -505,7 +508,7 @@ async fn add_nodes(
             RewardsAddress::from_str(config.rewards_address.as_str()).unwrap(),
             None,
             None,
-            config.safenode_path.clone(),
+            config.antnode_path.clone(),
             None,
             config.upnp,
             None,
@@ -523,7 +526,7 @@ async fn add_nodes(
                 retry_count = 0; // Reset retry count on success
             }
             Err(err) => {
-                //TODO: We should use concrete error types here instead of string matching (sn_node_manager)
+                //TODO: We should use concrete error types here instead of string matching (ant_node_manager)
                 if err.to_string().contains("is being used by another service") {
                     warn!(
                         "Port {} is being used, retrying with a different port. Attempt {}/{}",
@@ -554,8 +557,8 @@ async fn add_nodes(
                         action_sender.clone(),
                         Action::StatusActions(StatusActions::ErrorScalingUpNodes {
                             raw_error: "When trying to add a node, we failed.\n\
-                             You may be running an old version of safenode service?\n\
-                             Did you whitelisted safenode and the launchpad?"
+                             You may be running an old version of antnode service?\n\
+                             Did you whitelisted antnode and the launchpad?"
                                 .to_string(),
                         }),
                     );

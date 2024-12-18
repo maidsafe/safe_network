@@ -22,6 +22,6 @@ do
 
     echo Iteration $count
     echo Restarting node on port $target_port
-    cargo run --release --bin=safenode_rpc_client -- "127.0.0.1:$target_port" restart 1
+    cargo run --release --bin antnode_rpc_client -- "127.0.0.1:$target_port" restart 1
 	sleep 5
 done

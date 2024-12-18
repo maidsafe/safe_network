@@ -3,75 +3,84 @@ authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Autonomi client API"
 name = "autonomi"
 license = "GPL-3.0"
-version = "0.2.4"
+version = "0.3.0"
 edition = "2021"
 homepage = "https://maidsafe.net"
 readme = "README.md"
-repository = "https://github.com/maidsafe/safe_network"
+repository = "https://github.com/maidsafe/autonomi"
 
 [lib]
+name = "autonomi"
 crate-type = ["cdylib", "rlib"]
 
+[[example]]
+name = "data_and_archive"
+required-features = ["full"]
+
+[[example]]
+name = "put_and_dir_upload"
+required-features = ["full"]
+
 [features]
-default = ["data", "vault"]
-full = ["data", "registers", "vault", "fs"]
-data = []
-vault = ["data", "registers"]
-fs = ["tokio/fs", "data"]
-local = ["sn_networking/local", "sn_evm/local"]
-registers = ["data"]
+default = ["vault"]
+external-signer = ["ant-evm/external-signer"]
+extension-module = ["pyo3/extension-module"]
+fs = ["tokio/fs"]
+full = ["registers", "vault", "fs"]
+local = ["ant-networking/local", "ant-evm/local"]
 loud = []
-external-signer = ["sn_evm/external-signer", "data"]
+registers = []
+vault = ["registers"]
 
 [dependencies]
+ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
+ant-evm = { path = "../ant-evm", version = "0.1.5" }
+ant-networking = { path = "../ant-networking", version = "0.3.0" }
+ant-protocol = { path = "../ant-protocol", version = "0.3.0" }
+ant-registers = { path = "../ant-registers", version = "0.4.4" }
 bip39 = "2.0.0"
+blst = "0.3.13"
+blstrs = "0.7.1"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
+const-hex = "1.12.0"
 curv = { version = "0.10.1", package = "sn_curv", default-features = false, features = [
     "num-bigint",
 ] }
 eip2333 = { version = "0.2.1", package = "sn_bls_ckd" }
-const-hex = "1.12.0"
+futures = "0.3.30"
 hex = "~0.4.3"
 libp2p = "0.54.1"
+pyo3 = { version = "0.20", optional = true, features = ["extension-module", "abi3-py38"] }
 rand = "0.8.5"
 rmp-serde = "1.1.1"
 self_encryption = "~0.30.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
-sn_networking = { path = "../sn_networking", version = "0.19.5" }
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.7" }
-sn_protocol = { version = "0.17.15", path = "../sn_protocol" }
-sn_registers = { path = "../sn_registers", version = "0.4.3" }
-sn_evm = { path = "../sn_evm", version = "0.1.4" }
+serde-wasm-bindgen = "0.6.5"
+sha2 = "0.10.6"
 thiserror = "1.0.23"
 tokio = { version = "1.35.0", features = ["sync"] }
 tracing = { version = "~0.1.26" }
 walkdir = "2.5.0"
-xor_name = "5.0.0"
-futures = "0.3.30"
 wasm-bindgen = "0.2.93"
 wasm-bindgen-futures = "0.4.43"
-serde-wasm-bindgen = "0.6.5"
-sha2 = "0.10.6"
-blst = "0.3.13"
-blstrs = "0.7.1"
+xor_name = "5.0.0"
 
 [dev-dependencies]
-alloy = { version = "0.5.3", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
+alloy = { version = "0.7.3", default-features = false, features = ["contract", "json-rpc", "network", "node-bindings", "provider-http", "reqwest-rustls-tls", "rpc-client", "rpc-types", "signer-local", "std"] }
+ant-logging = { path = "../ant-logging", version = "0.2.41" }
 eyre = "0.6.5"
 sha2 = "0.10.6"
-sn_logging = { path = "../sn_logging", version = "0.2.40" }
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.7" }
 # Do not specify the version field. Release process expects even the local dev deps to be published.
 # Removing the version field is a workaround.
-test_utils = { path = "../test_utils" }
+test-utils = { path = "../test-utils" }
 tiny_http = "0.11"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wasm-bindgen-test = "0.3.43"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.7"
-evmlib = { path = "../evmlib", version = "0.1.4", features = ["wasm-bindgen"] }
+evmlib = { path = "../evmlib", version = "0.1.5", features = ["wasm-bindgen"] }
 # See https://github.com/sebcrozet/instant/blob/7bd13f51f5c930239fddc0476a837870fb239ed7/README.md#using-instant-for-a-wasm-platform-where-performancenow-is-not-available
 instant = { version = "0.1", features = ["wasm-bindgen", "inaccurate"] }
 js-sys = "0.3.70"

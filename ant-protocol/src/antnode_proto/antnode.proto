@@ -1,0 +1,51 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+// Protocol buffer for the gRPC interface exposed by a SAFE node to be used
+// for administration, infrastructure, and support purposes. This interface
+// is completely isolated and different from the node-to-node and client-to-node
+// messaging protocol defined by SAFE for network management and data storage/transfers.
+// For more information refer to https://grpc.io.
+
+// Version of protocol buffer used
+syntax = "proto3";
+
+// Package name
+package antnode_proto;
+
+import "req_resp_types.proto";
+
+// Service exposed by a SAFE node for administration, infrastructure, and support purposes
+service AntNode {
+  // Returns information about this node
+  rpc NodeInfo (NodeInfoRequest) returns (NodeInfoResponse);
+
+  // Returns information related to this node's connections to the network and peers
+  rpc NetworkInfo (NetworkInfoRequest) returns (NetworkInfoResponse);
+
+  // Returns a stream of events as triggered by this node
+  rpc NodeEvents (NodeEventsRequest) returns (stream NodeEvent);
+
+  // Returns the Addresses of all the Records stored by this node
+  rpc RecordAddresses (RecordAddressesRequest) returns (RecordAddressesResponse);
+
+  // Returns the entire Kbucket of this node
+  rpc KBuckets (KBucketsRequest) returns (KBucketsResponse);
+
+  // Stop the execution of this node
+  rpc Stop (StopRequest) returns (StopResponse);
+
+  // Restart the node
+  rpc Restart (RestartRequest) returns (RestartResponse);
+
+  // Update the node
+  rpc Update (UpdateRequest) returns (UpdateResponse);
+
+  // Update the log level of the node
+  rpc UpdateLogLevel (UpdateLogLevelRequest) returns (UpdateLogLevelResponse);
+}

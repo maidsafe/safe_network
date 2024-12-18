@@ -52,7 +52,7 @@ pub fn get_evm_testnet_csv_path() -> Result<PathBuf, Error> {
         .ok_or(Error::FailedToGetEvmNetwork(
             "failed to get data dir when fetching evm testnet CSV file".to_string(),
         ))?
-        .join("safe")
+        .join("autonomi")
         .join(EVM_TESTNET_CSV_FILENAME);
     Ok(file)
 }
@@ -70,7 +70,8 @@ pub fn get_evm_network(
     ))
 }
 
-/// Get the `Network` from environment variables
+/// Get the `Network` from environment variables.
+///
 /// Returns an error if we cannot obtain the network from any means.
 pub fn get_evm_network_from_env() -> Result<Network, Error> {
     let evm_vars = [
@@ -164,7 +165,7 @@ fn local_evm_network_from_csv() -> Result<Network, Error> {
 }
 
 #[allow(clippy::type_complexity)]
-pub(crate) fn http_provider(
+pub fn http_provider(
     rpc_url: reqwest::Url,
 ) -> FillProvider<
     JoinFill<

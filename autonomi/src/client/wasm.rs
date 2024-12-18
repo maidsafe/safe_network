@@ -1,10 +1,10 @@
 use super::address::{addr_to_str, str_to_addr};
 #[cfg(feature = "vault")]
 use super::vault::UserData;
-use crate::client::data_private::PrivateDataAccess;
+use crate::client::data::DataMapChunk;
 use crate::client::payment::Receipt;
+use ant_protocol::storage::Chunk;
 use libp2p::Multiaddr;
-use sn_protocol::storage::Chunk;
 use wasm_bindgen::prelude::*;
 
 /// The `Client` object allows interaction with the network to store and retrieve data.
@@ -18,7 +18,7 @@ use wasm_bindgen::prelude::*;
 /// const dataAddr = await client.putData(new Uint8Array([0, 1, 2, 3]), wallet);
 ///
 /// const archive = new Archive();
-/// archive.addNewFile("foo", dataAddr);
+/// archive.addFile("foo", dataAddr, createMetadata(4));
 ///
 /// const archiveAddr = await client.putArchive(archive, wallet);
 /// const archiveFetched = await client.getArchive(archiveAddr);
@@ -27,7 +27,7 @@ use wasm_bindgen::prelude::*;
 pub struct JsClient(super::Client);
 
 #[wasm_bindgen]
-pub struct AttoTokens(sn_evm::AttoTokens);
+pub struct AttoTokens(ant_evm::AttoTokens);
 #[wasm_bindgen]
 impl AttoTokens {
     #[wasm_bindgen(js_name = toString)]
@@ -70,7 +70,7 @@ impl JsClient {
             .map(|peer| peer.parse())
             .collect::<Result<Vec<Multiaddr>, _>>()?;
 
-        let client = super::Client::connect(&peers).await?;
+        let client = super::Client::init_with_peers(peers).await?;
 
         Ok(JsClient(client))
     }
@@ -100,14 +100,14 @@ impl JsClient {
     #[wasm_bindgen(js_name = putData)]
     pub async fn put_data(&self, data: Vec<u8>, wallet: &JsWallet) -> Result<String, JsError> {
         let data = crate::Bytes::from(data);
-        let xorname = self.0.data_put(data, (&wallet.0).into()).await?;
+        let xorname = self.0.data_put_public(data, (&wallet.0).into()).await?;
 
         Ok(addr_to_str(xorname))
     }
 
     /// Upload private data to the network.
     ///
-    /// Returns the `PrivateDataAccess` chunk of the data.
+    /// Returns the `DataMapChunk` chunk of the data.
     #[wasm_bindgen(js_name = putPrivateData)]
     pub async fn put_private_data(
         &self,
@@ -115,7 +115,7 @@ impl JsClient {
         wallet: &JsWallet,
     ) -> Result<JsValue, JsError> {
         let data = crate::Bytes::from(data);
-        let private_data_access = self.0.private_data_put(data, (&wallet.0).into()).await?;
+        let private_data_access = self.0.data_put(data, (&wallet.0).into()).await?;
         let js_value = serde_wasm_bindgen::to_value(&private_data_access)?;
 
         Ok(js_value)
@@ -124,7 +124,7 @@ impl JsClient {
     /// Upload private data to the network.
     /// Uses a `Receipt` as payment.
     ///
-    /// Returns the `PrivateDataAccess` chunk of the data.
+    /// Returns the `DataMapChunk` chunk of the data.
     #[wasm_bindgen(js_name = putPrivateDataWithReceipt)]
     pub async fn put_private_data_with_receipt(
         &self,
@@ -133,7 +133,7 @@ impl JsClient {
     ) -> Result<JsValue, JsError> {
         let data = crate::Bytes::from(data);
         let receipt: Receipt = serde_wasm_bindgen::from_value(receipt)?;
-        let private_data_access = self.0.private_data_put(data, receipt.into()).await?;
+        let private_data_access = self.0.data_put(data, receipt.into()).await?;
         let js_value = serde_wasm_bindgen::to_value(&private_data_access)?;
 
         Ok(js_value)
@@ -143,7 +143,7 @@ impl JsClient {
     #[wasm_bindgen(js_name = getData)]
     pub async fn get_data(&self, addr: String) -> Result<Vec<u8>, JsError> {
         let addr = str_to_addr(&addr)?;
-        let data = self.0.data_get(addr).await?;
+        let data = self.0.data_get_public(addr).await?;
 
         Ok(data.to_vec())
     }
@@ -151,9 +151,9 @@ impl JsClient {
     /// Fetch the data from the network.
     #[wasm_bindgen(js_name = getPrivateData)]
     pub async fn get_private_data(&self, private_data_access: JsValue) -> Result<Vec<u8>, JsError> {
-        let private_data_access: PrivateDataAccess =
+        let private_data_access: DataMapChunk =
             serde_wasm_bindgen::from_value(private_data_access)?;
-        let data = self.0.private_data_get(private_data_access).await?;
+        let data = self.0.data_get(private_data_access).await?;
 
         Ok(data.to_vec())
     }
@@ -170,28 +170,51 @@ impl JsClient {
 
 mod archive {
     use super::*;
-    use crate::client::{address::str_to_addr, archive::Archive};
+    use crate::client::{
+        address::str_to_addr, files::archive::Metadata, files::archive_public::PublicArchive,
+    };
     use std::path::PathBuf;
     use wasm_bindgen::JsError;
 
     /// Structure mapping paths to data addresses.
     #[wasm_bindgen(js_name = Archive)]
-    pub struct JsArchive(Archive);
+    pub struct JsArchive(PublicArchive);
+
+    /// Create new metadata with the current time as uploaded, created and modified.
+    ///
+    /// # Example
+    ///
+    /// ```js
+    /// const metadata = createMetadata(BigInt(3));
+    /// const archive = new atnm.Archive();
+    /// archive.addFile("foo", addr, metadata);
+    /// ```
+    #[wasm_bindgen(js_name = createMetadata)]
+    pub fn create_metadata(size: u64) -> Result<JsValue, JsError> {
+        let metadata = Metadata::new_with_size(size);
+        Ok(serde_wasm_bindgen::to_value(&metadata)?)
+    }
 
     #[wasm_bindgen(js_class = Archive)]
     impl JsArchive {
         /// Create a new archive.
         #[wasm_bindgen(constructor)]
         pub fn new() -> Self {
-            Self(Archive::new())
+            Self(PublicArchive::new())
         }
 
         /// Add a new file to the archive.
-        #[wasm_bindgen(js_name = addNewFile)]
-        pub fn add_new_file(&mut self, path: String, data_addr: String) -> Result<(), JsError> {
+        #[wasm_bindgen(js_name = addFile)]
+        pub fn add_file(
+            &mut self,
+            path: String,
+            data_addr: String,
+            metadata: JsValue,
+        ) -> Result<(), JsError> {
             let path = PathBuf::from(path);
             let data_addr = str_to_addr(&data_addr)?;
-            self.0.add_new_file(path, data_addr);
+            let metadata: Metadata = serde_wasm_bindgen::from_value(metadata)?;
+            self.0.add_file(path, data_addr, metadata);
 
             Ok(())
         }
@@ -225,7 +248,7 @@ mod archive {
         #[wasm_bindgen(js_name = getArchive)]
         pub async fn get_archive(&self, addr: String) -> Result<JsArchive, JsError> {
             let addr = str_to_addr(&addr)?;
-            let archive = self.0.archive_get(addr).await?;
+            let archive = self.0.archive_get_public(addr).await?;
             let archive = JsArchive(archive);
 
             Ok(archive)
@@ -240,7 +263,7 @@ mod archive {
             archive: &JsArchive,
             wallet: &JsWallet,
         ) -> Result<String, JsError> {
-            let addr = self.0.archive_put(archive.0.clone(), &wallet.0).await?;
+            let addr = self.0.archive_put_public(&archive.0, &wallet.0).await?;
 
             Ok(addr_to_str(addr))
         }
@@ -249,8 +272,8 @@ mod archive {
 
 mod archive_private {
     use super::*;
-    use crate::client::archive_private::{PrivateArchive, PrivateArchiveAccess};
-    use crate::client::data_private::PrivateDataAccess;
+    use crate::client::data::DataMapChunk;
+    use crate::client::files::archive::{Metadata, PrivateArchive, PrivateArchiveAccess};
     use crate::client::payment::Receipt;
     use std::path::PathBuf;
     use wasm_bindgen::{JsError, JsValue};
@@ -268,11 +291,17 @@ mod archive_private {
         }
 
         /// Add a new file to the private archive.
-        #[wasm_bindgen(js_name = addNewFile)]
-        pub fn add_new_file(&mut self, path: String, data_map: JsValue) -> Result<(), JsError> {
+        #[wasm_bindgen(js_name = addFile)]
+        pub fn add_file(
+            &mut self,
+            path: String,
+            data_map: JsValue,
+            metadata: JsValue,
+        ) -> Result<(), JsError> {
             let path = PathBuf::from(path);
-            let data_map: PrivateDataAccess = serde_wasm_bindgen::from_value(data_map)?;
-            self.0.add_new_file(path, data_map);
+            let data_map: DataMapChunk = serde_wasm_bindgen::from_value(data_map)?;
+            let metadata: Metadata = serde_wasm_bindgen::from_value(metadata)?;
+            self.0.add_file(path, data_map, metadata);
 
             Ok(())
         }
@@ -301,7 +330,7 @@ mod archive_private {
         ) -> Result<JsPrivateArchive, JsError> {
             let private_archive_access: PrivateArchiveAccess =
                 serde_wasm_bindgen::from_value(private_archive_access)?;
-            let archive = self.0.private_archive_get(private_archive_access).await?;
+            let archive = self.0.archive_get(private_archive_access).await?;
             let archive = JsPrivateArchive(archive);
 
             Ok(archive)
@@ -316,10 +345,7 @@ mod archive_private {
             archive: &JsPrivateArchive,
             wallet: &JsWallet,
         ) -> Result<JsValue, JsError> {
-            let private_archive_access = self
-                .0
-                .private_archive_put(archive.0.clone(), (&wallet.0).into())
-                .await?;
+            let private_archive_access = self.0.archive_put(&archive.0, (&wallet.0).into()).await?;
 
             let js_value = serde_wasm_bindgen::to_value(&private_archive_access)?;
 
@@ -338,10 +364,7 @@ mod archive_private {
         ) -> Result<JsValue, JsError> {
             let receipt: Receipt = serde_wasm_bindgen::from_value(receipt)?;
 
-            let private_archive_access = self
-                .0
-                .private_archive_put(archive.0.clone(), receipt.into())
-                .await?;
+            let private_archive_access = self.0.archive_put(&archive.0, receipt.into()).await?;
 
             let js_value = serde_wasm_bindgen::to_value(&private_archive_access)?;
 
@@ -354,11 +377,13 @@ mod archive_private {
 mod vault {
     use super::*;
     use crate::client::address::addr_to_str;
-    use crate::client::archive_private::PrivateArchiveAccess;
+    use crate::client::files::archive::PrivateArchiveAccess;
     use crate::client::payment::Receipt;
+    use crate::client::vault::key::blst_to_blsttc;
+    use crate::client::vault::key::derive_secret_key_from_seed;
     use crate::client::vault::user_data::USER_DATA_VAULT_CONTENT_IDENTIFIER;
     use crate::client::vault::VaultContentType;
-    use sn_protocol::storage::Scratchpad;
+    use ant_protocol::storage::Scratchpad;
     use wasm_bindgen::{JsError, JsValue};
 
     /// Structure to keep track of uploaded archives, registers and other data.
@@ -588,6 +613,13 @@ mod vault {
             Ok(js_scratchpad)
         }
     }
+
+    #[wasm_bindgen(js_name = vaultKeyFromSignature)]
+    pub fn vault_key_from_signature(signature: Vec<u8>) -> Result<SecretKeyJs, JsError> {
+        let blst_key = derive_secret_key_from_seed(&signature)?;
+        let vault_sk = blst_to_blsttc(&blst_key)?;
+        Ok(SecretKeyJs(vault_sk))
+    }
 }
 
 #[cfg(feature = "external-signer")]
@@ -597,11 +629,11 @@ mod external_signer {
     use crate::client::external_signer::encrypt_data;
     use crate::client::payment::Receipt;
     use crate::receipt_from_quotes_and_payments;
-    use sn_evm::external_signer::{approve_to_spend_tokens_calldata, pay_for_quotes_calldata};
-    use sn_evm::EvmNetwork;
-    use sn_evm::QuotePayment;
-    use sn_evm::{Amount, PaymentQuote};
-    use sn_evm::{EvmAddress, QuoteHash, TxHash};
+    use ant_evm::external_signer::{approve_to_spend_tokens_calldata, pay_for_quotes_calldata};
+    use ant_evm::EvmNetwork;
+    use ant_evm::QuotePayment;
+    use ant_evm::{Amount, PaymentQuote};
+    use ant_evm::{EvmAddress, QuoteHash, TxHash};
     use std::collections::{BTreeMap, HashMap};
     use wasm_bindgen::prelude::wasm_bindgen;
     use wasm_bindgen::{JsError, JsValue};
@@ -651,7 +683,7 @@ mod external_signer {
         ) -> Result<String, JsError> {
             let data = crate::Bytes::from(data);
             let receipt: Receipt = serde_wasm_bindgen::from_value(receipt)?;
-            let xorname = self.0.data_put(data, receipt.into()).await?;
+            let xorname = self.0.data_put_public(data, receipt.into()).await?;
             Ok(addr_to_str(xorname))
         }
     }
@@ -812,12 +844,12 @@ pub fn funded_wallet_with_custom_network(
 /// Enable tracing logging in the console.
 ///
 /// A level could be passed like `trace` or `warn`. Or set for a specific module/crate
-/// with `sn_networking=trace,autonomi=info`.
+/// with `ant-networking=trace,autonomi=info`.
 ///
 /// # Example
 ///
 /// ```js
-/// logInit("sn_networking=warn,autonomi=trace");
+/// logInit("ant-networking=warn,autonomi=trace");
 /// ```
 #[wasm_bindgen(js_name = logInit)]
 pub fn log_init(directive: String) {

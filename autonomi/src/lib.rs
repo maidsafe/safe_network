@@ -8,6 +8,31 @@
 
 //! Connect to and build on the Autonomi network.
 //!
+//! # Example
+//!
+//! ```no_run
+//! use autonomi::{Bytes, Client, Wallet};
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     let client = Client::init().await?;
+//!
+//!     // Default wallet of testnet.
+//!     let key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+//!     let wallet = Wallet::new_from_private_key(Default::default(), key)?;
+//!
+//!     // Put and fetch data.
+//!     let data_addr = client.data_put_public(Bytes::from("Hello, World"), (&wallet).into()).await?;
+//!     let _data_fetched = client.data_get_public(data_addr).await?;
+//!
+//!     // Put and fetch directory from local file system.
+//!     let dir_addr = client.dir_and_archive_upload_public("files/to/upload".into(), &wallet).await?;
+//!     client.dir_download_public(dir_addr, "files/downloaded".into()).await?;
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
 //! # Data types
 //!
 //! This API gives access to two fundamental types on the network: chunks and
@@ -26,7 +51,6 @@
 //!
 //! - `fs`: Up/download files and directories from filesystem
 //! - `registers`: Operate on register datatype
-//! - `data`: Operate on raw bytes and chunks
 //! - `vault`: Operate on Vault datatype
 //! - `full`: All of above
 //! - `local`: Discover local peers using mDNS. Useful for development.
@@ -39,20 +63,20 @@
 extern crate tracing;
 
 pub mod client;
-#[cfg(feature = "data")]
 mod self_encryption;
-mod utils;
 
-pub use sn_evm::get_evm_network_from_env;
-pub use sn_evm::EvmNetwork;
-pub use sn_evm::EvmWallet as Wallet;
-pub use sn_evm::RewardsAddress;
-#[cfg(feature = "external-signer")]
-pub use utils::receipt_from_quotes_and_payments;
+pub use ant_evm::get_evm_network_from_env;
+pub use ant_evm::EvmNetwork as Network;
+pub use ant_evm::EvmWallet as Wallet;
+pub use ant_evm::RewardsAddress;
 
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use libp2p::Multiaddr;
 
-pub use client::Client;
+#[doc(inline)]
+pub use client::{files::archive::Metadata, files::archive::PrivateArchive, Client, ClientConfig};
+
+#[cfg(feature = "extension-module")]
+mod python;

@@ -18,9 +18,9 @@ mod test {
     #[tokio::test]
     async fn file() -> Result<(), Box<dyn std::error::Error>> {
         let _log_appender_guard =
-            sn_logging::LogBuilder::init_single_threaded_tokio_test("file", false);
+            ant_logging::LogBuilder::init_single_threaded_tokio_test("file", false);
 
-        let mut client = Client::connect(&[]).await.unwrap();
+        let mut client = Client::init_local().await?;
         let mut wallet = get_funded_wallet();
 
         // let data = common::gen_random_data(1024 * 1024 * 1000);
@@ -47,7 +47,7 @@ mod test {
     async fn file_into_vault() -> eyre::Result<()> {
         common::enable_logging();
 
-        let mut client = Client::connect(&[])
+        let mut client = Client::init()
             .await?
             .with_vault_entropy(Bytes::from("at least 32 bytes of entropy here"))?;
 
@@ -66,7 +66,7 @@ mod test {
         );
 
         // now assert over the stored account packet
-        let new_client = Client::connect(&[])
+        let new_client = Client::init()
             .await?
             .with_vault_entropy(Bytes::from("at least 32 bytes of entropy here"))?;
 

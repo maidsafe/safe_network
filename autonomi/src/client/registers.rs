@@ -6,29 +6,26 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-/// Register Secret Key
-pub use bls::SecretKey as RegisterSecretKey;
-use sn_evm::Amount;
-use sn_evm::AttoTokens;
-use sn_evm::EvmWalletError;
-use sn_networking::VerificationKind;
-use sn_protocol::storage::RetryStrategy;
-pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
+#![allow(deprecated)]
 
 use crate::client::data::PayError;
 use crate::client::Client;
 use crate::client::ClientEvent;
 use crate::client::UploadSummary;
+
+pub use ant_registers::{Permissions as RegisterPermissions, RegisterAddress};
+pub use bls::SecretKey as RegisterSecretKey;
+
+use ant_evm::{Amount, AttoTokens, EvmWallet, EvmWalletError};
+use ant_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg, VerificationKind};
+use ant_protocol::{
+    storage::{try_deserialize_record, try_serialize_record, RecordKind, RetryStrategy},
+    NetworkAddress,
+};
+use ant_registers::Register as BaseRegister;
+use ant_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
-use sn_evm::EvmWallet;
-use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg};
-use sn_protocol::storage::try_deserialize_record;
-use sn_protocol::storage::try_serialize_record;
-use sn_protocol::storage::RecordKind;
-use sn_protocol::NetworkAddress;
-use sn_registers::Register as BaseRegister;
-use sn_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use std::collections::BTreeSet;
 use xor_name::XorName;
 
@@ -49,13 +46,19 @@ pub enum RegisterError {
     #[error("Failed to retrieve wallet payment")]
     Wallet(#[from] EvmWalletError),
     #[error("Failed to write to low-level register")]
-    Write(#[source] sn_registers::Error),
+    Write(#[source] ant_registers::Error),
     #[error("Failed to sign register")]
-    CouldNotSign(#[source] sn_registers::Error),
+    CouldNotSign(#[source] ant_registers::Error),
     #[error("Received invalid quote from node, this node is possibly malfunctioning, try another node by trying another register name")]
     InvalidQuote,
+    #[error("The payment proof contains no payees.")]
+    PayeesMissing,
 }
 
+#[deprecated(
+    since = "0.2.4",
+    note = "Use transactions instead (see Client::transaction_put)"
+)]
 #[derive(Clone, Debug)]
 pub struct Register {
     signed_reg: SignedRegister,
@@ -101,7 +104,11 @@ impl Register {
         if let Some(value) = initial_value {
             register.write_atop(&value, &owner)?;
         }
-
+        debug!(
+            "Created register {:?} with address: {:?}",
+            register,
+            register.address()
+        );
         Ok(register)
     }
 
@@ -121,6 +128,10 @@ impl Register {
     }
 }
 
+#[deprecated(
+    since = "0.2.4",
+    note = "Use transactions instead (see Client::transaction_put)"
+)]
 impl Client {
     /// Generate a new register key
     pub fn register_generate_key() -> RegisterSecretKey {
@@ -171,10 +182,12 @@ impl Client {
             }
         }
 
-        Ok(Register {
+        let register = Register {
             signed_reg,
             crdt_reg,
-        })
+        };
+        debug!("Fetched register {register:?} from the address: {address} in the network");
+        Ok(register)
     }
 
     /// Updates a Register on the network with a new value. This will overwrite existing value(s).
@@ -222,7 +235,11 @@ impl Client {
                     register.address()
                 )
             })?;
-
+        debug!(
+            "Updated register {:?} with new value {:?}",
+            register.address(),
+            new_value
+        );
         Ok(())
     }
 
@@ -232,7 +249,7 @@ impl Client {
         name: String,
         owner: RegisterSecretKey,
     ) -> Result<AttoTokens, RegisterError> {
-        info!("Getting cost for register with name: {name}");
+        trace!("Getting cost for register with name: {name}");
         // get register address
         let pk = owner.public_key();
         let name = XorName::from_content_parts(&[name.as_bytes()]);
@@ -242,14 +259,16 @@ impl Client {
 
         // get cost to store register
         // NB TODO: register should be priced differently from other data
-        let cost_map = self.get_store_quotes(std::iter::once(reg_xor)).await?;
+        let store_quote = self.get_store_quotes(std::iter::once(reg_xor)).await?;
+
         let total_cost = AttoTokens::from_atto(
-            cost_map
+            store_quote
+                .0
                 .values()
-                .map(|quote| quote.2.cost.as_atto())
+                .map(|quote| quote.price())
                 .sum::<Amount>(),
         );
-
+        debug!("Calculated the cost to create register with name: {name} is {total_cost}");
         Ok(total_cost)
     }
 
@@ -260,12 +279,12 @@ impl Client {
         RegisterAddress::new(name, pk)
     }
 
-    /// Creates a new Register with a name and an initial value and uploads it to the network.
+    /// Creates a new Register with a name and optional initial value and uploads it to the network.
     ///
     /// The Register is created with the owner as the only writer.
     pub async fn register_create(
         &self,
-        value: Bytes,
+        value: Option<Bytes>,
         name: &str,
         owner: RegisterSecretKey,
         wallet: &EvmWallet,
@@ -277,12 +296,12 @@ impl Client {
             .await
     }
 
-    /// Creates a new Register with a name and an initial value and uploads it to the network.
+    /// Creates a new Register with a name and optional initial value and uploads it to the network.
     ///
     /// Unlike `register_create`, this function allows you to specify the permissions for the register.
     pub async fn register_create_with_permissions(
         &self,
-        value: Bytes,
+        value: Option<Bytes>,
         name: &str,
         owner: RegisterSecretKey,
         permissions: RegisterPermissions,
@@ -292,29 +311,26 @@ impl Client {
         let name = XorName::from_content_parts(&[name.as_bytes()]);
 
         // Owner can write to the register.
-        let register = Register::new(Some(value), name, owner, permissions)?;
+        let register = Register::new(value, name, owner, permissions)?;
         let address = register.address();
 
         let reg_xor = address.xorname();
         debug!("Paying for register at address: {address}");
-        let (payment_proofs, _skipped) = self
+        let payment_proofs = self
             .pay(std::iter::once(reg_xor), wallet)
             .await
             .inspect_err(|err| {
                 error!("Failed to pay for register at address: {address} : {err}")
             })?;
-        let proof = if let Some(proof) = payment_proofs.get(&reg_xor) {
-            proof
+        let (proof, price) = if let Some((proof, price)) = payment_proofs.get(&reg_xor) {
+            (proof, price)
         } else {
             // register was skipped, meaning it was already paid for
             error!("Register at address: {address} was already paid for");
             return Err(RegisterError::Network(NetworkError::RegisterAlreadyExists));
         };
 
-        let payee = proof
-            .to_peer_id_payee()
-            .ok_or(RegisterError::InvalidQuote)
-            .inspect_err(|err| error!("Failed to get payee from payment proof: {err}"))?;
+        let payees = proof.payees();
         let signed_register = register.signed_reg.clone();
 
         let record = Record {
@@ -336,11 +352,12 @@ impl Client {
             expected_holders: Default::default(),
             is_register: true,
         };
+
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             retry_strategy: None,
-            use_put_record_to: Some(vec![payee]),
-            verification: Some((VerificationKind::Network, get_cfg)),
+            use_put_record_to: Some(payees),
+            verification: Some((VerificationKind::Crdt, get_cfg)),
         };
 
         debug!("Storing register at address {address} to the network");
@@ -354,7 +371,7 @@ impl Client {
         if let Some(channel) = self.client_event_sender.as_ref() {
             let summary = UploadSummary {
                 record_count: 1,
-                tokens_spent: proof.quote.cost.as_atto(),
+                tokens_spent: price.as_atto(),
             };
             if let Err(err) = channel.send(ClientEvent::UploadComplete(summary)).await {
                 error!("Failed to send client event: {err}");

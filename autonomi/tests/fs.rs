@@ -8,14 +8,14 @@
 
 #![cfg(feature = "fs")]
 
+use ant_logging::LogBuilder;
 use autonomi::Client;
 use eyre::Result;
 use sha2::{Digest, Sha256};
-use sn_logging::LogBuilder;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::time::Duration;
-use test_utils::{evm::get_funded_wallet, peers_from_env};
+use test_utils::evm::get_funded_wallet;
 use tokio::time::sleep;
 use walkdir::WalkDir;
 
@@ -26,17 +26,17 @@ async fn dir_upload_download() -> Result<()> {
     let _log_appender_guard =
         LogBuilder::init_single_threaded_tokio_test("dir_upload_download", false);
 
-    let client = Client::connect(&peers_from_env()?).await?;
+    let client = Client::init_local().await?;
     let wallet = get_funded_wallet();
 
     let addr = client
-        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .dir_and_archive_upload_public("tests/file/test_dir".into(), &wallet)
         .await?;
 
     sleep(Duration::from_secs(10)).await;
 
     client
-        .dir_download(addr, "tests/file/test_dir_fetched".into())
+        .dir_download_public(addr, "tests/file/test_dir_fetched".into())
         .await?;
 
     // compare the two directories
@@ -81,32 +81,28 @@ fn compute_dir_sha256(dir: &str) -> Result<String> {
 async fn file_into_vault() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("file", false);
 
-    let client = Client::connect(&peers_from_env()?).await?;
+    let client = Client::init_local().await?;
     let wallet = get_funded_wallet();
     let client_sk = bls::SecretKey::random();
 
     let addr = client
-        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .dir_and_archive_upload_public("tests/file/test_dir".into(), &wallet)
         .await?;
     sleep(Duration::from_secs(2)).await;
 
-    let archive = client.archive_get(addr).await?;
+    let archive = client.archive_get_public(addr).await?;
     let set_version = 0;
     client
-        .write_bytes_to_vault(
-            archive.into_bytes()?,
-            wallet.into(),
-            &client_sk,
-            set_version,
-        )
+        .write_bytes_to_vault(archive.to_bytes()?, wallet.into(), &client_sk, set_version)
         .await?;
 
     // now assert over the stored account packet
-    let new_client = Client::connect(&[]).await?;
+    let new_client = Client::init_local().await?;
 
     let (ap, got_version) = new_client.fetch_and_decrypt_vault(&client_sk).await?;
     assert_eq!(set_version, got_version);
-    let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
+    let ap_archive_fetched =
+        autonomi::client::files::archive_public::PublicArchive::from_bytes(ap)?;
 
     assert_eq!(
         archive, ap_archive_fetched,

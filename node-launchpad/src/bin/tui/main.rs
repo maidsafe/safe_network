@@ -11,6 +11,9 @@ mod terminal;
 #[macro_use]
 extern crate tracing;
 
+use ant_bootstrap::PeersArgs;
+#[cfg(target_os = "windows")]
+use ant_node_manager::config::is_running_as_root;
 use clap::Parser;
 use color_eyre::eyre::Result;
 use node_launchpad::{
@@ -18,49 +21,48 @@ use node_launchpad::{
     config::configure_winsw,
     utils::{initialize_logging, initialize_panic_handler},
 };
-#[cfg(target_os = "windows")]
-use sn_node_manager::config::is_running_as_root;
-use sn_peers_acquisition::PeersArgs;
 use std::{env, path::PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(disable_version_flag = true)]
 pub struct Cli {
-    #[arg(
-        short,
-        long,
-        value_name = "FLOAT",
-        help = "Tick rate, i.e. number of ticks per second",
-        default_value_t = 1.0
-    )]
-    pub tick_rate: f64,
-
-    #[arg(
-        short,
-        long,
-        value_name = "FLOAT",
-        help = "Frame rate, i.e. number of frames per second",
-        default_value_t = 60.0
-    )]
-    pub frame_rate: f64,
-
-    /// Provide a path for the safenode binary to be used by the service.
+    /// Provide a path for the antnode binary to be used by the service.
     ///
     /// Useful for creating the service using a custom built binary.
     #[clap(long)]
-    safenode_path: Option<PathBuf>,
-
-    #[command(flatten)]
-    pub(crate) peers: PeersArgs,
+    antnode_path: Option<PathBuf>,
 
     /// Print the crate version.
     #[clap(long)]
     crate_version: bool,
 
+    /// Specify the network ID to use. This will allow you to run the node on a different network.
+    ///
+    /// By default, the network ID is set to 1, which represents the mainnet.
+    #[clap(long, verbatim_doc_comment)]
+    network_id: Option<u8>,
+
+    /// Frame rate, i.e. number of frames per second
+    #[arg(short, long, value_name = "FLOAT", default_value_t = 60.0)]
+    frame_rate: f64,
+
+    /// Provide a path for the antnode binary to be used by the service.
+    ///
+    /// Useful for creating the service using a custom built binary.
+    #[clap(long)]
+    path: Option<PathBuf>,
+
+    #[command(flatten)]
+    peers: PeersArgs,
+
     /// Print the package version.
     #[clap(long)]
     #[cfg(not(feature = "nightly"))]
     package_version: bool,
+
+    /// Tick rate, i.e. number of ticks per second
+    #[arg(short, long, value_name = "FLOAT", default_value_t = 1.0)]
+    tick_rate: f64,
 
     /// Print the version.
     #[clap(long)]
@@ -103,7 +105,7 @@ async fn main() -> Result<()> {
     if args.version {
         println!(
             "{}",
-            sn_build_info::version_string(
+            ant_build_info::version_string(
                 "Autonomi Node Launchpad",
                 env!("CARGO_PKG_VERSION"),
                 None
@@ -119,7 +121,7 @@ async fn main() -> Result<()> {
 
     #[cfg(not(feature = "nightly"))]
     if args.package_version {
-        println!("{}", sn_build_info::package_version());
+        println!("{}", ant_build_info::package_version());
         return Ok(());
     }
 
@@ -128,8 +130,9 @@ async fn main() -> Result<()> {
         args.tick_rate,
         args.frame_rate,
         args.peers,
-        args.safenode_path,
-        None,
+        args.antnode_path,
+        args.path,
+        args.network_id,
     )
     .await?;
     app.run().await?;

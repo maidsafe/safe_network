@@ -47,11 +47,6 @@ done
 
 echo "Now performing safety bumps for any crates not bumped by release-plz..."
 for crate in "${all_crates[@]}"; do
-  # The node manager is an annoying special case where the directory and crate name don't match.
-  if [[ $crate == "sn_node_manager" ]]; then
-    crate="sn-node-manager"
-  fi
-
   if [[ -z "${crates_bumped[$crate]}" ]]; then
     echo "==============================="
     echo " Safety bump for $crate"
@@ -80,10 +75,10 @@ done
 echo "======================="
 echo "  New Binary Versions  "
 echo "======================="
+echo "ant: $(grep "^version" < ant-cli/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
+echo "antctl: $(grep "^version" < ant-node-manager/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
+echo "antctld: $(grep "^version" < ant-node-manager/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
+echo "antnode: $(grep "^version" < ant-node/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
+echo "antnode_rpc_client: $(grep "^version" < ant-node-rpc-client/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
 echo "nat-detection: $(grep "^version" < nat-detection/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
 echo "node-launchpad: $(grep "^version" < node-launchpad/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
-echo "autonomi: $(grep "^version" < autonomi-cli/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
-echo "safenode: $(grep "^version" < sn_node/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
-echo "safenode-manager: $(grep "^version" < sn_node_manager/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
-echo "safenode_rpc_client: $(grep "^version" < sn_node_rpc_client/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"
-echo "safenodemand: $(grep "^version" < sn_node_manager/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')"

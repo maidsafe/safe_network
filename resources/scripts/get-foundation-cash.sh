@@ -19,6 +19,6 @@ fi
     exit 1
 fi
 
-scp root@$FOUNDATION_SERVER:/home/safe/.local/share/safe/test_faucet/wallet/foundation_disbursement.transfer $TMPDIR/foundation.transfer
+scp root@$FOUNDATION_SERVER:/home/safe/.local/share/autonomi/test_faucet/wallet/foundation_disbursement.transfer $TMPDIR/foundation.transfer
 safe --peer $2 wallet receive $TMPDIR/foundation.transfer --file
 safe wallet balance

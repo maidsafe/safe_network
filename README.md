@@ -16,27 +16,23 @@ Libp2p.<br>
 
 ### For Users
 
-- [CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi-cli/README.md) The Command Line
-  Interface, allowing users to interact with the network from their terminal.
-- [Node](https://github.com/maidsafe//safe_network/blob/main/sn_node/README.md) The backbone of the
-  safe network. Nodes can be run on commodity hardware and provide storage space and validation of
-  transactions to the network.
+- [CLI](https://github.com/maidsafe/autonomi/blob/main/ant-cli/README.md) The client command line
+  interface that enables users to interact with the network from their terminal.
+- [Node](https://github.com/maidsafe/autonomi/blob/main/ant-node/README.md) The backbone of the
+  Autonomi network. Nodes can run on commodity hardware and provide storage space and validate
+  transactions on the network.
 - Web App: Coming Soon!
 
 #### Building the Node from Source
 
-If you wish to build a version of `safenode` from source, some special consideration must be given
+If you wish to build a version of `antnode` from source, some special consideration must be given
 if you want it to connect to the current beta network.
 
 You should build from the `stable` branch, as follows:
 
 ```
 git checkout stable
-export FOUNDATION_PK=b20c916c7a28707018292f06dfdb66ab88ebcbad9c78d18135e843a91b1d66b875b24d2c27d8d1ad4637c2d5811896fe
-export GENESIS_PK=93f7355906fa8c1a639bac80f4619dbb4cf5f71c47827d1ff2c30f0d133f6b841859662cbf7e0bbceca0eb0f521f6ebc
-export NETWORK_ROYALTIES_PK=af451aa34a0d16c50eb217b91ab6b2ca75ef43b9c20449384ff1e90dbf8477351499cca985828e33b208805dadc80c63
-export PAYMENT_FORWARD_PK=adc6401588af49c60af6717a60546207abddb4e150014b4ab6c407ef6d7b3d3899b8892a91ab23042378b7b285e655fc
-cargo build --release --features=network-contacts --bin safenode
+cargo build --release --bin antnode
 ```
 
 #### Running the Node
@@ -44,50 +40,28 @@ cargo build --release --features=network-contacts --bin safenode
 To run a node and receive rewards, you need to specify your Ethereum address as a parameter. Rewards are paid to the specified address.
 
 ```
-cargo run --release --bin safenode --features=network-contacts -- --rewards-address <YOUR_ETHEREUM_ADDRESS_TO_RECEIVE_REWARDS>
+cargo run --release --bin antnode -- --rewards-address <YOUR_ETHEREUM_ADDRESS_TO_RECEIVE_REWARDS>
 ```
 
 More options about EVM Network below.
 
 ### For Developers
-
-#### Build
-
-You should also build `safe` with the `network-contacts` and `distribution` features enabled:
-
-```
-cargo build --release --features="network-contacts,distribution" --bin safe
-```
-
-For `safenode`, only the `network-contacts` feature should be required:
-
-```
-cargo build --release --features=network-contacts --bin safenode
-```
-
 #### Main Crates
 
-- [Autonomi API](https://github.com/maidsafe/safe_network/blob/main/autonomi/README.md) The client APIs
-  allowing use of the Autonomi Network to users and developers.
-- [Autonomi CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi-cli/README.md) The Command Line
-  Interface, allowing users to interact with the network from their terminal.
-- [Node](https://github.com/maidsafe/safe_network/blob/main/sn_node/README.md) The backbone of the
-  autonomi network. Nodes can be run on commodity hardware and run the Network.
-- [Node Manager](https://github.com/maidsafe/safe_network/blob/main/sn_node_manager/README.md) Use
+- [Autonomi API](https://github.com/maidsafe/autonomi/blob/main/autonomi/README.md) The client APIs
+  allowing use of the Autonomi network to users and developers.
+- [Autonomi CLI](https://github.com/maidsafe/autonomi/blob/main/ant-cli/README.md) The client command line
+  interface that enables users to interact with the network from their terminal.
+- [Node](https://github.com/maidsafe/autonomi/blob/main/ant-node/README.md) The backbone of the
+  Autonomi network. Nodes can be run on commodity hardware and connect to the network.
+- [Node Manager](https://github.com/maidsafe/autonomi/blob/main/ant-node-manager/README.md) Use
   to create a local network for development and testing.
-- [Node RPC](https://github.com/maidsafe/safe_network/blob/main/sn_node_rpc_client/README.md) The
+- [Node RPC](https://github.com/maidsafe/autonomi/blob/main/ant-node-rpc-client/README.md) The
   RPC server used by the nodes to expose API calls to the outside world.
 
 #### Transport Protocols and Architectures
 
-The Safe Network uses `quic` as the default transport protocol.
-
-The `websockets` feature is available for the `sn_networking` crate, and above, and will allow for
-tcp over websockets.
-
-If building for `wasm32` then `websockets` are enabled by default as this is the only method
-available to communicate with a network as things stand. (And that network must have `websockets`
-enabled.)
+The Autonomi network uses `quic` as the default transport protocol.
 
 #### Building for wasm32
 
@@ -95,27 +69,25 @@ WASM support for the autonomi API is currently under active development. More do
 
 ### For the Technical
 
-- [Logging](https://github.com/maidsafe/safe_network/blob/main/sn_logging/README.md) The
-  generalised logging crate used by the safe network (backed by the tracing crate).
-- [Metrics](https://github.com/maidsafe/safe_network/blob/main/metrics/README.md) The metrics crate
-  used by the safe network.
-- [Networking](https://github.com/maidsafe/safe_network/blob/main/sn_networking/README.md) The
+- [Logging](https://github.com/maidsafe/autonomi/blob/main/ant-logging/README.md) The
+  generalised logging crate used by the autonomi network (backed by the tracing crate).
+- [Metrics](https://github.com/maidsafe/autonomi/blob/main/ant-metrics/README.md) The metrics crate
+  used by the autonomi network.
+- [Networking](https://github.com/maidsafe/autonomi/blob/main/ant-networking/README.md) The
   networking layer, built atop libp2p which allows nodes and clients to communicate.
-- [Protocol](https://github.com/maidsafe/safe_network/blob/main/sn_protocol/README.md) The protocol
-  used by the safe network.
-- [Transfers](https://github.com/maidsafe/safe_network/blob/main/sn_transfers/README.md) The
-  transfers crate, used to send and receive tokens Native to the network.
-- [Registers](https://github.com/maidsafe/safe_network/blob/main/sn_registers/README.md) The
+- [Protocol](https://github.com/maidsafe/autonomi/blob/main/ant-protocol/README.md) The protocol
+  used by the autonomi network.
+- [Registers](https://github.com/maidsafe/autonomi/blob/main/ant-registers/README.md) The
   registers crate, used for the Register CRDT data type on the network.
-- [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acquisition/README.md)
-  The peers acquisition crate, or: how the network layer discovers bootstrap peers.
-- [Build Info](https://github.com/maidsafe/safe_network/blob/main/sn_build_info/README.md) Small
+- [Bootstrap](https://github.com/maidsafe/autonomi/blob/main/ant-bootstrap/README.md)
+  The network bootstrap cache or: how the network layer discovers bootstrap peers.
+- [Build Info](https://github.com/maidsafe/autonomi/blob/main/ant-build-info/README.md) Small
   helper used to get the build/commit versioning info for debug purposes.
 
 ### Using a Local Network
 
-We can explore the network's features by using multiple node processes to form a local network. e also need to run a
-local EVM network for our nodes and client to connect to.
+We can explore the network's features by using multiple node processes to form a local network. We
+also need to run a local EVM network for our nodes and client to connect to.
 
 Follow these steps to create a local network:
 
@@ -132,7 +104,7 @@ To collect rewards for you nodes, you will need an EVM address, you can create o
 ##### 2. Run a local EVM node
 
 ```sh
-cargo run --bin evm_testnet
+cargo run --bin evm-testnet
 ```
 
 This creates a CSV file with the EVM network params in your data directory.
@@ -141,7 +113,7 @@ This creates a CSV file with the EVM network params in your data directory.
    `--rewards-address` _is the address where you will receive your node earnings on._
 
 ```bash
-cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <YOUR_ETHEREUM_ADDRESS>
+cargo run --bin antctl --features local -- local run --build --clean --rewards-address <YOUR_ETHEREUM_ADDRESS>
 ```
 
 The EVM Network parameters are loaded from the CSV file in your data directory automatically when the `local` feature flag is enabled (`--features=local`).
@@ -149,20 +121,20 @@ The EVM Network parameters are loaded from the CSV file in your data directory a
 ##### 4. Verify node status
 
 ```bash
-cargo run --bin safenode-manager --features local -- status
+cargo run --bin antctl --features local -- status
 ```
 
-The node manager's `run` command starts the node processes. The `status` command should show twenty-five
+The Antctl `run` command starts the node processes. The `status` command should show twenty-five
 running nodes.
 
 ##### 5. Uploading and Downloading Data
 
 To upload a file or a directory, you need to set the `SECRET_KEY` environment variable to your EVM secret key:
 
-> When running a local network, you can use the `SECRET_KEY` printed by the `evm_testnet` command [step 2](#2-run-a-local-evm-node) as it has all the money.
+> When running a local network, you can use the `SECRET_KEY` printed by the `evm-testnet` command [step 2](#2-run-a-local-evm-node) as it has all the money.
 
 ```bash
-SECRET_KEY=<YOUR_EVM_SECRET_KEY> cargo run --bin autonomi --features local -- file upload <path>
+SECRET_KEY=<YOUR_EVM_SECRET_KEY> cargo run --bin ant --features local -- file upload <path>
 ```
 
 The output will print out the address at which the content was uploaded.
@@ -170,7 +142,7 @@ The output will print out the address at which the content was uploaded.
 Now to download the files again:
 
 ```bash
-cargo run --bin autonomi --features local -- file download <addr> <dest_path>
+cargo run --bin ant --features local -- file download <addr> <dest_path>
 ```
 
 ### Registers
@@ -292,10 +264,10 @@ workspace has a client binary that can be used to run commands against these ser
 Run the `status` command with the `--details` flag to get the RPC port for each node:
 
 ```
-$ cargo run --bin safenode-manager -- status --details
+$ cargo run --bin antctl -- status --details
 ...
 ===================================
-safenode-local25 - RUNNING
+antctl-local25 - RUNNING
 ===================================
 Version: 0.103.21
 Peer ID: 12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
@@ -303,9 +275,9 @@ Port: 38835
 RPC Port: 34416
 Multiaddr: /ip4/127.0.0.1/udp/38835/quic-v1/p2p/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
 PID: 62369
-Data path: /home/<<user_directory>>/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
-Log path: /home/<<user_directory>>/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
-Bin path: target/release/safenode
+Data path: /home/<<user_directory>>/.local/share/autonomi/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
+Log path: /home/<<user_directory>>/.local/share/autonomi/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
+Bin path: target/release/antnode
 Connected peers: 24
 ```
 
@@ -314,12 +286,12 @@ Now you can run RPC commands against any node.
 The `info` command will retrieve basic information about the node:
 
 ```
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 info
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 info
 Node info:
 ==========
 RPC endpoint: https://127.0.0.1:34416
 Peer Id: 12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
-Logs dir: /home/<<user_directory>>/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
+Logs dir: /home/<<user_directory>>/.local/share/autonomi/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
 PID: 62369
 Binary version: 0.103.21
 Time since last restart: 1614s
@@ -328,7 +300,7 @@ Time since last restart: 1614s
 The `netinfo` command will return connected peers and listeners:
 
 ```
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 netinfo
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 netinfo
 Node's connections to the Network:
 
 Connected peers:
@@ -355,48 +327,24 @@ Listener: /ip4/172.20.0.1/udp/38835/quic-v1
 Node control commands:
 
 ```
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 restart 5000
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 restart 5000
 Node successfully received the request to restart in 5s
 
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 stop 6000
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 stop 6000
 Node successfully received the request to stop in 6s
 
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 update 7000
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 update 7000
 Node successfully received the request to try to update in 7s
 ```
 
 NOTE: it is preferable to use the node manager to control the node rather than RPC commands.
-
-Listening to royalty payment events:
-
-```
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 transfers
-Listening to transfer notifications... (press Ctrl+C to exit)
-
-New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
-CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
-
-New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
-CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
-```
-
-The `transfers` command can provide a path for royalty payment cash notes:
-
-```
-$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:34416 transfers ./royalties-cash-notes
-Listening to transfer notifications... (press Ctrl+C to exit)
-Writing cash notes to: ./royalties-cash-notes
-```
-
-Each received cash note is written to a file in the directory above, under another directory
-corresponding to the public address of the recipient.
 
 ### Tear Down
 
 When you're finished experimenting, tear down the network:
 
 ```bash
-cargo run --bin safenode-manager -- local kill
+cargo run --bin antctl -- local kill
 ```
 
 ## Metrics Dashboard

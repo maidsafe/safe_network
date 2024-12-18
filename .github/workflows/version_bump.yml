@@ -14,7 +14,7 @@ on:
 
 env:
   RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
-  WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
+  WORKFLOW_URL: https://github.com/maidsafe/autonomi/actions/runs
 
 jobs:
   bump_version:

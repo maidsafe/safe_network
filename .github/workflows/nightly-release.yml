@@ -6,7 +6,7 @@ on:
   workflow_dispatch:    # This also allows the workflow to be triggered manually
 
 env:
-  WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
+  WORKFLOW_URL: https://github.com/maidsafe/autonomi/actions/runs
 
 jobs:
   build:
@@ -51,7 +51,7 @@ jobs:
 
       - uses: actions/upload-artifact@main
         with:
-          name: safe_network-${{ matrix.target }}
+          name: autonomi-${{ matrix.target }}
           path: |
             artifacts
             !artifacts/.cargo-lock
@@ -77,31 +77,31 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-x86_64-pc-windows-msvc
+          name: autonomi-x86_64-pc-windows-msvc
           path: artifacts/x86_64-pc-windows-msvc/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-x86_64-unknown-linux-musl
+          name: autonomi-x86_64-unknown-linux-musl
           path: artifacts/x86_64-unknown-linux-musl/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-x86_64-apple-darwin
+          name: autonomi-x86_64-apple-darwin
           path: artifacts/x86_64-apple-darwin/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-aarch64-apple-darwin
+          name: autonomi-aarch64-apple-darwin
           path: artifacts/aarch64-apple-darwin/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-arm-unknown-linux-musleabi
+          name: autonomi-arm-unknown-linux-musleabi
           path: artifacts/arm-unknown-linux-musleabi/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-armv7-unknown-linux-musleabihf
+          name: autonomi-armv7-unknown-linux-musleabihf
           path: artifacts/armv7-unknown-linux-musleabihf/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-aarch64-unknown-linux-musl
+          name: autonomi-aarch64-unknown-linux-musl
           path: artifacts/aarch64-unknown-linux-musl/release
 
       - uses: cargo-bins/cargo-binstall@main
@@ -112,41 +112,35 @@ jobs:
       - name: remove latest nightly release
         shell: bash
         run: |
-          just delete-s3-bin "faucet" "nightly"
           just delete-s3-bin "nat-detection" "nightly"
           just delete-s3-bin "node-launchpad" "nightly"
-          just delete-s3-bin "safe" "nightly"
-          just delete-s3-bin "safenode" "nightly"
-          just delete-s3-bin "safenode_rpc_client" "nightly"
-          just delete-s3-bin "safenode-manager" "nightly"
-          just delete-s3-bin "safenodemand" "nightly"
-          just delete-s3-bin "sn_auditor" "nightly"
+          just delete-s3-bin "autonomi" "nightly"
+          just delete-s3-bin "antnode" "nightly"
+          just delete-s3-bin "antnode_rpc_client" "nightly"
+          just delete-s3-bin "antctl" "nightly"
+          just delete-s3-bin "antctld" "nightly"
 
       - name: upload binaries to S3
         shell: bash
         run: |
           version=$(date +"%Y.%m.%d")
-          just package-bin "faucet" "$version"
           just package-bin "nat-detection" "$version"
           just package-bin "node-launchpad" "$version"
-          just package-bin "safe" "$version"
-          just package-bin "safenode" "$version"
-          just package-bin "safenode_rpc_client" "$version"
-          just package-bin "safenode-manager" "$version"
-          just package-bin "safenodemand" "$version"
-          just package-bin "sn_auditor" "$version"
+          just package-bin "autonomi" "$version"
+          just package-bin "antnode" "$version"
+          just package-bin "antnode_rpc_client" "$version"
+          just package-bin "antctl" "$version"
+          just package-bin "antctld" "$version"
           just upload-all-packaged-bins-to-s3
 
           rm -rf packaged_bins
-          just package-bin "faucet" "nightly"
           just package-bin "nat-detection" "nightly"
           just package-bin "node-launchpad" "nightly"
-          just package-bin "safe" "nightly"
-          just package-bin "safenode" "nightly"
-          just package-bin "safenode_rpc_client" "nightly"
-          just package-bin "safenode-manager" "nightly"
-          just package-bin "safenodemand" "nightly"
-          just package-bin "sn_auditor" "nightly"
+          just package-bin "autonomi" "nightly"
+          just package-bin "antnode" "nightly"
+          just package-bin "antnode_rpc_client" "nightly"
+          just package-bin "antctl" "nightly"
+          just package-bin "antctld" "nightly"
           just upload-all-packaged-bins-to-s3
 
   github-release:
@@ -158,31 +152,31 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-x86_64-pc-windows-msvc
+          name: autonomi-x86_64-pc-windows-msvc
           path: artifacts/x86_64-pc-windows-msvc/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-x86_64-unknown-linux-musl
+          name: autonomi-x86_64-unknown-linux-musl
           path: artifacts/x86_64-unknown-linux-musl/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-x86_64-apple-darwin
+          name: autonomi-x86_64-apple-darwin
           path: artifacts/x86_64-apple-darwin/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-aarch64-apple-darwin
+          name: autonomi-aarch64-apple-darwin
           path: artifacts/aarch64-apple-darwin/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-arm-unknown-linux-musleabi
+          name: autonomi-arm-unknown-linux-musleabi
           path: artifacts/arm-unknown-linux-musleabi/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-armv7-unknown-linux-musleabihf
+          name: autonomi-armv7-unknown-linux-musleabihf
           path: artifacts/armv7-unknown-linux-musleabihf/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-aarch64-unknown-linux-musl
+          name: autonomi-aarch64-unknown-linux-musl
           path: artifacts/aarch64-unknown-linux-musl/release
 
       - uses: cargo-bins/cargo-binstall@main

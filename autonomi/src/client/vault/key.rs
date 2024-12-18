@@ -15,7 +15,7 @@ pub type VaultSecretKey = bls::SecretKey;
 #[derive(Debug, thiserror::Error)]
 pub enum VaultKeyError {
     #[error("Failed to sign message: {0}")]
-    FailedToSignMessage(#[from] sn_evm::cryptography::SignError),
+    FailedToSignMessage(#[from] ant_evm::cryptography::SignError),
     #[error("Failed to generate vault secret key: {0}")]
     FailedToGenerateVaultSecretKey(String),
     #[error("Failed to convert blst secret key to blsttc secret key: {0}")]
@@ -31,7 +31,7 @@ const VAULT_SECRET_KEY_SEED: &[u8] = b"Massive Array of Internet Disks Secure Ac
 /// The EVM secret key is used to sign a message and the signature is hashed to derive the vault secret key
 /// Being able to derive the vault secret key from the EVM secret key allows users to only keep track of one key: the EVM secret key
 pub fn derive_vault_key(evm_sk_hex: &str) -> Result<VaultSecretKey, VaultKeyError> {
-    let signature = sn_evm::cryptography::sign_message(evm_sk_hex, VAULT_SECRET_KEY_SEED)
+    let signature = ant_evm::cryptography::sign_message(evm_sk_hex, VAULT_SECRET_KEY_SEED)
         .map_err(VaultKeyError::FailedToSignMessage)?;
 
     let blst_key = derive_secret_key_from_seed(&signature)?;
@@ -40,13 +40,13 @@ pub fn derive_vault_key(evm_sk_hex: &str) -> Result<VaultSecretKey, VaultKeyErro
 }
 
 /// Convert a blst secret key to a blsttc secret key and pray that endianness is the same
-fn blst_to_blsttc(sk: &BlstSecretKey) -> Result<bls::SecretKey, VaultKeyError> {
+pub(crate) fn blst_to_blsttc(sk: &BlstSecretKey) -> Result<bls::SecretKey, VaultKeyError> {
     let sk_bytes = sk.to_bytes();
     let sk = bls::SecretKey::from_bytes(sk_bytes).map_err(VaultKeyError::BlsConversionError)?;
     Ok(sk)
 }
 
-fn derive_secret_key_from_seed(seed: &[u8]) -> Result<BlstSecretKey, VaultKeyError> {
+pub(crate) fn derive_secret_key_from_seed(seed: &[u8]) -> Result<BlstSecretKey, VaultKeyError> {
     let mut hasher = Sha256::new();
     hasher.update(seed);
     let hashed_seed = hasher.finalize();

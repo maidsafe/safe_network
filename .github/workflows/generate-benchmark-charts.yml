@@ -15,8 +15,8 @@ permissions:
 env:
   CARGO_INCREMENTAL: "0"
   RUST_BACKTRACE: 1
-  CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
-  NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
+  NODE_DATA_PATH: /home/runner/.local/share/autonomi/node
 
 jobs:
   benchmark-cli:
@@ -46,15 +46,15 @@ jobs:
         run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
 
       - name: Build node and cli binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin ant
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ubuntu-latest
           build: true
           sn-log: "all"
@@ -100,9 +100,9 @@ jobs:
 
       - name: Start a client instance to compare memory usage
         shell: bash
-        run: cargo run --bin autonomi --release -- --log-output-dest=data-dir file upload the-test-data.zip
+        run: cargo run --bin ant --release -- --log-output-dest data-dir file upload the-test-data.zip
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
 
       #########################
       ### Stop Network      ###
@@ -110,7 +110,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           platform: ubuntu-latest

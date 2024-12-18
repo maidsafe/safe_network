@@ -31,16 +31,16 @@ use crate::{
         clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE,
     },
 };
+use ant_bootstrap::PeersArgs;
+use ant_node_manager::add_services::config::PortRange;
+use ant_node_manager::config::get_node_registry_path;
+use ant_service_management::{
+    control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
+};
 use color_eyre::eyre::{Ok, OptionExt, Result};
 use crossterm::event::KeyEvent;
 use ratatui::text::Span;
 use ratatui::{prelude::*, widgets::*};
-use sn_node_manager::add_services::config::PortRange;
-use sn_node_manager::config::get_node_registry_path;
-use sn_peers_acquisition::PeersArgs;
-use sn_service_management::{
-    control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
-};
 use std::fmt;
 use std::{
     path::PathBuf,
@@ -61,7 +61,7 @@ const NODE_WIDTH: usize = 10;
 const VERSION_WIDTH: usize = 7;
 const ATTOS_WIDTH: usize = 5;
 const MEMORY_WIDTH: usize = 7;
-const MB_WIDTH: usize = 15;
+const MBPS_WIDTH: usize = 13;
 const RECORDS_WIDTH: usize = 4;
 const PEERS_WIDTH: usize = 5;
 const CONNS_WIDTH: usize = 5;
@@ -83,6 +83,8 @@ pub struct Status<'a> {
     // Nodes
     node_services: Vec<NodeServiceData>,
     items: Option<StatefulTable<NodeItem<'a>>>,
+    /// To pass into node services.
+    network_id: Option<u8>,
     // Node Management
     node_management: NodeManagement,
     // Amount of nodes
@@ -95,7 +97,7 @@ pub struct Status<'a> {
     // Peers to pass into nodes for startup
     peers_args: PeersArgs,
     // If path is provided, we don't fetch the binary from the network
-    safenode_path: Option<PathBuf>,
+    antnode_path: Option<PathBuf>,
     // Path where the node data is stored
     data_dir_path: PathBuf,
     // Connection mode
@@ -117,13 +119,14 @@ pub enum LockRegistryState {
 
 pub struct StatusConfig {
     pub allocated_disk_space: usize,
-    pub rewards_address: String,
-    pub peers_args: PeersArgs,
-    pub safenode_path: Option<PathBuf>,
-    pub data_dir_path: PathBuf,
+    pub antnode_path: Option<PathBuf>,
     pub connection_mode: ConnectionMode,
+    pub data_dir_path: PathBuf,
+    pub network_id: Option<u8>,
+    pub peers_args: PeersArgs,
     pub port_from: Option<u32>,
     pub port_to: Option<u32>,
+    pub rewards_address: String,
 }
 
 impl Status<'_> {
@@ -135,6 +138,7 @@ impl Status<'_> {
             active: true,
             is_nat_status_determined: false,
             error_while_running_nat_detection: 0,
+            network_id: config.network_id,
             node_stats: NodeStats::default(),
             node_stats_last_update: Instant::now(),
             node_services: Default::default(),
@@ -143,7 +147,7 @@ impl Status<'_> {
             nodes_to_start: config.allocated_disk_space,
             lock_registry: None,
             rewards_address: config.rewards_address,
-            safenode_path: config.safenode_path,
+            antnode_path: config.antnode_path,
             data_dir_path: config.data_dir_path,
             connection_mode: config.connection_mode,
             port_from: config.port_from,
@@ -155,7 +159,7 @@ impl Status<'_> {
         let now = Instant::now();
         debug!("Refreshing node registry states on startup");
         let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-        sn_node_manager::refresh_node_registry(
+        ant_node_manager::refresh_node_registry(
             &mut node_registry,
             &ServiceController {},
             false,
@@ -220,10 +224,10 @@ impl Status<'_> {
                     {
                         item.attos = stats.rewards_wallet_balance;
                         item.memory = stats.memory_usage_mb;
-                        item.mb = format!(
-                            "↓{:06.02} ↑{:06.02}",
-                            stats.bandwidth_inbound as f64 / (1024_f64 * 1024_f64),
-                            stats.bandwidth_outbound as f64 / (1024_f64 * 1024_f64)
+                        item.mbps = format!(
+                            "↓{:0>5.0} ↑{:0>5.0}",
+                            (stats.bandwidth_inbound_rate * 8) as f64 / 1_000_000.0,
+                            (stats.bandwidth_outbound_rate * 8) as f64 / 1_000_000.0,
                         );
                         item.records = stats.max_records;
                         item.connections = stats.connections;
@@ -235,7 +239,7 @@ impl Status<'_> {
                         version: node_item.version.to_string(),
                         attos: 0,
                         memory: 0,
-                        mb: "-".to_string(),
+                        mbps: "-".to_string(),
                         records: 0,
                         peers: 0,
                         connections: 0,
@@ -269,7 +273,7 @@ impl Status<'_> {
                         version: node_item.version.to_string(),
                         attos: 0,
                         memory: 0,
-                        mb: "-".to_string(),
+                        mbps: "-".to_string(),
                         records: 0,
                         peers: 0,
                         connections: 0,
@@ -418,7 +422,7 @@ impl Component for Status<'_> {
                 if we_have_nodes && has_changed {
                     debug!("Setting lock_registry to ResettingNodes");
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
-                    info!("Resetting safenode services because the Rewards Address was reset.");
+                    info!("Resetting antnode services because the Rewards Address was reset.");
                     let action_sender = self.get_actions_sender()?;
                     self.node_management
                         .send_task(NodeManagementTask::ResetNodes {
@@ -430,7 +434,7 @@ impl Component for Status<'_> {
             Action::StoreStorageDrive(ref drive_mountpoint, ref _drive_name) => {
                 debug!("Setting lock_registry to ResettingNodes");
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
-                info!("Resetting safenode services because the Storage Drive was changed.");
+                info!("Resetting antnode services because the Storage Drive was changed.");
                 let action_sender = self.get_actions_sender()?;
                 self.node_management
                     .send_task(NodeManagementTask::ResetNodes {
@@ -444,7 +448,7 @@ impl Component for Status<'_> {
                 debug!("Setting lock_registry to ResettingNodes");
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 self.connection_mode = connection_mode;
-                info!("Resetting safenode services because the Connection Mode range was changed.");
+                info!("Resetting antnode services because the Connection Mode range was changed.");
                 let action_sender = self.get_actions_sender()?;
                 self.node_management
                     .send_task(NodeManagementTask::ResetNodes {
@@ -457,7 +461,7 @@ impl Component for Status<'_> {
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 self.port_from = Some(port_from);
                 self.port_to = Some(port_range);
-                info!("Resetting safenode services because the Port Range was changed.");
+                info!("Resetting antnode services because the Port Range was changed.");
                 let action_sender = self.get_actions_sender()?;
                 self.node_management
                     .send_task(NodeManagementTask::ResetNodes {
@@ -614,16 +618,17 @@ impl Component for Status<'_> {
                     let action_sender = self.get_actions_sender()?;
 
                     let maintain_nodes_args = MaintainNodesArgs {
+                        action_sender: action_sender.clone(),
+                        antnode_path: self.antnode_path.clone(),
+                        connection_mode: self.connection_mode,
                         count: self.nodes_to_start as u16,
+                        data_dir_path: Some(self.data_dir_path.clone()),
+                        network_id: self.network_id,
                         owner: self.rewards_address.clone(),
                         peers_args: self.peers_args.clone(),
-                        run_nat_detection: self.should_we_run_nat_detection(),
-                        safenode_path: self.safenode_path.clone(),
-                        data_dir_path: Some(self.data_dir_path.clone()),
-                        action_sender: action_sender.clone(),
-                        connection_mode: self.connection_mode,
                         port_range: Some(port_range),
                         rewards_address: self.rewards_address.clone(),
+                        run_nat_detection: self.should_we_run_nat_detection(),
                     };
 
                     debug!("Calling maintain_n_running_nodes");
@@ -930,7 +935,7 @@ impl Component for Status<'_> {
                     Constraint::Min(VERSION_WIDTH as u16),
                     Constraint::Min(ATTOS_WIDTH as u16),
                     Constraint::Min(MEMORY_WIDTH as u16),
-                    Constraint::Min(MB_WIDTH as u16),
+                    Constraint::Min(MBPS_WIDTH as u16),
                     Constraint::Min(RECORDS_WIDTH as u16),
                     Constraint::Min(PEERS_WIDTH as u16),
                     Constraint::Min(CONNS_WIDTH as u16),
@@ -945,7 +950,8 @@ impl Component for Status<'_> {
                     Cell::new("Attos").fg(COOL_GREY),
                     Cell::new("Memory").fg(COOL_GREY),
                     Cell::new(
-                        format!("{}{}", " ".repeat(MB_WIDTH - "Mb".len()), "Mb").fg(COOL_GREY),
+                        format!("{}{}", " ".repeat(MBPS_WIDTH - "Mbps".len()), "Mbps")
+                            .fg(COOL_GREY),
                     ),
                     Cell::new("Recs").fg(COOL_GREY),
                     Cell::new("Peers").fg(COOL_GREY),
@@ -1179,7 +1185,7 @@ pub struct NodeItem<'a> {
     version: String,
     attos: usize,
     memory: usize,
-    mb: String,
+    mbps: String,
     records: usize,
     peers: usize,
     connections: usize,
@@ -1266,8 +1272,8 @@ impl NodeItem<'_> {
             ),
             format!(
                 "{}{}",
-                " ".repeat(MB_WIDTH.saturating_sub(self.mb.to_string().len())),
-                self.mb.to_string()
+                " ".repeat(MBPS_WIDTH.saturating_sub(self.mbps.to_string().len())),
+                self.mbps.to_string()
             ),
             format!(
                 "{}{}",

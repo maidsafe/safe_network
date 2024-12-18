@@ -16,14 +16,14 @@ use super::data::CostError;
 use crate::client::data::PutError;
 use crate::client::payment::PaymentOption;
 use crate::client::Client;
-use libp2p::kad::{Quorum, Record};
-use sn_evm::{Amount, AttoTokens};
-use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg, VerificationKind};
-use sn_protocol::storage::{
+use ant_evm::{Amount, AttoTokens};
+use ant_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg, VerificationKind};
+use ant_protocol::storage::{
     try_serialize_record, RecordKind, RetryStrategy, Scratchpad, ScratchpadAddress,
 };
-use sn_protocol::Bytes;
-use sn_protocol::{storage::try_deserialize_record, NetworkAddress};
+use ant_protocol::Bytes;
+use ant_protocol::{storage::try_deserialize_record, NetworkAddress};
+use libp2p::kad::{Quorum, Record};
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use tracing::info;
@@ -35,7 +35,7 @@ pub enum VaultError {
     #[error("Scratchpad found at {0:?} was not a valid record.")]
     CouldNotDeserializeVaultScratchPad(ScratchpadAddress),
     #[error("Protocol: {0}")]
-    Protocol(#[from] sn_protocol::Error),
+    Protocol(#[from] ant_protocol::Error),
     #[error("Network: {0}")]
     Network(#[from] NetworkError),
     #[error("Vault not found")]
@@ -63,10 +63,11 @@ impl Client {
         &self,
         secret_key: &VaultSecretKey,
     ) -> Result<(Bytes, VaultContentType), VaultError> {
-        info!("Fetching and decrypting vault");
+        info!("Fetching and decrypting vault...");
         let pad = self.get_vault_from_network(secret_key).await?;
 
         let data = pad.decrypt_data(secret_key)?;
+        debug!("vault data is successfully fetched and decrypted");
         Ok((data, pad.data_encoding()))
     }
 
@@ -151,11 +152,13 @@ impl Client {
         let vault_xor = scratch.network_address().as_xorname().unwrap_or_default();
 
         // NB TODO: vault should be priced differently from other data
-        let cost_map = self.get_store_quotes(std::iter::once(vault_xor)).await?;
+        let store_quote = self.get_store_quotes(std::iter::once(vault_xor)).await?;
+
         let total_cost = AttoTokens::from_atto(
-            cost_map
+            store_quote
+                .0
                 .values()
-                .map(|quote| quote.2.cost.as_atto())
+                .map(|quote| quote.price())
                 .sum::<Amount>(),
         );
 
@@ -196,12 +199,12 @@ impl Client {
                     error!("Failed to pay for new vault at addr: {scratch_address:?} : {err}");
                 })?;
 
-            let proof = match receipt.values().next() {
+            let (proof, price) = match receipt.values().next() {
                 Some(proof) => proof,
                 None => return Err(PutError::PaymentUnexpectedlyInvalid(scratch_address)),
             };
 
-            total_cost = proof.quote.cost;
+            total_cost = *price;
 
             Record {
                 key: scratch_key,

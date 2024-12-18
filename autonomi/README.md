@@ -7,117 +7,94 @@ Connect to and build on the Autonomi network.
 
 ## Usage
 
-Add the autonomi crate to your `Cargo.toml`:
+Add the `autonomi` crate to your project with `cargo add`:
 
-```toml
-[dependencies]
-autonomi = { path = "../autonomi", version = "0.1.0" }
+```sh
+cargo add autonomi
 ```
+
+### Example
+
+```rust
+use autonomi::{Bytes, Client, Wallet};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::init().await?;
+
+    // Default wallet of testnet.
+    let key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+    let wallet = Wallet::new_from_private_key(Default::default(), key)?;
+
+    // Put and fetch data.
+    let data_addr = client
+        .data_put_public(Bytes::from("Hello, World"), (&wallet).into())
+        .await?;
+    let _data_fetched = client.data_get_public(data_addr).await?;
+
+    // Put and fetch directory from local file system.
+    let dir_addr = client.dir_and_archive_upload_public("files/to/upload".into(), &wallet).await?;
+    client
+        .dir_download_public(dir_addr, "files/downloaded".into())
+        .await?;
+
+    Ok(())
+}
+```
+
+In the above example the wallet is setup to use the default EVM network (Arbitrum One). Instead we can use a different network:
+```rust
+use autonomi::{EvmNetwork, Wallet};
+// Arbitrum Sepolia
+let wallet = Wallet::new_from_private_key(EvmNetwork::ArbitrumSepolia, key)?;
+// Custom (e.g. local testnet)
+let wallet = Wallet::new_from_private_key(EvmNetwork::new_custom("<rpc URL>", "<payment token address>", "<data payment address>"), key)?;
+```
+
+# Registers
+
+Registers are deprecated and planned to be replaced by transactions and pointers. Currently, transactions can already be used. For example usage, see [the transaction test](tests/transaction.rs). Pointers are not yet implemented, but will follow soon.
 
 ## Running tests
 
-### Using a local EVM testnet
+To run the tests, we can run a local network:
 
-1. If you haven't, install Foundry, to be able to run Anvil
-   nodes: https://book.getfoundry.sh/getting-started/installation
-2. Run a local EVM node:
+1. Run a local EVM node:
+    > Note: To run the EVM node, Foundry is required to be installed: https://book.getfoundry.sh/getting-started/installation
 
-```sh
-cargo run --bin evm_testnet
-```
+    ```sh
+    cargo run --bin evm-testnet
+    ```
 
-3. Run a local network with the `local` feature and use the local evm node.
+2. Run a local network with the `local` feature and use the local EVM node.
+    ```sh
+    cargo run --bin antctl --features local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-local
+    ```
 
-```sh
-cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-local
-```
-
-4. Then run the tests with the `local` feature and pass the EVM params again:
-
-```sh
-EVM_NETWORK=local cargo test --package=autonomi --features=local
-# Or with logs
-RUST_LOG=autonomi EVM_NETWORK=local cargo test --package=autonomi --features=local -- --nocapture
-```
+3. Then run the tests with the `local` feature and pass the EVM params again:
+    ```sh
+    EVM_NETWORK=local cargo test --features local --package autonomi
+    ```
 
 ### Using a live testnet or mainnet
 
-Using the hardcoded `Arbitrum One` option as an example, but you can also use the command flags of the steps above and
-point it to a live network.
+Using the hardcoded `Arbitrum One` option as an example, but you can also use the command flags of the steps above and point it to a live network.
 
 1. Run a local network with the `local` feature:
 
 ```sh
-cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-arbitrum-one
+cargo run --bin antctl --features local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-arbitrum-one
 ```
 
-2. Then run the tests with the `local` feature. Make sure that the wallet of the private key you pass has enough gas and
-   payment tokens on the network (in this case Arbitrum One):
+2. Then pass the private key of the wallet, and ensure it has enough gas and payment tokens on the network (in this case Arbitrum One):
 
 ```sh
-EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
-# Or with logs
-RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local -- --nocapture
+EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package autonomi --features local
 ```
 
-### WebAssembly
+## Using funds from the Deployer Wallet
 
-To run a WASM test
-
-- Install `wasm-pack`
-- Make sure your Rust supports the `wasm32-unknown-unknown` target. (If you
-  have `rustup`: `rustup target add wasm32-unknown-unknown`.)
-- Pass a bootstrap peer via `SAFE_PEERS`. This *has* to be the websocket address,
-  e.g. `/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID>`.
-    - As well as the other environment variables needed for EVM payments (e.g. `RPC_URL`).
-- Optionally specify the specific test, e.g. `-- put` to run `put()` in `wasm.rs` only.
-
-Example:
-
-```sh
-SAFE_PEERS=/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID> wasm-pack test --release --firefox autonomi --features=data,files --test wasm -- put
-```
-
-#### Test from JS in the browser
-
-`wasm-pack test` does not execute JavaScript, but runs mostly WebAssembly. Again make sure the environment variables are
-set and build the JS package:
-
-```sh
-wasm-pack build --dev --target=web autonomi --features=vault
-```
-
-Then cd into `autonomi/tests-js`, and use `npm` to install and serve the test html file.
-
-```
-cd autonomi/tests-js
-npm install
-npm run serve
-```
-
-Then go to `http://127.0.0.1:8080/tests-js` in the browser. Here, enter a `ws` multiaddr of a local node and press '
-run'.
-
-#### MetaMask example
-
-There is a MetaMask example for doing a simple put operation.
-
-Build the package with the `external-signer` feature (and again with the env variables) and run a webserver, e.g. with
-Python:
-
-```sh
-wasm-pack build --dev --target=web autonomi --features=external-signer
-python -m http.server --directory=autonomi 8000
-```
-
-Then visit `http://127.0.0.1:8000/examples/metamask` in your (modern) browser.
-
-Here, enter a `ws` multiaddr of a local node and press 'run'.
-
-## Faucet (local)
-
-There is no faucet server, but instead you can use the `Deployer wallet private key` printed in the EVM node output to
-initialise a wallet from with almost infinite gas and payment tokens. Example:
+You can use the `Deployer wallet private key` printed in the EVM node output to initialise a wallet from with almost infinite gas and payment tokens. Example:
 
 ```rust
 let rpc_url = "http://localhost:54370/";
@@ -126,9 +103,9 @@ let data_payments_address = "0x8464135c8F25Da09e49BC8782676a84730C318bC";
 let private_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 let network = Network::Custom(CustomNetwork::new(
-rpc_url,
-payment_token_address,
-data_payments_address,
+    rpc_url,
+    payment_token_address,
+    data_payments_address,
 ));
 
 let deployer_wallet = Wallet::new_from_private_key(network, private_key).unwrap();
@@ -136,15 +113,15 @@ let receiving_wallet = Wallet::new_with_random_wallet(network);
 
 // Send 10 payment tokens (atto)
 let _ = deployer_wallet
-.transfer_tokens(receiving_wallet.address(), Amount::from(10))
-.await;
+    .transfer_tokens(receiving_wallet.address(), Amount::from(10))
+    .await;
 ```
 
 Alternatively, you can provide the wallet address that should own all the gas and payment tokens to the EVM testnet
 startup command using the `--genesis-wallet` flag:
 
 ```sh
-cargo run --bin evm_testnet -- --genesis-wallet <ETHEREUM_ADDRESS>
+cargo run --bin evm-testnet -- --genesis-wallet <ETHEREUM_ADDRESS>
 ```
 
 ```shell
@@ -157,3 +134,11 @@ Chunk payments address: 0x8464135c8F25Da09e49BC8782676a84730C318bC
 Deployer wallet private key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 Genesis wallet balance: (tokens: 20000000000000000000000000, gas: 9998998011366954730202)
 ```
+
+# WASM
+
+For documentation on WASM, see [./README_WASM.md].
+
+# Python
+
+For documentation on the Python bindings, see [./README_PYTHON.md].

@@ -6,39 +6,40 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+// Optionally enable nightly `doc_cfg`. Allows items to be annotated, e.g.: "Available on crate feature X only".
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 pub mod address;
 pub mod payment;
+pub mod quote;
 
-#[cfg(feature = "data")]
-pub mod archive;
-#[cfg(feature = "data")]
-pub mod archive_private;
-#[cfg(feature = "data")]
 pub mod data;
-#[cfg(feature = "data")]
-pub mod data_private;
+pub mod files;
+pub mod transactions;
+
 #[cfg(feature = "external-signer")]
+#[cfg_attr(docsrs, doc(cfg(feature = "external-signer")))]
 pub mod external_signer;
-#[cfg(feature = "fs")]
-pub mod fs;
-#[cfg(feature = "fs")]
-pub mod fs_private;
 #[cfg(feature = "registers")]
+#[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
 pub mod registers;
 #[cfg(feature = "vault")]
+#[cfg_attr(docsrs, doc(cfg(feature = "vault")))]
 pub mod vault;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 
 // private module with utility functions
+mod rate_limiter;
 mod utils;
 
-pub use sn_evm::Amount;
-
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore, PeersArgs};
+pub use ant_evm::Amount;
+use ant_evm::EvmNetwork;
+use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
+use ant_protocol::version::IDENTIFY_PROTOCOL_STR;
 use libp2p::{identity::Keypair, Multiaddr};
-use sn_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
-use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
 
@@ -47,18 +48,20 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 10;
 
 const CLIENT_EVENT_CHANNEL_SIZE: usize = 100;
 
-/// Represents a connection to the Autonomi network.
+// Amount of peers to confirm into our routing table before we consider the client ready.
+pub use ant_protocol::CLOSE_GROUP_SIZE;
+
+/// Represents a client for the Autonomi network.
 ///
 /// # Example
 ///
-/// To connect to the network, use [`Client::connect`].
+/// To start interacting with the network, use [`Client::init`].
 ///
 /// ```no_run
 /// # use autonomi::client::Client;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
-/// let client = Client::connect(&peers).await?;
+/// let client = Client::init().await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -66,33 +69,164 @@ const CLIENT_EVENT_CHANNEL_SIZE: usize = 100;
 pub struct Client {
     pub(crate) network: Network,
     pub(crate) client_event_sender: Arc<Option<mpsc::Sender<ClientEvent>>>,
+    pub(crate) evm_network: EvmNetwork,
 }
 
-/// Error returned by [`Client::connect`].
+/// Configuration for [`Client::init_with_config`].
+#[derive(Debug, Clone)]
+pub struct ClientConfig {
+    /// Whether we're expected to connect to a local network.
+    ///
+    /// If `local` feature is enabled, [`ClientConfig::default()`] will set this to `true`.
+    pub local: bool,
+
+    /// List of peers to connect to.
+    ///
+    /// If not provided, the client will use the default bootstrap peers.
+    pub peers: Option<Vec<Multiaddr>>,
+}
+
+impl Default for ClientConfig {
+    fn default() -> Self {
+        Self {
+            #[cfg(feature = "local")]
+            local: true,
+            #[cfg(not(feature = "local"))]
+            local: false,
+            peers: None,
+        }
+    }
+}
+
+/// Error returned by [`Client::init`].
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectError {
-    /// Did not manage to connect to enough peers in time.
-    #[error("Could not connect to enough peers in time.")]
+    /// Did not manage to populate the routing table with enough peers.
+    #[error("Failed to populate our routing table with enough peers in time")]
     TimedOut,
+
     /// Same as [`ConnectError::TimedOut`] but with a list of incompatible protocols.
-    #[error("Could not connect to peers due to incompatible protocol: {0:?}")]
+    #[error("Failed to populate our routing table due to incompatible protocol: {0:?}")]
     TimedOutWithIncompatibleProtocol(HashSet<String>, String),
+
+    /// An error occurred while bootstrapping the client.
+    #[error("Failed to bootstrap the client")]
+    Bootstrap(#[from] ant_bootstrap::Error),
 }
 
 impl Client {
+    /// Initialize the client with default configuration.
+    ///
+    /// See [`Client::init_with_config`].
+    pub async fn init() -> Result<Self, ConnectError> {
+        Self::init_with_config(Default::default()).await
+    }
+
+    /// Initialize a client that is configured to be local.
+    ///
+    /// See [`Client::init_with_config`].
+    pub async fn init_local() -> Result<Self, ConnectError> {
+        Self::init_with_config(ClientConfig {
+            local: true,
+            ..Default::default()
+        })
+        .await
+    }
+
+    /// Initialize a client that bootstraps from a list of peers.
+    ///
+    /// If any of the provided peers is a global address, the client will not be local.
+    ///
+    /// ```no_run
+    /// # use autonomi::Client;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// // Will set `local` to true.
+    /// let client = Client::init_with_peers(vec!["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?]).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn init_with_peers(peers: Vec<Multiaddr>) -> Result<Self, ConnectError> {
+        // Any global address makes the client non-local
+        let local = !peers.iter().any(multiaddr_is_global);
+
+        Self::init_with_config(ClientConfig {
+            local,
+            peers: Some(peers),
+        })
+        .await
+    }
+
+    /// Initialize the client with the given configuration.
+    ///
+    /// This will block until [`CLOSE_GROUP_SIZE`] have been added to the routing table.
+    ///
+    /// See [`ClientConfig`].
+    ///
+    /// ```no_run
+    /// use autonomi::client::Client;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = Client::init_with_config(Default::default()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn init_with_config(config: ClientConfig) -> Result<Self, ConnectError> {
+        let (network, event_receiver) = build_client_and_run_swarm(config.local);
+
+        let peers_args = PeersArgs {
+            disable_mainnet_contacts: config.local,
+            addrs: config.peers.unwrap_or_default(),
+            ..Default::default()
+        };
+
+        let peers = match peers_args.get_addrs(None, None).await {
+            Ok(peers) => peers,
+            Err(e) => return Err(e.into()),
+        };
+
+        let network_clone = network.clone();
+        let peers = peers.to_vec();
+        let _handle = ant_networking::target_arch::spawn(async move {
+            for addr in peers {
+                if let Err(err) = network_clone.dial(addr.clone()).await {
+                    error!("Failed to dial addr={addr} with err: {err:?}");
+                    eprintln!("addr={addr} Failed to dial: {err:?}");
+                };
+            }
+        });
+
+        // Wait until we have added a few peers to our routing table.
+        let (sender, receiver) = futures::channel::oneshot::channel();
+        ant_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
+        receiver.await.expect("sender should not close")?;
+        debug!("Enough peers were added to our routing table, initialization complete");
+
+        Ok(Self {
+            network,
+            client_event_sender: Arc::new(None),
+            evm_network: Default::default(),
+        })
+    }
+
     /// Connect to the network.
     ///
-    /// This will timeout after 20 seconds. (See [`CONNECT_TIMEOUT_SECS`].)
+    /// This will timeout after [`CONNECT_TIMEOUT_SECS`] secs.
     ///
     /// ```no_run
     /// # use autonomi::client::Client;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
+    /// #[allow(deprecated)]
     /// let client = Client::connect(&peers).await?;
     /// # Ok(())
     /// # }
     /// ```
+    #[deprecated(
+        since = "0.2.4",
+        note = "Use [`Client::init`] or [`Client::init_with_config`] instead"
+    )]
     pub async fn connect(peers: &[Multiaddr]) -> Result<Self, ConnectError> {
         // Any global address makes the client non-local
         let local = !peers.iter().any(multiaddr_is_global);
@@ -102,7 +236,7 @@ impl Client {
         // Spawn task to dial to the given peers
         let network_clone = network.clone();
         let peers = peers.to_vec();
-        let _handle = sn_networking::target_arch::spawn(async move {
+        let _handle = ant_networking::target_arch::spawn(async move {
             for addr in peers {
                 if let Err(err) = network_clone.dial(addr.clone()).await {
                     error!("Failed to dial addr={addr} with err: {err:?}");
@@ -112,13 +246,21 @@ impl Client {
         });
 
         let (sender, receiver) = futures::channel::oneshot::channel();
-        sn_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
+        ant_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
 
         receiver.await.expect("sender should not close")?;
+        debug!("Client is connected to the network");
+
+        // With the switch to the new bootstrap cache scheme,
+        // Seems the too many `initial dial`s could result in failure,
+        // when startup quoting/upload tasks got started up immediatly.
+        // Hence, put in a forced wait to allow `initial network discovery` to be completed.
+        ant_networking::target_arch::sleep(Duration::from_secs(5)).await;
 
         Ok(Self {
             network,
             client_event_sender: Arc::new(None),
+            evm_network: Default::default(),
         })
     }
 
@@ -127,19 +269,35 @@ impl Client {
         let (client_event_sender, client_event_receiver) =
             tokio::sync::mpsc::channel(CLIENT_EVENT_CHANNEL_SIZE);
         self.client_event_sender = Arc::new(Some(client_event_sender));
+        debug!("All events to the clients are enabled");
+
         client_event_receiver
+    }
+
+    pub fn set_evm_network(&mut self, evm_network: EvmNetwork) {
+        self.evm_network = evm_network;
     }
 }
 
 fn build_client_and_run_swarm(local: bool) -> (Network, mpsc::Receiver<NetworkEvent>) {
-    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
+    let mut network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
 
-    // TODO: Re-export `Receiver<T>` from `sn_networking`. Else users need to keep their `tokio` dependency in sync.
+    if let Ok(mut config) = BootstrapCacheConfig::default_config() {
+        if local {
+            config.disable_cache_writing = true;
+        }
+        if let Ok(cache) = BootstrapCacheStore::new(config) {
+            network_builder.bootstrap_cache(cache);
+        }
+    }
+
+    // TODO: Re-export `Receiver<T>` from `ant-networking`. Else users need to keep their `tokio` dependency in sync.
     // TODO: Think about handling the mDNS error here.
     let (network, event_receiver, swarm_driver) =
         network_builder.build_client().expect("mdns to succeed");
 
-    let _swarm_driver = sn_networking::target_arch::spawn(swarm_driver.run());
+    let _swarm_driver = ant_networking::target_arch::spawn(swarm_driver.run());
+    debug!("Client swarm driver is running");
 
     (network, event_receiver)
 }
@@ -167,7 +325,7 @@ async fn handle_event_receiver(
                         sender
                             .send(Err(ConnectError::TimedOutWithIncompatibleProtocol(
                                 protocols,
-                                IDENTIFY_PROTOCOL_STR.to_string(),
+                                IDENTIFY_PROTOCOL_STR.read().expect("Failed to obtain read lock for IDENTIFY_PROTOCOL_STR. A call to set_network_id performed. This should not happen").clone(),
                             )))
                             .expect("receiver should not close");
                     } else {

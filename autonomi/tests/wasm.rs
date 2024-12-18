@@ -10,26 +10,26 @@
 
 use std::time::Duration;
 
+use ant_networking::target_arch::sleep;
 use autonomi::Client;
-use sn_networking::target_arch::sleep;
-use test_utils::{evm::get_funded_wallet, gen_random_data, peers_from_env};
+use test_utils::{evm::get_funded_wallet, gen_random_data};
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
 async fn put() -> Result<(), Box<dyn std::error::Error>> {
-    enable_logging_wasm("sn_networking,autonomi,wasm");
+    enable_logging_wasm("ant-networking,autonomi,wasm");
 
-    let client = Client::connect(&peers_from_env()?).await?;
+    let client = Client::init_local().await?;
     let wallet = get_funded_wallet();
     let data = gen_random_data(1024 * 1024 * 10);
 
-    let addr = client.data_put(data.clone(), wallet.into()).await?;
+    let addr = client.data_put_public(data.clone(), wallet.into()).await?;
 
     sleep(Duration::from_secs(10)).await;
 
-    let data_fetched = client.data_get(addr).await?;
+    let data_fetched = client.data_get_public(addr).await?;
     assert_eq!(data, data_fetched, "data fetched should match data put");
 
     Ok(())
