@@ -142,7 +142,7 @@ impl PrivateArchive {
     }
 
     /// Serialize to bytes.
-    pub fn into_bytes(&self) -> Result<Bytes, rmp_serde::encode::Error> {
+    pub fn to_bytes(&self) -> Result<Bytes, rmp_serde::encode::Error> {
         let root_serialized = rmp_serde::to_vec(&self)?;
         let root_serialized = Bytes::from(root_serialized);
 
@@ -163,11 +163,11 @@ impl Client {
     /// Upload a [`PrivateArchive`] to the network
     pub async fn archive_put(
         &self,
-        archive: PrivateArchive,
+        archive: &PrivateArchive,
         payment_option: PaymentOption,
     ) -> Result<PrivateArchiveAccess, PutError> {
         let bytes = archive
-            .into_bytes()
+            .to_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
         let result = self.data_put(bytes, payment_option).await;
         debug!("Uploaded private archive {archive:?} to the network and address is {result:?}");

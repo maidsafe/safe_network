@@ -83,6 +83,8 @@ pub struct Status<'a> {
     // Nodes
     node_services: Vec<NodeServiceData>,
     items: Option<StatefulTable<NodeItem<'a>>>,
+    /// To pass into node services.
+    network_id: Option<u8>,
     // Node Management
     node_management: NodeManagement,
     // Amount of nodes
@@ -117,13 +119,14 @@ pub enum LockRegistryState {
 
 pub struct StatusConfig {
     pub allocated_disk_space: usize,
-    pub rewards_address: String,
-    pub peers_args: PeersArgs,
     pub antnode_path: Option<PathBuf>,
-    pub data_dir_path: PathBuf,
     pub connection_mode: ConnectionMode,
+    pub data_dir_path: PathBuf,
+    pub network_id: Option<u8>,
+    pub peers_args: PeersArgs,
     pub port_from: Option<u32>,
     pub port_to: Option<u32>,
+    pub rewards_address: String,
 }
 
 impl Status<'_> {
@@ -135,6 +138,7 @@ impl Status<'_> {
             active: true,
             is_nat_status_determined: false,
             error_while_running_nat_detection: 0,
+            network_id: config.network_id,
             node_stats: NodeStats::default(),
             node_stats_last_update: Instant::now(),
             node_services: Default::default(),
@@ -614,16 +618,17 @@ impl Component for Status<'_> {
                     let action_sender = self.get_actions_sender()?;
 
                     let maintain_nodes_args = MaintainNodesArgs {
+                        action_sender: action_sender.clone(),
+                        antnode_path: self.antnode_path.clone(),
+                        connection_mode: self.connection_mode,
                         count: self.nodes_to_start as u16,
+                        data_dir_path: Some(self.data_dir_path.clone()),
+                        network_id: self.network_id,
                         owner: self.rewards_address.clone(),
                         peers_args: self.peers_args.clone(),
-                        run_nat_detection: self.should_we_run_nat_detection(),
-                        antnode_path: self.antnode_path.clone(),
-                        data_dir_path: Some(self.data_dir_path.clone()),
-                        action_sender: action_sender.clone(),
-                        connection_mode: self.connection_mode,
                         port_range: Some(port_range),
                         rewards_address: self.rewards_address.clone(),
+                        run_nat_detection: self.should_we_run_nat_detection(),
                     };
 
                     debug!("Calling maintain_n_running_nodes");

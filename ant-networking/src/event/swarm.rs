@@ -253,7 +253,10 @@ impl SwarmDriver {
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if self.local || has_dialed {
                             // A bad node cannot establish a connection with us. So we can add it to the RT directly.
-                            self.remove_bootstrap_from_full(peer_id);
+
+                            // With the new bootstrap cache, the workload is distributed,
+                            // hence no longer need to replace bootstrap nodes for workload share.
+                            // self.remove_bootstrap_from_full(peer_id);
 
                             // Avoid have `direct link format` addrs co-exists with `relay` addr
                             if has_relayed {
@@ -624,12 +627,16 @@ impl SwarmDriver {
     }
 
     // if target bucket is full, remove a bootstrap node if presents.
+    #[allow(dead_code)]
     fn remove_bootstrap_from_full(&mut self, peer_id: PeerId) {
         let mut shall_removed = None;
 
+        let mut bucket_index = Some(0);
+
         if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
             if kbucket.num_entries() >= K_VALUE.into() {
-                if let Some(peers) = self.bootstrap_peers.get(&kbucket.range().0.ilog2()) {
+                bucket_index = kbucket.range().0.ilog2();
+                if let Some(peers) = self.bootstrap_peers.get(&bucket_index) {
                     for peer_entry in kbucket.iter() {
                         if peers.contains(peer_entry.node.key.preimage()) {
                             shall_removed = Some(*peer_entry.node.key.preimage());
@@ -648,6 +655,13 @@ impl SwarmDriver {
                 .remove_peer(&to_be_removed_bootstrap);
             if let Some(removed_peer) = entry {
                 self.update_on_peer_removal(*removed_peer.node.key.preimage());
+            }
+
+            // With the switch to using bootstrap cache, workload is distributed already.
+            // to avoid peers keeps being replaced by each other,
+            // there shall be just one time of removal to be undertaken.
+            if let Some(peers) = self.bootstrap_peers.get_mut(&bucket_index) {
+                let _ = peers.remove(&to_be_removed_bootstrap);
             }
         }
     }

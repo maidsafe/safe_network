@@ -16,7 +16,9 @@ use ant_bootstrap::BootstrapCacheStore;
 use ant_evm::RewardsAddress;
 #[cfg(feature = "open-metrics")]
 use ant_networking::MetricsRegistries;
-use ant_networking::{Instant, Network, NetworkBuilder, NetworkEvent, NodeIssue, SwarmDriver};
+use ant_networking::{
+    target_arch::sleep, Instant, Network, NetworkBuilder, NetworkEvent, NodeIssue, SwarmDriver,
+};
 use ant_protocol::{
     convert_distance_to_u256,
     error::Error as ProtocolError,
@@ -969,7 +971,7 @@ impl Node {
                 }
             }
             // Sleep a short while to avoid causing a spike on resource usage.
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            sleep(std::time::Duration::from_secs(10)).await;
         }
     }
 }

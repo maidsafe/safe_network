@@ -15,7 +15,7 @@ mod subcommands;
 use crate::subcommands::EvmNetworkCommand;
 use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore, PeersArgs};
 use ant_evm::{get_evm_network_from_env, EvmNetwork, RewardsAddress};
-#[cfg(feature = "metrics")]
+#[cfg(feature = "local")]
 use ant_logging::metrics::init_metrics;
 use ant_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use ant_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
@@ -306,7 +306,7 @@ fn main() -> Result<()> {
     // Create a tokio runtime per `run_node` attempt, this ensures
     // any spawned tasks are closed before we would attempt to run
     // another process with these args.
-    #[cfg(feature = "metrics")]
+    #[cfg(feature = "local")]
     rt.spawn(init_metrics(std::process::id()));
     let initial_peres = rt.block_on(opt.peers.get_addrs(None, Some(100)))?;
     debug!("Node's owner set to: {:?}", opt.owner);

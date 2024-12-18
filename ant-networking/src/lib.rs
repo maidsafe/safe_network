@@ -387,6 +387,10 @@ impl Network {
             .await?;
         // Filter out results from the ignored peers.
         close_nodes.retain(|peer_id| !ignore_peers.contains(peer_id));
+        info!(
+            "For record {record_address:?} quoting {} nodes. ignore_peers is {ignore_peers:?}",
+            close_nodes.len()
+        );
 
         if close_nodes.is_empty() {
             error!("Can't get store_cost of {record_address:?}, as all close_nodes are ignored");
@@ -1111,7 +1115,8 @@ impl Network {
             );
         }
 
-        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE + 1)?;
+        let expanded_close_group = CLOSE_GROUP_SIZE + CLOSE_GROUP_SIZE / 2;
+        let closest_peers = sort_peers_by_address(&closest_peers, key, expanded_close_group)?;
         Ok(closest_peers.into_iter().cloned().collect())
     }
 
