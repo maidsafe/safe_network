@@ -251,6 +251,7 @@ jobs:
         with:
           fetch-depth: "0"
           token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+      - uses: dtolnay/rust-toolchain@stable
 
       # Required for the creation of tags
       - shell: bash
