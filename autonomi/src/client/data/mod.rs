@@ -166,6 +166,19 @@ fn hash_to_short_string(input: &str) -> String {
 
 impl Client {
     /// Fetch a blob of (private) data from the network
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use autonomi::{Client, Bytes};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let client = Client::init().await?;
+    /// # let data_map = todo!();
+    /// let data_fetched = client.data_get(data_map).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn data_get(&self, data_map: DataMapChunk) -> Result<Bytes, GetError> {
         info!(
             "Fetching private data from Data Map {:?}",
@@ -181,6 +194,22 @@ impl Client {
     /// The [`DataMapChunk`] is not uploaded to the network, keeping the data private.
     ///
     /// Returns the [`DataMapChunk`] containing the map to the encrypted chunks.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use autonomi::{Client, Bytes};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let client = Client::init().await?;
+    /// # let wallet = todo!();
+    /// let data = Bytes::from("Hello, World");
+    /// let data_map = client.data_put(data, wallet).await?;
+    /// let data_fetched = client.data_get(data_map).await?;
+    /// assert_eq!(data, data_fetched);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn data_put(
         &self,
         data: Bytes,

@@ -123,11 +123,8 @@ pub fn decrypt_private_key(encrypted_data: &str, password: &str) -> Result<Strin
             ))
         })?;
 
-    let mut private_key_bytes = [0u8; 66];
-    private_key_bytes.copy_from_slice(&decrypted_data[0..66]);
-
     // Create secret key from decrypted byte
-    Ok(String::from_utf8(private_key_bytes.to_vec()).expect("not able to convert private key"))
+    Ok(String::from_utf8(decrypted_data.to_vec()).expect("not able to convert private key"))
 }
 
 #[cfg(test)]

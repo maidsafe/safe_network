@@ -245,12 +245,13 @@ jobs:
   publish-crates:
     if: ${{ github.repository_owner == 'maidsafe' && github.ref == 'refs/heads/stable' }}
     needs: [ build, s3-release ]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: "0"
           token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+      - uses: dtolnay/rust-toolchain@stable
 
       # Required for the creation of tags
       - shell: bash

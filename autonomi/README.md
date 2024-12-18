@@ -20,10 +20,10 @@ use autonomi::{Bytes, Client, Wallet};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::init().await?;
+
     // Default wallet of testnet.
     let key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-
-    let client = Client::connect(&["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?]).await?;
     let wallet = Wallet::new_from_private_key(Default::default(), key)?;
 
     // Put and fetch data.
@@ -50,6 +50,10 @@ let wallet = Wallet::new_from_private_key(EvmNetwork::ArbitrumSepolia, key)?;
 // Custom (e.g. local testnet)
 let wallet = Wallet::new_from_private_key(EvmNetwork::new_custom("<rpc URL>", "<payment token address>", "<data payment address>"), key)?;
 ```
+
+# Registers
+
+Registers are deprecated and planned to be replaced by transactions and pointers. Currently, transactions can already be used. For example usage, see [the transaction test](tests/transaction.rs). Pointers are not yet implemented, but will follow soon.
 
 ## Running tests
 
@@ -130,3 +134,11 @@ Chunk payments address: 0x8464135c8F25Da09e49BC8782676a84730C318bC
 Deployer wallet private key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 Genesis wallet balance: (tokens: 20000000000000000000000000, gas: 9998998011366954730202)
 ```
+
+# WASM
+
+For documentation on WASM, see [./README_WASM.md].
+
+# Python
+
+For documentation on the Python bindings, see [./README_PYTHON.md].

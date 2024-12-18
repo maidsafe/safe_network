@@ -70,7 +70,7 @@ impl JsClient {
             .map(|peer| peer.parse())
             .collect::<Result<Vec<Multiaddr>, _>>()?;
 
-        let client = super::Client::connect(&peers).await?;
+        let client = super::Client::init_with_peers(peers).await?;
 
         Ok(JsClient(client))
     }
@@ -263,10 +263,7 @@ mod archive {
             archive: &JsArchive,
             wallet: &JsWallet,
         ) -> Result<String, JsError> {
-            let addr = self
-                .0
-                .archive_put_public(archive.0.clone(), &wallet.0)
-                .await?;
+            let addr = self.0.archive_put_public(&archive.0, &wallet.0).await?;
 
             Ok(addr_to_str(addr))
         }
@@ -348,10 +345,7 @@ mod archive_private {
             archive: &JsPrivateArchive,
             wallet: &JsWallet,
         ) -> Result<JsValue, JsError> {
-            let private_archive_access = self
-                .0
-                .archive_put(archive.0.clone(), (&wallet.0).into())
-                .await?;
+            let private_archive_access = self.0.archive_put(&archive.0, (&wallet.0).into()).await?;
 
             let js_value = serde_wasm_bindgen::to_value(&private_archive_access)?;
 
@@ -370,10 +364,7 @@ mod archive_private {
         ) -> Result<JsValue, JsError> {
             let receipt: Receipt = serde_wasm_bindgen::from_value(receipt)?;
 
-            let private_archive_access = self
-                .0
-                .archive_put(archive.0.clone(), receipt.into())
-                .await?;
+            let private_archive_access = self.0.archive_put(&archive.0, receipt.into()).await?;
 
             let js_value = serde_wasm_bindgen::to_value(&private_archive_access)?;
 

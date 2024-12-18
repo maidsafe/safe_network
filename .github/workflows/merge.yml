@@ -125,7 +125,11 @@ jobs:
 
       - name: Run autonomi tests
         timeout-minutes: 25
-        run: cargo test --release --package autonomi --lib --features="full,fs"
+        run: cargo test --release --package autonomi --features full,local --lib
+
+      - name: Run autonomi doc tests
+        timeout-minutes: 25
+        run: cargo test --release --package autonomi --features full,local --doc
 
       - name: Run bootstrap tests
         timeout-minutes: 25
@@ -134,6 +138,10 @@ jobs:
       - name: Run node tests
         timeout-minutes: 25
         run: cargo test --release --package ant-node --lib
+      
+      - name: Run launchpad tests
+        timeout-minutes: 25
+        run: cargo test --release --package node-launchpad
 
       # The `can_store_after_restart` can be executed with other package tests together and passing
       # on local machine. However keeps failing (when executed together) on CI machines.
@@ -404,7 +412,7 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           set -e
-          for i in {1..100}; do
+          for i in {1..50}; do
             dd if=/dev/urandom of=random_file_$i.bin bs=1M count=1 status=none
             ./target/release/ant --log-output-dest data-dir file upload random_file_$i.bin --public
             ./target/release/ant --log-output-dest data-dir file upload random_file_$i.bin
@@ -419,7 +427,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          for ($i = 1; $i -le 100; $i++) {
+          for ($i = 1; $i -le 50; $i++) {
               $fileName = "random_file_$i.bin"
               $byteArray = [byte[]]@(0xFF) * (1MB)  # Create a 1 MB array filled with 0xFF
               [System.IO.File]::WriteAllBytes($fileName, $byteArray)

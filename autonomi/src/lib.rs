@@ -10,12 +10,12 @@
 //!
 //! # Example
 //!
-//! ```rust
+//! ```no_run
 //! use autonomi::{Bytes, Client, Wallet};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let client = Client::connect(&["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?]).await?;
+//!     let client = Client::init().await?;
 //!
 //!     // Default wallet of testnet.
 //!     let key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
@@ -26,7 +26,7 @@
 //!     let _data_fetched = client.data_get_public(data_addr).await?;
 //!
 //!     // Put and fetch directory from local file system.
-//!     let dir_addr = client.dir_upload_public("files/to/upload".into(), &wallet).await?;
+//!     let dir_addr = client.dir_and_archive_upload_public("files/to/upload".into(), &wallet).await?;
 //!     client.dir_download_public(dir_addr, "files/downloaded".into()).await?;
 //!
 //!     Ok(())
@@ -79,7 +79,10 @@ pub use bytes::Bytes;
 pub use libp2p::Multiaddr;
 
 #[doc(inline)]
-pub use client::{files::archive::PrivateArchive, files::archive_public::PublicArchive, Client};
+pub use client::{
+    files::archive::Metadata, files::archive::PrivateArchive, files::archive_public::PublicArchive,
+    Client, ClientConfig,
+};
 
 #[cfg(feature = "extension-module")]
 mod python;

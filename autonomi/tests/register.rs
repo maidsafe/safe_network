@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 #![cfg(feature = "registers")]
+#![allow(deprecated)]
 
 use ant_logging::LogBuilder;
 use autonomi::Client;
@@ -14,14 +15,14 @@ use bytes::Bytes;
 use eyre::Result;
 use rand::Rng;
 use std::time::Duration;
-use test_utils::{evm::get_funded_wallet, peers_from_env};
+use test_utils::evm::get_funded_wallet;
 use tokio::time::sleep;
 
 #[tokio::test]
 async fn register() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("register", false);
 
-    let client = Client::connect(&peers_from_env()?).await?;
+    let client = Client::init_local().await?;
     let wallet = get_funded_wallet();
 
     // Owner key of the register.

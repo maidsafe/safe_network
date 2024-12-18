@@ -3,7 +3,7 @@ authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Autonomi client API"
 name = "autonomi"
 license = "GPL-3.0"
-version = "0.2.4"
+version = "0.3.0"
 edition = "2021"
 homepage = "https://maidsafe.net"
 readme = "README.md"
@@ -12,6 +12,14 @@ repository = "https://github.com/maidsafe/autonomi"
 [lib]
 name = "autonomi"
 crate-type = ["cdylib", "rlib"]
+
+[[example]]
+name = "data_and_archive"
+required-features = ["full"]
+
+[[example]]
+name = "put_and_dir_upload"
+required-features = ["full"]
 
 [features]
 default = ["vault"]
@@ -26,10 +34,10 @@ vault = ["registers"]
 
 [dependencies]
 ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
-ant-evm = { path = "../ant-evm", version = "0.1.4" }
-ant-networking = { path = "../ant-networking", version = "0.19.5" }
-ant-protocol = { version = "0.17.15", path = "../ant-protocol" }
-ant-registers = { path = "../ant-registers", version = "0.4.3" }
+ant-evm = { path = "../ant-evm", version = "0.1.5" }
+ant-networking = { path = "../ant-networking", version = "0.3.0" }
+ant-protocol = { path = "../ant-protocol", version = "0.3.0" }
+ant-registers = { path = "../ant-registers", version = "0.4.4" }
 bip39 = "2.0.0"
 blst = "0.3.13"
 blstrs = "0.7.1"
@@ -45,6 +53,7 @@ hex = "~0.4.3"
 libp2p = "0.54.1"
 pyo3 = { version = "0.20", optional = true, features = ["extension-module", "abi3-py38"] }
 rand = "0.8.5"
+rayon = "1.8.0"
 rmp-serde = "1.1.1"
 self_encryption = "~0.30.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
@@ -60,7 +69,7 @@ xor_name = "5.0.0"
 
 [dev-dependencies]
 alloy = { version = "0.7.3", default-features = false, features = ["contract", "json-rpc", "network", "node-bindings", "provider-http", "reqwest-rustls-tls", "rpc-client", "rpc-types", "signer-local", "std"] }
-ant-logging = { path = "../ant-logging", version = "0.2.40" }
+ant-logging = { path = "../ant-logging", version = "0.2.41" }
 eyre = "0.6.5"
 sha2 = "0.10.6"
 # Do not specify the version field. Release process expects even the local dev deps to be published.
@@ -72,7 +81,7 @@ wasm-bindgen-test = "0.3.43"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.7"
-evmlib = { path = "../evmlib", version = "0.1.4", features = ["wasm-bindgen"] }
+evmlib = { path = "../evmlib", version = "0.1.5", features = ["wasm-bindgen"] }
 # See https://github.com/sebcrozet/instant/blob/7bd13f51f5c930239fddc0476a837870fb239ed7/README.md#using-instant-for-a-wasm-platform-where-performancenow-is-not-available
 instant = { version = "0.1", features = ["wasm-bindgen", "inaccurate"] }
 js-sys = "0.3.70"

@@ -173,7 +173,7 @@ impl Client {
         wallet: &EvmWallet,
     ) -> Result<PrivateArchiveAccess, UploadError> {
         let archive = self.dir_upload(dir_path, wallet).await?;
-        let archive_addr = self.archive_put(archive, wallet.into()).await?;
+        let archive_addr = self.archive_put(&archive, wallet.into()).await?;
         Ok(archive_addr)
     }
 

@@ -22,7 +22,7 @@ pub async fn connect_to_network(peers: Vec<Multiaddr>) -> Result<Client> {
 
     progress_bar.set_message("Connecting to The Autonomi Network...");
 
-    match Client::connect(&peers).await {
+    match Client::init_with_peers(peers).await {
         Ok(client) => {
             info!("Connected to the Network");
             progress_bar.finish_with_message("Connected to the Network");

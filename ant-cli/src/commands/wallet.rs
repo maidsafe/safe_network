@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::wallet::fs::{select_wallet, store_private_key};
+use crate::wallet::fs::{select_wallet, select_wallet_private_key, store_private_key};
 use crate::wallet::input::request_password;
 use crate::wallet::DUMMY_NETWORK;
 use autonomi::Wallet;
@@ -16,34 +16,10 @@ use prettytable::{Cell, Row, Table};
 
 const WALLET_PASSWORD_REQUIRED: bool = false;
 
-pub fn create(
-    no_password: bool,
-    private_key: Option<String>,
-    password: Option<String>,
-) -> Result<()> {
-    if no_password && password.is_some() {
-        return Err(eyre!(
-            "Only one of `--no-password` or `--password` may be specified"
-        ));
-    }
+pub fn create(no_password: bool, password: Option<String>) -> Result<()> {
+    let maybe_encryption_password = maybe_request_password(no_password, password)?;
 
-    // Set a password for encryption or not
-    let encryption_password: Option<String> = match (no_password, password) {
-        (true, _) => None,
-        (false, Some(pass)) => Some(pass.to_owned()),
-        (false, None) => request_password(WALLET_PASSWORD_REQUIRED),
-    };
-
-    let wallet_private_key = if let Some(private_key) = private_key {
-        // Validate imported key
-        Wallet::new_from_private_key(DUMMY_NETWORK, &private_key)
-            .map_err(|_| eyre!("Please provide a valid secret key in hex format"))?;
-
-        private_key
-    } else {
-        // Create a new key
-        Wallet::random_private_key()
-    };
+    let wallet_private_key = Wallet::random_private_key();
 
     let wallet_address = Wallet::new_from_private_key(DUMMY_NETWORK, &wallet_private_key)
         .expect("Infallible")
@@ -51,10 +27,55 @@ pub fn create(
         .to_string();
 
     // Save the private key file
-    let file_path = store_private_key(&wallet_private_key, encryption_password)?;
+    let file_path = store_private_key(&wallet_private_key, maybe_encryption_password)?;
+
+    println!("Wallet address: {wallet_address}");
+    println!("Wallet private key: {wallet_private_key}");
+    println!("Stored wallet in: {file_path:?}");
+
+    Ok(())
+}
+
+pub fn import(
+    mut wallet_private_key: String,
+    no_password: bool,
+    password: Option<String>,
+) -> Result<()> {
+    // Validate imported key
+    Wallet::new_from_private_key(DUMMY_NETWORK, &wallet_private_key)
+        .map_err(|_| eyre!("Please provide a valid private key in hex format"))?;
+
+    let maybe_encryption_password = maybe_request_password(no_password, password)?;
+
+    let wallet_address = Wallet::new_from_private_key(DUMMY_NETWORK, &wallet_private_key)
+        .expect("Infallible")
+        .address()
+        .to_string();
+
+    // Prepend with 0x if it isn't already
+    if !wallet_private_key.starts_with("0x") {
+        wallet_private_key = format!("0x{wallet_private_key}");
+    }
+
+    // Save the private key file
+    let file_path = store_private_key(&wallet_private_key, maybe_encryption_password)?;
 
     println!("Wallet address: {wallet_address}");
     println!("Stored wallet in: {file_path:?}");
+
+    Ok(())
+}
+
+pub fn export() -> Result<()> {
+    let wallet_private_key = select_wallet_private_key()?;
+
+    let wallet_address = Wallet::new_from_private_key(DUMMY_NETWORK, &wallet_private_key)
+        .expect("Infallible")
+        .address()
+        .to_string();
+
+    println!("Wallet address: {wallet_address}");
+    println!("Wallet private key: {wallet_private_key}");
 
     Ok(())
 }
@@ -82,4 +103,21 @@ pub async fn balance() -> Result<()> {
     table.printstd();
 
     Ok(())
+}
+
+fn maybe_request_password(no_password: bool, password: Option<String>) -> Result<Option<String>> {
+    if no_password && password.is_some() {
+        return Err(eyre!(
+            "Only one of `--no-password` or `--password` may be specified"
+        ));
+    }
+
+    // Set a password for encryption or not
+    let maybe_password = match (no_password, password) {
+        (true, _) => None,
+        (false, Some(pass)) => Some(pass.to_owned()),
+        (false, None) => request_password(WALLET_PASSWORD_REQUIRED),
+    };
+
+    Ok(maybe_password)
 }

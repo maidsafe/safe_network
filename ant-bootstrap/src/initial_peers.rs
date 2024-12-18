@@ -107,13 +107,20 @@ impl PeersArgs {
             return Ok(vec![]);
         }
 
+        let mut bootstrap_addresses = vec![];
+
+        // Read from ANT_PEERS environment variable if present
+        bootstrap_addresses.extend(Self::read_bootstrap_addr_from_env());
+
+        if !bootstrap_addresses.is_empty() {
+            return Ok(bootstrap_addresses);
+        }
+
         // If local mode is enabled, return empty store (will use mDNS)
         if self.local || cfg!(feature = "local") {
             info!("Local mode enabled, using only local discovery.");
             return Ok(vec![]);
         }
-
-        let mut bootstrap_addresses = vec![];
 
         // Add addrs from arguments if present
         for addr in &self.addrs {
@@ -124,8 +131,6 @@ impl PeersArgs {
                 warn!("Invalid multiaddress format from arguments: {addr}");
             }
         }
-        // Read from ANT_PEERS environment variable if present
-        bootstrap_addresses.extend(Self::read_bootstrap_addr_from_env());
 
         if let Some(count) = count {
             if bootstrap_addresses.len() >= count {

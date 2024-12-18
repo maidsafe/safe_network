@@ -8,6 +8,7 @@
 
 use ant_protocol::storage::Chunk;
 use bytes::{BufMut, Bytes, BytesMut};
+use rayon::prelude::*;
 use self_encryption::{DataMap, MAX_CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
 use tracing::debug;
@@ -36,8 +37,8 @@ pub fn encrypt(data: Bytes) -> Result<(Chunk, Vec<Chunk>), Error> {
 
     // Transform `EncryptedChunk` into `Chunk`
     let chunks: Vec<Chunk> = chunks
-        .into_iter()
-        .map(|c| Chunk::new(c.content))
+        .into_par_iter()
+        .map(|c| Chunk::new(c.content.clone()))
         .chain(additional_chunks)
         .collect();
 

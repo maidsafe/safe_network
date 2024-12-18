@@ -11,7 +11,7 @@ use crate::client::rate_limiter::RateLimiter;
 use ant_evm::payment_vault::get_market_price;
 use ant_evm::{Amount, EvmNetwork, PaymentQuote, QuotePayment, QuotingMetrics};
 use ant_networking::{Network, NetworkError};
-use ant_protocol::{storage::ChunkAddress, NetworkAddress};
+use ant_protocol::{storage::ChunkAddress, NetworkAddress, CLOSE_GROUP_SIZE};
 use libp2p::PeerId;
 use std::collections::HashMap;
 use xor_name::XorName;
@@ -159,6 +159,14 @@ async fn fetch_store_quote_with_retries(
     loop {
         match fetch_store_quote(network, content_addr).await {
             Ok(quote) => {
+                if quote.len() < CLOSE_GROUP_SIZE {
+                    retries += 1;
+                    error!("Error while fetching store quote: not enough quotes ({}/{CLOSE_GROUP_SIZE}), retry #{retries}, quotes {quote:?}",
+                        quote.len());
+                    if retries > 2 {
+                        break Err(CostError::CouldNotGetStoreQuote(content_addr));
+                    }
+                }
                 break Ok((content_addr, quote));
             }
             Err(err) if retries < 2 => {
@@ -172,6 +180,9 @@ async fn fetch_store_quote_with_retries(
                 break Err(CostError::CouldNotGetStoreQuote(content_addr));
             }
         }
+        // Shall have a sleep between retries to avoid choking the network.
+        // This shall be rare to happen though.
+        std::thread::sleep(std::time::Duration::from_secs(5));
     }
 }
 
