@@ -148,7 +148,7 @@ impl BootstrapCacheStore {
         &self.config
     }
 
-    /// Create a empty CacheStore with the given configuration
+    /// Create an empty CacheStore with the given configuration
     pub fn new(config: BootstrapCacheConfig) -> Result<Self> {
         info!("Creating new CacheStore with config: {:?}", config);
         let cache_path = config.cache_file_path.clone();
@@ -172,7 +172,7 @@ impl BootstrapCacheStore {
         Ok(store)
     }
 
-    /// Create a empty CacheStore from the given peers argument.
+    /// Create an empty CacheStore from the given peers argument.
     /// This also modifies the cfg if provided based on the PeersArgs.
     /// And also performs some actions based on the PeersArgs.
     ///
