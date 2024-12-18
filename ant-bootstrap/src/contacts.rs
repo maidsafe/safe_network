@@ -28,7 +28,7 @@ const MAINNET_CONTACTS: &[&str] = &[
 const FETCH_TIMEOUT_SECS: u64 = 30;
 /// Maximum number of endpoints to fetch at a time
 const MAX_CONCURRENT_FETCHES: usize = 3;
-/// The max number of retries for a endpoint on failure.
+/// The max number of retries for an endpoint on failure.
 const MAX_RETRIES_ON_FETCH_FAILURE: usize = 3;
 
 /// Discovers initial peers from a list of endpoints
@@ -228,7 +228,7 @@ impl ContactsFetcher {
         Ok(bootstrap_addresses)
     }
 
-    /// Try to parse a response from a endpoint
+    /// Try to parse a response from an endpoint
     fn try_parse_response(response: &str, ignore_peer_id: bool) -> Result<Vec<Multiaddr>> {
         match serde_json::from_str::<CacheData>(response) {
             Ok(json_endpoints) => {
