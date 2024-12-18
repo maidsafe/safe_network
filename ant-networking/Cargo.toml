@@ -38,7 +38,7 @@ hyper = { version = "0.14", features = [
     "http1",
 ], optional = true }
 itertools = "~0.12.1"
-lazy_static = "~1.4.0"
+lazy_static = "1.4.0"
 libp2p = { version = "0.54.1", features = [
     "tokio",
     "dns",

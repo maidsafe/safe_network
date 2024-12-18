@@ -15,7 +15,7 @@ name = "metrics"
 
 [dependencies]
 clap = { version = "4.2.1", features = ["cargo", "string"] }
-color-eyre = "~0.6.2"
+color-eyre = "0.6.3"
 dirs-next = "~2.0.0"
 regex = "1.10"
 serde = { version = "1.0.133", features = ["derive"] }

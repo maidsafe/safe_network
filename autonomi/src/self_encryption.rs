@@ -31,7 +31,7 @@ pub(crate) enum DataMapLevel {
     Additional(DataMap),
 }
 
-pub(crate) fn encrypt(data: Bytes) -> Result<(Chunk, Vec<Chunk>), Error> {
+pub fn encrypt(data: Bytes) -> Result<(Chunk, Vec<Chunk>), Error> {
     let (data_map, chunks) = self_encryption::encrypt(data)?;
     let (data_map_chunk, additional_chunks) = pack_data_map(data_map)?;
 

@@ -53,7 +53,7 @@ impl StoreQuote {
 }
 
 impl Client {
-    pub(crate) async fn get_store_quotes(
+    pub async fn get_store_quotes(
         &self,
         content_addrs: impl Iterator<Item = XorName>,
     ) -> Result<StoreQuote, CostError> {

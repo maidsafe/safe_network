@@ -63,12 +63,15 @@
 extern crate tracing;
 
 pub mod client;
-mod self_encryption;
+pub mod self_encryption;
 
 pub use ant_evm::get_evm_network_from_env;
+pub use ant_evm::Amount;
 pub use ant_evm::EvmNetwork as Network;
 pub use ant_evm::EvmWallet as Wallet;
+pub use ant_evm::QuoteHash;
 pub use ant_evm::RewardsAddress;
+pub use ant_protocol::storage::{Chunk, ChunkAddress};
 
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
@@ -76,7 +79,10 @@ pub use bytes::Bytes;
 pub use libp2p::Multiaddr;
 
 #[doc(inline)]
-pub use client::{files::archive::Metadata, files::archive::PrivateArchive, Client, ClientConfig};
+pub use client::{
+    files::archive::Metadata, files::archive::PrivateArchive, files::archive_public::PublicArchive,
+    Client, ClientConfig,
+};
 
 #[cfg(feature = "extension-module")]
 mod python;
