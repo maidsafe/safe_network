@@ -12,7 +12,7 @@ use crate::{
     CLOSE_GROUP_SIZE,
 };
 use ant_protocol::{
-    storage::{try_serialize_record, RecordKind, Transaction},
+    storage::{try_serialize_record, LinkedList, RecordKind},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use itertools::Itertools;
@@ -412,7 +412,7 @@ impl SwarmDriver {
                         info!("For record {pretty_key:?} task {query_id:?}, found split record for a transaction, accumulated and sending them as a single record");
                         let accumulated_transactions = accumulated_transactions
                             .into_iter()
-                            .collect::<Vec<Transaction>>();
+                            .collect::<Vec<LinkedList>>();
 
                         let bytes = try_serialize_record(
                             &accumulated_transactions,

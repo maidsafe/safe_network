@@ -75,7 +75,7 @@ use tokio::sync::{
 };
 use tokio::time::Duration;
 use {
-    ant_protocol::storage::Transaction,
+    ant_protocol::storage::LinkedList,
     ant_protocol::storage::{
         try_deserialize_record, try_serialize_record, RecordHeader, RecordKind,
     },
@@ -711,7 +711,7 @@ impl Network {
             info!("For record {pretty_key:?} task found split record for a transaction, accumulated and sending them as a single record");
             let accumulated_transactions = accumulated_transactions
                 .into_iter()
-                .collect::<Vec<Transaction>>();
+                .collect::<Vec<LinkedList>>();
             let record = Record {
                 key: key.clone(),
                 value: try_serialize_record(&accumulated_transactions, RecordKind::Transaction)

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::address::TransactionAddress;
+use super::address::LinkedListAddress;
 use bls::SecretKey;
 use serde::{Deserialize, Serialize};
 
@@ -14,26 +14,26 @@ use serde::{Deserialize, Serialize};
 pub use bls::{PublicKey, Signature};
 
 /// Content of a transaction, limited to 32 bytes
-pub type TransactionContent = [u8; 32];
+pub type LinkedListContent = [u8; 32];
 
 /// A generic Transaction on the Network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, Ord, PartialOrd)]
-pub struct Transaction {
+pub struct LinkedList {
     pub owner: PublicKey,
     pub parents: Vec<PublicKey>,
-    pub content: TransactionContent,
-    pub outputs: Vec<(PublicKey, TransactionContent)>,
+    pub content: LinkedListContent,
+    pub outputs: Vec<(PublicKey, LinkedListContent)>,
     /// signs the above 4 fields with the owners key
     pub signature: Signature,
 }
 
-impl Transaction {
+impl LinkedList {
     /// Create a new transaction, signing it with the provided secret key.
     pub fn new(
         owner: PublicKey,
         parents: Vec<PublicKey>,
-        content: TransactionContent,
-        outputs: Vec<(PublicKey, TransactionContent)>,
+        content: LinkedListContent,
+        outputs: Vec<(PublicKey, LinkedListContent)>,
         signing_key: &SecretKey,
     ) -> Self {
         let signature = signing_key.sign(Self::bytes_to_sign(&owner, &parents, &content, &outputs));
@@ -50,8 +50,8 @@ impl Transaction {
     pub fn new_with_signature(
         owner: PublicKey,
         parents: Vec<PublicKey>,
-        content: TransactionContent,
-        outputs: Vec<(PublicKey, TransactionContent)>,
+        content: LinkedListContent,
+        outputs: Vec<(PublicKey, LinkedListContent)>,
         signature: Signature,
     ) -> Self {
         Self {
@@ -68,7 +68,7 @@ impl Transaction {
         owner: &PublicKey,
         parents: &[PublicKey],
         content: &[u8],
-        outputs: &[(PublicKey, TransactionContent)],
+        outputs: &[(PublicKey, LinkedListContent)],
     ) -> Vec<u8> {
         let mut bytes = Vec::new();
         bytes.extend_from_slice(&owner.to_bytes());
@@ -92,8 +92,8 @@ impl Transaction {
         bytes
     }
 
-    pub fn address(&self) -> TransactionAddress {
-        TransactionAddress::from_owner(self.owner)
+    pub fn address(&self) -> LinkedListAddress {
+        LinkedListAddress::from_owner(self.owner)
     }
 
     /// Get the bytes that the signature is calculated from.

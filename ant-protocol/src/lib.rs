@@ -31,7 +31,7 @@ pub mod antnode_proto {
 pub use error::Error;
 use storage::ScratchpadAddress;
 
-use self::storage::{ChunkAddress, RegisterAddress, TransactionAddress};
+use self::storage::{ChunkAddress, LinkedListAddress, RegisterAddress};
 
 /// Re-export of Bytes used throughout the protocol
 pub use bytes::Bytes;
@@ -95,7 +95,7 @@ pub enum NetworkAddress {
     /// The NetworkAddress is representing a ChunkAddress.
     ChunkAddress(ChunkAddress),
     /// The NetworkAddress is representing a TransactionAddress.
-    TransactionAddress(TransactionAddress),
+    TransactionAddress(LinkedListAddress),
     /// The NetworkAddress is representing a ChunkAddress.
     RegisterAddress(RegisterAddress),
     /// The NetworkAddress is representing a RecordKey.
@@ -111,7 +111,7 @@ impl NetworkAddress {
     }
 
     /// Return a `NetworkAddress` representation of the `TransactionAddress`.
-    pub fn from_transaction_address(transaction_address: TransactionAddress) -> Self {
+    pub fn from_transaction_address(transaction_address: LinkedListAddress) -> Self {
         NetworkAddress::TransactionAddress(transaction_address)
     }
     /// Return a `NetworkAddress` representation of the `TransactionAddress`.
@@ -413,14 +413,14 @@ impl std::fmt::Debug for PrettyPrintRecordKey<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::storage::TransactionAddress;
+    use crate::storage::LinkedListAddress;
     use crate::NetworkAddress;
     use bls::rand::thread_rng;
 
     #[test]
     fn verify_transaction_addr_is_actionable() {
         let xorname = xor_name::XorName::random(&mut thread_rng());
-        let transaction_addr = TransactionAddress::new(xorname);
+        let transaction_addr = LinkedListAddress::new(xorname);
         let net_addr = NetworkAddress::from_transaction_address(transaction_addr);
 
         let transaction_addr_hex = &transaction_addr.to_hex()[0..6]; // we only log the first 6 chars

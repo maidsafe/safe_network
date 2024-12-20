@@ -12,11 +12,11 @@ use crate::{node::Node, Error, Marker, Result};
 use ant_evm::payment_vault::verify_data_payment;
 use ant_evm::{AttoTokens, ProofOfPayment};
 use ant_networking::NetworkError;
-use ant_protocol::storage::Transaction;
+use ant_protocol::storage::LinkedList;
 use ant_protocol::{
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
-        Scratchpad, TransactionAddress,
+        Scratchpad, LinkedListAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -172,7 +172,7 @@ impl Node {
             }
             RecordKind::TransactionWithPayment => {
                 let (payment, transaction) =
-                    try_deserialize_record::<(ProofOfPayment, Transaction)>(&record)?;
+                    try_deserialize_record::<(ProofOfPayment, LinkedList)>(&record)?;
 
                 // check if the deserialized value's TransactionAddress matches the record's key
                 let net_addr = NetworkAddress::from_transaction_address(transaction.address());
@@ -354,7 +354,7 @@ impl Node {
             }
             RecordKind::Transaction => {
                 let record_key = record.key.clone();
-                let transactions = try_deserialize_record::<Vec<Transaction>>(&record)?;
+                let transactions = try_deserialize_record::<Vec<LinkedList>>(&record)?;
                 self.validate_merge_and_store_transactions(transactions, &record_key)
                     .await
             }
@@ -559,14 +559,14 @@ impl Node {
     /// If we already have a transaction at this address, the Vec is extended and stored.
     pub(crate) async fn validate_merge_and_store_transactions(
         &self,
-        transactions: Vec<Transaction>,
+        transactions: Vec<LinkedList>,
         record_key: &RecordKey,
     ) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(record_key);
         debug!("Validating transactions before storage at {pretty_key:?}");
 
         // only keep transactions that match the record key
-        let transactions_for_key: Vec<Transaction> = transactions
+        let transactions_for_key: Vec<LinkedList> = transactions
             .into_iter()
             .filter(|s| {
                 // get the record key for the transaction
@@ -591,7 +591,7 @@ impl Node {
         }
 
         // verify the transactions
-        let mut validated_transactions: BTreeSet<Transaction> = transactions_for_key
+        let mut validated_transactions: BTreeSet<LinkedList> = transactions_for_key
             .into_iter()
             .filter(|t| t.verify())
             .collect();
@@ -608,7 +608,7 @@ impl Node {
         // add local transactions to the validated transactions, turn to Vec
         let local_txs = self.get_local_transactions(addr).await?;
         validated_transactions.extend(local_txs.into_iter());
-        let validated_transactions: Vec<Transaction> = validated_transactions.into_iter().collect();
+        let validated_transactions: Vec<LinkedList> = validated_transactions.into_iter().collect();
 
         // store the record into the local storage
         let record = Record {
@@ -764,7 +764,7 @@ impl Node {
 
     /// Get the local transactions for the provided `TransactionAddress`
     /// This only fetches the transactions from the local store and does not perform any network operations.
-    async fn get_local_transactions(&self, addr: TransactionAddress) -> Result<Vec<Transaction>> {
+    async fn get_local_transactions(&self, addr: LinkedListAddress) -> Result<Vec<LinkedList>> {
         // get the local transactions
         let record_key = NetworkAddress::from_transaction_address(addr).to_record_key();
         debug!("Checking for local transactions with key: {record_key:?}");
@@ -783,7 +783,7 @@ impl Node {
             error!("Found a {record_kind} when expecting to find Spend at {addr:?}");
             return Err(NetworkError::RecordKindMismatch(RecordKind::Transaction).into());
         }
-        let local_transactions: Vec<Transaction> = try_deserialize_record(&local_record)?;
+        let local_transactions: Vec<LinkedList> = try_deserialize_record(&local_record)?;
         Ok(local_transactions)
     }
 }

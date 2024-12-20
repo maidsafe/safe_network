@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{driver::GetRecordCfg, Network, NetworkError, Result};
-use ant_protocol::storage::{Transaction, TransactionAddress};
+use ant_protocol::storage::{LinkedList, LinkedListAddress};
 use ant_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, RetryStrategy},
     NetworkAddress, PrettyPrintRecordKey,
@@ -16,7 +16,7 @@ use libp2p::kad::{Quorum, Record};
 
 impl Network {
     /// Gets Transactions at TransactionAddress from the Network.
-    pub async fn get_transactions(&self, address: TransactionAddress) -> Result<Vec<Transaction>> {
+    pub async fn get_transactions(&self, address: LinkedListAddress) -> Result<Vec<LinkedList>> {
         let key = NetworkAddress::from_transaction_address(address).to_record_key();
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::All,
@@ -35,10 +35,10 @@ impl Network {
     }
 }
 
-pub fn get_transactions_from_record(record: &Record) -> Result<Vec<Transaction>> {
+pub fn get_transactions_from_record(record: &Record) -> Result<Vec<LinkedList>> {
     let header = RecordHeader::from_record(record)?;
     if let RecordKind::Transaction = header.kind {
-        let transactions = try_deserialize_record::<Vec<Transaction>>(record)?;
+        let transactions = try_deserialize_record::<Vec<LinkedList>>(record)?;
         Ok(transactions)
     } else {
         warn!(
