@@ -460,36 +460,25 @@ jobs:
           set -e
           NUM_OF_PUBLIC_FILES=""
           NUM_OF_PRIVATE_FILES=""
-          NUM_OF_REGISTERS=""
           NUM_OF_PUBLIC_FILES_IN_VAULT=""
           NUM_OF_PRIVATE_FILES_IN_VAULT=""
-          NUM_OF_REGISTERS_IN_VAULT=""
 
           ./target/release/ant --log-output-dest data-dir file list 2>&1 > file_list.txt
 
-          ./target/release/ant register list | grep register > register_list.txt
-
           NUM_OF_PUBLIC_FILES=`cat file_list.txt | grep "public" | grep -o '[0-9]\+'`
           NUM_OF_PRIVATE_FILES=`cat file_list.txt | grep "private" | grep -o '[0-9]\+'`
-          NUM_OF_REGISTERS=`cat register_list.txt | grep "register" | grep -o '[0-9]\+'`
-          # when obtaining registers we get random garbage, this is the only hack that works.
-          NUM_OF_REGISTERS_first=${NUM_OF_REGISTERS%%[ $'\n']*}
-          echo "NUM_OF_REGISTERS is $NUM_OF_REGISTERS_first"
           ./target/release/ant --log-output-dest data-dir vault load 2>&1 > vault_data.txt
 
           NUM_OF_PUBLIC_FILES_IN_VAULT=`cat vault_data.txt  | grep "public" | grep -o '[0-9]\+'`
           NUM_OF_PRIVATE_FILES_IN_VAULT=`cat vault_data.txt| grep "private" | grep -o '[0-9]\+'`
-          NUM_OF_REGISTERS_IN_VAULT=`cat vault_data.txt | grep "register" | grep -o '[0-9]\+'`
 
           echo "Total Num of local public files is $NUM_OF_PUBLIC_FILES and in vault is $NUM_OF_PUBLIC_FILES_IN_VAULT"
           echo "Total Num of local private files is $NUM_OF_PRIVATE_FILES and in vault is $NUM_OF_PRIVATE_FILES_IN_VAULT"
-          echo "Total Num of local registers is $NUM_OF_REGISTERS_first and in vault is $NUM_OF_REGISTERS_IN_VAULT"
 
-          rm -rf file_list.txt register_list.txt vault_data.txt
+          rm -rf file_list.txt vault_data.txt
 
           python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: local data and vault in network dont match, Local public Files: {sys.argv[1]} and vault public files: {sys.argv[2]} are Not Equal"' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
           python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: local data and vault in network dont match, Local private Files: {sys.argv[1]} and vault private files: {sys.argv[2]} are Not Equal"' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
-          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: local data and vault in network dont match, Local registers: {sys.argv[1]} and vault registers: {sys.argv[2]} are Not Equal"' $NUM_OF_REGISTERS_first $NUM_OF_REGISTERS_IN_VAULT
           echo "vault synced successfully!"
         env:
           ANT_LOG: "v"
@@ -501,7 +490,6 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           ./target/release/ant --log-output-dest data-dir file list > file_list.txt 2>&1
-          ./target/release/ant register list > register_list.txt 2>&1
           ./target/release/ant --log-output-dest data-dir vault load > vault_data.txt 2>&1
         env:
           ANT_LOG: "v"
@@ -535,19 +523,14 @@ jobs:
           print("NUM_OF_PUBLIC_FILES:", NUM_OF_PUBLIC_FILES)
           NUM_OF_PRIVATE_FILES = find_number_before_word("file_list.txt", "private")
           print("NUM_OF_PRIVATE_FILES:", NUM_OF_PRIVATE_FILES)
-          NUM_OF_REGISTERS_FILES = find_number_before_word("register_list.txt", "register")
-          print("NUM_OF_REGISTERS_FILES:", NUM_OF_REGISTERS_FILES)
           NUM_OF_PUBLIC_FILES_IN_VAULT = find_number_before_word("vault_data.txt", "public")
           print("NUM_OF_PUBLIC_FILES_IN_VAULT:", NUM_OF_PUBLIC_FILES_IN_VAULT)
           NUM_OF_PRIVATE_FILES_IN_VAULT = find_number_before_word("vault_data.txt", "private")
-          print("NUM_OF_PRIVATE_FILES_IN_VAULT:", NUM_OF_PRIVATE_FILES_IN_VAULT)
-          NUM_OF_REGISTERS_IN_VAULT = find_number_before_word("vault_data.txt", "register")
           print("NUM_OF_PRIVATE_FILES_IN_VAULT:", NUM_OF_PRIVATE_FILES_IN_VAULT)
 
           # Assertions
           assert NUM_OF_PUBLIC_FILES == NUM_OF_PUBLIC_FILES_IN_VAULT, f"Error: local data and vault in network dont match, Local public Files: {NUM_OF_PUBLIC_FILES} and vault public files: {NUM_OF_PUBLIC_FILES_IN_VAULT} are Not Equal"
           assert NUM_OF_PRIVATE_FILES == NUM_OF_PRIVATE_FILES_IN_VAULT, f"Error: local data and vault in network dont match, Local private Files: {NUM_OF_PRIVATE_FILES} and vault private files: {NUM_OF_PRIVATE_FILES_IN_VAULT} are Not Equal"
-          assert NUM_OF_REGISTERS_FILES == NUM_OF_REGISTERS_IN_VAULT, f"Error: local data and vault in network dont match, Local registers: {NUM_OF_REGISTERS_FILES} and vault registers: {NUM_OF_REGISTERS_IN_VAULT} are Not Equal"
           print("Vault synced successfully!")
         env:
           ANT_LOG: "v"

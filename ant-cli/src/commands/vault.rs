@@ -36,7 +36,6 @@ pub async fn create(peers: Vec<Multiaddr>) -> Result<()> {
     let local_user_data = crate::user_data::get_local_user_data()?;
     let file_archives_len = local_user_data.file_archives.len();
     let private_file_archives_len = local_user_data.private_file_archives.len();
-    let registers_len = local_user_data.registers.len();
 
     println!("Pushing to network vault...");
     let total_cost = client
@@ -53,7 +52,6 @@ pub async fn create(peers: Vec<Multiaddr>) -> Result<()> {
     println!("Vault contains:");
     println!("{file_archives_len} public file archive(s)");
     println!("{private_file_archives_len} private file archive(s)");
-    println!("{registers_len} register(s)");
     Ok(())
 }
 
@@ -80,7 +78,6 @@ pub async fn sync(peers: Vec<Multiaddr>, force: bool) -> Result<()> {
     let local_user_data = crate::user_data::get_local_user_data()?;
     let file_archives_len = local_user_data.file_archives.len();
     let private_file_archives_len = local_user_data.private_file_archives.len();
-    let registers_len = local_user_data.registers.len();
     client
         .put_user_data_to_vault(&vault_sk, wallet.into(), local_user_data)
         .await?;
@@ -89,7 +86,6 @@ pub async fn sync(peers: Vec<Multiaddr>, force: bool) -> Result<()> {
     println!("Vault contains:");
     println!("{file_archives_len} public file archive(s)");
     println!("{private_file_archives_len} private file archive(s)");
-    println!("{registers_len} register(s)");
     Ok(())
 }
 
@@ -108,6 +104,5 @@ pub async fn load(peers: Vec<Multiaddr>) -> Result<()> {
         "{} private file archive(s)",
         user_data.private_file_archives.len()
     );
-    println!("{} register(s)", user_data.registers.len());
     Ok(())
 }

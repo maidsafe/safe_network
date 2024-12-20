@@ -26,11 +26,11 @@ default = ["vault"]
 external-signer = ["ant-evm/external-signer"]
 extension-module = ["pyo3/extension-module"]
 fs = ["tokio/fs"]
-full = ["registers", "vault", "fs"]
+full = ["vault", "fs"]
 local = ["ant-networking/local", "ant-evm/local"]
 loud = []
 registers = []
-vault = ["registers"]
+vault = []
 
 [dependencies]
 ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
