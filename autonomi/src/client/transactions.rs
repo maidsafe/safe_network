@@ -13,8 +13,8 @@ use crate::client::UploadSummary;
 
 use ant_evm::Amount;
 use ant_evm::AttoTokens;
-pub use ant_protocol::storage::Transaction;
-use ant_protocol::storage::TransactionAddress;
+pub use ant_protocol::storage::LinkedList;
+use ant_protocol::storage::LinkedListAddress;
 pub use bls::SecretKey;
 
 use ant_evm::{EvmWallet, EvmWalletError};
@@ -44,15 +44,15 @@ pub enum TransactionError {
     #[error("Received invalid quote from node, this node is possibly malfunctioning, try another node by trying another transaction name")]
     InvalidQuote,
     #[error("Transaction already exists at this address: {0:?}")]
-    TransactionAlreadyExists(TransactionAddress),
+    TransactionAlreadyExists(LinkedListAddress),
 }
 
 impl Client {
     /// Fetches a Transaction from the network.
     pub async fn transaction_get(
         &self,
-        address: TransactionAddress,
-    ) -> Result<Vec<Transaction>, TransactionError> {
+        address: LinkedListAddress,
+    ) -> Result<Vec<LinkedList>, TransactionError> {
         let transactions = self.network.get_transactions(address).await?;
 
         Ok(transactions)
@@ -60,7 +60,7 @@ impl Client {
 
     pub async fn transaction_put(
         &self,
-        transaction: Transaction,
+        transaction: LinkedList,
         wallet: &EvmWallet,
     ) -> Result<(), TransactionError> {
         let address = transaction.address();
@@ -137,7 +137,7 @@ impl Client {
         let pk = key.public_key();
         trace!("Getting cost for transaction of {pk:?}");
 
-        let address = TransactionAddress::from_owner(pk);
+        let address = LinkedListAddress::from_owner(pk);
         let xor = *address.xorname();
         let store_quote = self.get_store_quotes(std::iter::once(xor)).await?;
         let total_cost = AttoTokens::from_atto(

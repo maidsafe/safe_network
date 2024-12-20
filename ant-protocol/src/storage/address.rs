@@ -8,9 +8,9 @@
 
 mod chunk;
 mod scratchpad;
-mod transaction;
+mod linked_list;
 
 pub use self::chunk::ChunkAddress;
 pub use self::scratchpad::ScratchpadAddress;
-pub use self::transaction::TransactionAddress;
+pub use self::linked_list::LinkedListAddress;
 pub use ant_registers::RegisterAddress;

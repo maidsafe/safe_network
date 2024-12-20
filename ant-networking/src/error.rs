@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ant_protocol::storage::TransactionAddress;
+use ant_protocol::storage::LinkedListAddress;
 use ant_protocol::{messages::Response, storage::RecordKind, NetworkAddress, PrettyPrintRecordKey};
 use libp2p::{
     kad::{self, QueryId, Record},
@@ -135,7 +135,7 @@ pub enum NetworkError {
 
     // ---------- Transaction Errors
     #[error("Transaction not found: {0:?}")]
-    NoTransactionFoundInsideRecord(TransactionAddress),
+    NoTransactionFoundInsideRecord(LinkedListAddress),
 
     // ---------- Store Error
     #[error("No Store Cost Responses")]

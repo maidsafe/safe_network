@@ -9,19 +9,19 @@
 mod address;
 mod chunks;
 mod header;
+mod linked_list;
 mod scratchpad;
-mod transaction;
 
 use core::fmt;
 use exponential_backoff::Backoff;
 use std::{num::NonZeroUsize, time::Duration};
 
 pub use self::{
-    address::{ChunkAddress, RegisterAddress, ScratchpadAddress, TransactionAddress},
+    address::{ChunkAddress, LinkedListAddress, RegisterAddress, ScratchpadAddress},
     chunks::Chunk,
     header::{try_deserialize_record, try_serialize_record, RecordHeader, RecordKind, RecordType},
+    linked_list::LinkedList,
     scratchpad::Scratchpad,
-    transaction::Transaction,
 };
 
 /// A strategy that translates into a configuration for exponential backoff.
