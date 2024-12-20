@@ -25,10 +25,8 @@ ant-build-info = { path = "../ant-build-info", version = "0.1.20" }
 ant-evm = { path = "../ant-evm", version = "0.1.5" }
 ant-protocol = { path = "../ant-protocol", version = "0.3.0" }
 ant-registers = { path = "../ant-registers", version = "0.4.4" }
-async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 custom_debug = "~0.6.1"
-exponential-backoff = "2.0.0"
 futures = "~0.3.13"
 hex = "~0.4.3"
 hkdf = "0.12"
@@ -38,7 +36,6 @@ hyper = { version = "0.14", features = [
     "http1",
 ], optional = true }
 itertools = "~0.12.1"
-lazy_static = "1.4.0"
 libp2p = { version = "0.54.1", features = [
     "tokio",
     "dns",
@@ -58,13 +55,11 @@ prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
 rmp-serde = "1.1.1"
-self_encryption = "~0.30.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
 sha2 = "0.10"
 strum = { version = "0.26.2", features = ["derive"] }
 sysinfo = { version = "0.30.8", default-features = false, optional = true }
 thiserror = "1.0.23"
-tiny-keccak = { version = "~2.0.2", features = ["sha3"] }
 tokio = { version = "1.32.0", features = [
     "io-util",
     "macros",
