@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use xor_name::XorName;
 
-/// Scratchpad, an mutable address for encrypted data
+/// Scratchpad, a mutable address for encrypted data
 #[derive(
     Hash, Eq, PartialEq, PartialOrd, Ord, Clone, custom_debug::Debug, Serialize, Deserialize,
 )]

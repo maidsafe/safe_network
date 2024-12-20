@@ -13,7 +13,7 @@ use ratatui::{
 
 /// Error popup is a popup that is used to display error messages to the user.
 ///
-/// It accepts a title, a message and a error message.
+/// It accepts a title, a message and an error message.
 /// Handles key events to hide the popup (Enter and Esc keys).
 ///
 /// How to use:
