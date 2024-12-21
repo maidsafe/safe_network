@@ -773,7 +773,7 @@ dependencies = [
 
 [[package]]
 name = "ant-bootstrap"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ant-logging",
  "ant-protocol",
@@ -798,7 +798,7 @@ dependencies = [
 
 [[package]]
 name = "ant-build-info"
-version = "0.1.20"
+version = "0.1.21"
 dependencies = [
  "chrono",
  "tracing",
@@ -807,7 +807,7 @@ dependencies = [
 
 [[package]]
 name = "ant-cli"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "ant-bootstrap",
  "ant-build-info",
@@ -838,7 +838,7 @@ dependencies = [
 
 [[package]]
 name = "ant-evm"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "custom_debug",
  "evmlib",
@@ -861,7 +861,7 @@ dependencies = [
 
 [[package]]
 name = "ant-logging"
-version = "0.2.41"
+version = "0.2.42"
 dependencies = [
  "chrono",
  "color-eyre",
@@ -886,7 +886,7 @@ dependencies = [
 
 [[package]]
 name = "ant-metrics"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "clap",
  "color-eyre",
@@ -900,7 +900,7 @@ dependencies = [
 
 [[package]]
 name = "ant-networking"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "aes-gcm-siv",
  "ant-bootstrap",
@@ -909,6 +909,7 @@ dependencies = [
  "ant-protocol",
  "ant-registers",
  "assert_fs",
+ "async-trait",
  "blsttc",
  "bytes",
  "custom_debug",
@@ -943,7 +944,7 @@ dependencies = [
 
 [[package]]
 name = "ant-node"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "ant-bootstrap",
  "ant-build-info",
@@ -1001,7 +1002,7 @@ dependencies = [
 
 [[package]]
 name = "ant-node-manager"
-version = "0.11.4"
+version = "0.11.5"
 dependencies = [
  "ant-bootstrap",
  "ant-build-info",
@@ -1044,7 +1045,7 @@ dependencies = [
 
 [[package]]
 name = "ant-node-rpc-client"
-version = "0.6.37"
+version = "0.6.38"
 dependencies = [
  "ant-build-info",
  "ant-logging",
@@ -1068,7 +1069,7 @@ dependencies = [
 
 [[package]]
 name = "ant-protocol"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "ant-build-info",
  "ant-evm",
@@ -1098,7 +1099,7 @@ dependencies = [
 
 [[package]]
 name = "ant-registers"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "blsttc",
  "crdts",
@@ -1135,7 +1136,7 @@ dependencies = [
 
 [[package]]
 name = "ant-service-management"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "ant-bootstrap",
  "ant-evm",
@@ -1162,7 +1163,7 @@ dependencies = [
 
 [[package]]
 name = "ant-token-supplies"
-version = "0.1.59"
+version = "0.1.60"
 dependencies = [
  "dirs-next",
  "reqwest 0.11.27",
@@ -1571,7 +1572,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
 name = "autonomi"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "alloy",
  "ant-bootstrap",
@@ -1580,6 +1581,7 @@ dependencies = [
  "ant-networking",
  "ant-protocol",
  "ant-registers",
+ "bip39",
  "blst",
  "blstrs 0.7.1",
  "blsttc",
@@ -1730,6 +1732,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bip39"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33415e24172c1b7d6066f6d999545375ab8e1d95421d6784bdfff9496f292387"
+dependencies = [
+ "bitcoin_hashes",
+ "serde",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1743,6 +1756,22 @@ name = "bit-vec"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
+
+[[package]]
+name = "bitcoin-internals"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9425c3bf7089c983facbae04de54513cce73b41c7f9ff8c845b54e7bc64ebbfb"
+
+[[package]]
+name = "bitcoin_hashes"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1930a4dabfebb8d7d9992db18ebe3ae2876f0a305fab206fd168df931ede293b"
+dependencies = [
+ "bitcoin-internals",
+ "hex-conservative",
+]
 
 [[package]]
 name = "bitflags"
@@ -3156,7 +3185,7 @@ dependencies = [
 
 [[package]]
 name = "evm-testnet"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "ant-evm",
  "clap",
@@ -3167,7 +3196,7 @@ dependencies = [
 
 [[package]]
 name = "evmlib"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "alloy",
  "dirs-next",
@@ -4349,6 +4378,12 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "hex-conservative"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "212ab92002354b4819390025006c897e8140934349e8635c9b077f47b4dcbd20"
 
 [[package]]
 name = "hex-literal"
@@ -6006,7 +6041,7 @@ dependencies = [
 
 [[package]]
 name = "nat-detection"
-version = "0.2.12"
+version = "0.2.13"
 dependencies = [
  "ant-build-info",
  "ant-networking",
@@ -6123,7 +6158,7 @@ dependencies = [
 
 [[package]]
 name = "node-launchpad"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ant-bootstrap",
  "ant-build-info",
@@ -8696,7 +8731,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "test-utils"
-version = "0.4.12"
+version = "0.4.13"
 dependencies = [
  "bytes",
  "color-eyre",

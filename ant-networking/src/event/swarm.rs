@@ -200,25 +200,25 @@ impl SwarmDriver {
                                 {
                                     let ilog2 = kbucket.range().0.ilog2();
                                     let num_peers = kbucket.num_entries();
-                                    let mut is_bucket_full = num_peers >= K_VALUE.into();
+                                    let is_bucket_full = num_peers >= K_VALUE.into();
 
                                     // check if peer_id is already a part of RT
                                     let already_present_in_rt = kbucket
                                         .iter()
                                         .any(|entry| entry.node.key.preimage() == &peer_id);
 
-                                    // If the bucket contains any of a bootstrap node,
-                                    // consider the bucket is not full and dial back
-                                    // so that the bootstrap nodes can be replaced.
-                                    if is_bucket_full {
-                                        if let Some(peers) = self.bootstrap_peers.get(&ilog2) {
-                                            if kbucket.iter().any(|entry| {
-                                                peers.contains(entry.node.key.preimage())
-                                            }) {
-                                                is_bucket_full = false;
-                                            }
-                                        }
-                                    }
+                                    // // If the bucket contains any of a bootstrap node,
+                                    // // consider the bucket is not full and dial back
+                                    // // so that the bootstrap nodes can be replaced.
+                                    // if is_bucket_full {
+                                    //     if let Some(peers) = self.bootstrap_peers.get(&ilog2) {
+                                    //         if kbucket.iter().any(|entry| {
+                                    //             peers.contains(entry.node.key.preimage())
+                                    //         }) {
+                                    //             is_bucket_full = false;
+                                    //         }
+                                    //     }
+                                    // }
 
                                     (is_bucket_full, already_present_in_rt, ilog2)
                                 } else {
