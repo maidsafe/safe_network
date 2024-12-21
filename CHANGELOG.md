@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-12-21
+
+### Network
+
+#### Fixed
+
+- Do not dial back when a new peer is detected. This resulted in a large number of open connections,
+  in turn causing increased CPU usage.
+
+### Client
+
+#### Changed
+
+- Remove the 'dial error' output on the `file upload` command
+
 ## 2024-12-18
 
 ### General

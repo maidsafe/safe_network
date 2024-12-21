@@ -4,5 +4,9 @@ git_release_enable = false
 semver_check = false
 
 [[package]]
+name = "evm-testnet"
+release = false
+
+[[package]]
 name = "test-utils"
 release = false
